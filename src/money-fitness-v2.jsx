@@ -2360,11 +2360,11 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
     }
   }
 
-  var week = program[activeWk];
-  if (!week) return null;
+  var week = program && program[activeWk];
+  
 
   // Always put first scheduled day at top as featured
-  var days = week.days.slice();
+  var days = week ? week.days.slice() : [];
 
   return (
     <div style={{background:CARD,margin:"0 -16px",padding:"0 16px 24px"}}>

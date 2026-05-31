@@ -3952,7 +3952,7 @@ function RecentActivityTimeline({ activityLogs }) {
     );
   }
 
-  var PLATFORM_COLORS = { apple: "#1C1C1E", garmin: "#003087", google: "#4285F4", fitbit: "#00B0B9", coros: "#E94560" };
+  var PLATFORM_COLORS = { apple: "#3A3A3C", garmin: "#003087", google: "#4285F4", fitbit: "#00B0B9", coros: "#E94560" };
 
   function iconForType(type, fromWatch, fromDevice, notes) {
     var n = (notes || "").toLowerCase();
@@ -4206,7 +4206,7 @@ function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onI
 
   const PLATFORM_LOGOS = {
     apple:  '<svg width="22" height="26" viewBox="0 0 256 315" fill="currentColor"><path d="M213.803 167.03c.442 47.58 41.74 63.413 42.197 63.615-.35 1.116-6.599 22.563-21.757 44.716-13.104 19.153-26.705 38.235-48.13 38.63-21.05.388-27.82-12.498-51.888-12.498-24.061 0-31.582 12.105-51.51 12.886-20.723.782-36.577-20.44-49.8-39.526C5.977 247.185-14.816 181.661 11.366 136.51c13.053-22.407 36.395-36.593 61.735-36.98 19.288-.36 37.476 12.981 49.28 12.981 11.804 0 33.948-16.06 57.188-13.7 9.726.4 37.05 3.93 54.595 29.622zm-62.76-96.18c10.95-13.281 18.368-31.79 16.353-50.24-15.826.636-34.996 10.546-46.35 23.827-10.18 11.798-19.09 30.729-16.698 48.783 17.644 1.368 35.658-8.998 46.695-22.37z"/></svg>',
-    garmin: '<svg width="60" height="18" viewBox="0 0 360 60" fill="currentColor"><text x="0" y="46" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="50" letter-spacing="-2">GARMIN</text></svg>',
+    garmin: '<svg width="20" height="20" viewBox="0 0 100 100" fill="currentColor"><circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" stroke-width="8"/><path d="M72 50H50v15h14c-3 8-11 14-21 14-13 0-23-10-23-23s10-23 23-23c6 0 11 2 15 6l10-10c-6-6-15-10-25-10-21 0-38 17-38 37s17 37 38 37 37-16 37-37v-6z"/></svg>',
     google: '<svg width="28" height="28" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>',
     fitbit: '<svg width="28" height="28" viewBox="0 0 100 100"><circle cx="50" cy="18" r="9" fill="currentColor"/><circle cx="50" cy="50" r="12" fill="currentColor"/><circle cx="50" cy="82" r="9" fill="currentColor"/><circle cx="20" cy="34" r="7" fill="currentColor"/><circle cx="20" cy="66" r="7" fill="currentColor"/><circle cx="80" cy="34" r="7" fill="currentColor"/><circle cx="80" cy="66" r="7" fill="currentColor"/></svg>',
     coros:  '<svg width="28" height="28" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" stroke="currentColor" stroke-width="8" fill="none"/><circle cx="50" cy="50" r="28" stroke="currentColor" stroke-width="5" fill="none"/><circle cx="50" cy="50" r="8" fill="currentColor"/></svg>',

@@ -5767,18 +5767,19 @@ function SettingsMenu({ isCoach, goTo, tab, onLogout, onReplayTutorial, notifSet
                   </button>
                 );
               })}
-              <button onClick={function() { if (onReplayTutorial) { setOpen(false); onReplayTutorial(); } }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "13px 16px", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}
-                onMouseEnter={function(e) { e.currentTarget.style.background = ORANGE_BG; }}
+              <button onClick={function() { if (onReplayTutorial) { setOpen(false); onReplayTutorial(); } }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "13px 16px", background: "none", border: "none", cursor: "pointer", borderBottom: "1px solid "+SURFACE2, textAlign: "left" }}
+                onMouseEnter={function(e) { e.currentTarget.style.background = SURFACE; }}
                 onMouseLeave={function(e) { e.currentTarget.style.background = "none"; }}>
-                <span style={{ fontSize: 18 }}>🎓</span>
-                <span style={{ color: ORANGE, fontSize: 14, fontWeight: 600 }}>Replay Tutorial</span>
+                <span style={{ display:"flex", alignItems:"center" }} dangerouslySetInnerHTML={{ __html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>' }} />
+                <span style={{ color: TEXT, fontSize: 14, fontWeight: 500 }}>Replay Tutorial</span>
                 <svg style={{ marginLeft: "auto" }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={TEXT3} strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
               <button onClick={function() { setOpen(false); onLogout(); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "13px 16px", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}
-                onMouseEnter={function(e) { e.currentTarget.style.background = "#FFF0F0"; }}
+                onMouseEnter={function(e) { e.currentTarget.style.background = SURFACE; }}
                 onMouseLeave={function(e) { e.currentTarget.style.background = "none"; }}>
-                <span style={{ fontSize: 18 }}><span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span></span>
-                <span style={{ color: "#E05252", fontSize: 14, fontWeight: 600 }}>Log Out</span>
+                <span style={{ display:"flex", alignItems:"center" }} dangerouslySetInnerHTML={{ __html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>' }} />
+                <span style={{ color: TEXT, fontSize: 14, fontWeight: 500 }}>Log Out</span>
+                <svg style={{ marginLeft: "auto" }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={TEXT3} strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
             </div>
           )}

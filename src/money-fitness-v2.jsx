@@ -2360,11 +2360,11 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
     }
   }
 
-  var week = program && program[activeWk];
-  var days = week ? week.days.slice() : [];
+  var week = program[activeWk];
+  if (!week) return null;
 
   // Always put first scheduled day at top as featured
-  var days = week ? week.days.slice() : [];
+  var days = week.days.slice();
 
   return (
     <div style={{background:CARD,margin:"0 -16px",padding:"0 16px 24px"}}>
@@ -3723,10 +3723,10 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
 
 function ClientsScreen({ isCoach, selected, setSelected, clientDefaultTab, setClientDefaultTab, favorites, watchDays, messages, onSend, coachProgram, setCoachProgram, activityLogs, onLogsChange, programDayIndex, setProgramDayIndex, myPlans }) {
   if (selected) {
-    return <ClientDetail client={selected} onBack={function() { setSelected(null); setClientDefaultTab("Progress"); }} isCoach={isCoach} defaultTab={clientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages[selected.id] || []} onSend={onSend} coachProgram={coachProgram} setCoachProgram={setCoachProgram} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} activityLogs={activityLogs} />;
+    return <ClientDetail client={selected} onBack={function() { setSelected(null); setClientDefaultTab("Progress"); }} isCoach={isCoach} defaultTab={clientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages[selected.id] || []} onSend={onSend} coachProgram={coachProgram} setCoachProgram={handleProgramUpdate} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} activityLogs={activityLogs} />;
   }
   if (!isCoach) {
-    return <ClientDetail client={CLIENTS[0]} onBack={null} isCoach={false} defaultTab={clientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages[CLIENTS[0].id] || []} onSend={onSend} coachProgram={coachProgram} setCoachProgram={setCoachProgram} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} activityLogs={activityLogs} />;
+    return <ClientDetail client={CLIENTS[0]} onBack={null} isCoach={false} defaultTab={clientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages[CLIENTS[0].id] || []} onSend={onSend} coachProgram={coachProgram} setCoachProgram={handleProgramUpdate} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} activityLogs={activityLogs} />;
   }
   return (
     <div>
@@ -7771,4 +7771,3 @@ export default function App() {
   return <MainApp initCoach={isCoach} newClientName={newClientName} onLogout={function() { setAuthed(false); setAuthScreen("welcome"); setNewClientName(null); }} />;
 }
 
-// updated

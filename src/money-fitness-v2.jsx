@@ -4205,32 +4205,10 @@ function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onI
   const [importing, setImporting]     = useState(null);
 
   const PLATFORM_LOGOS = {
-    apple: (
-      <svg width="26" height="26" viewBox="0 0 170 170" fill="#fff">
-        <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.197-2.12-9.973-3.17-14.34-3.17-4.58 0-9.492 1.05-14.746 3.17-5.262 2.13-9.501 3.24-12.742 3.35-4.929.21-9.842-1.96-14.746-6.52-3.13-2.73-7.045-7.41-11.735-14.04-5.032-7.08-9.169-15.29-12.41-24.65-3.471-10.11-5.211-19.9-5.211-29.38 0-10.86 2.345-20.21 7.045-28.03 3.688-6.31 8.591-11.3 14.739-14.97 6.148-3.67 12.798-5.54 19.961-5.66 3.922 0 9.069 1.21 15.462 3.59 6.376 2.39 10.465 3.6 12.254 3.6 1.34 0 5.877-1.42 13.57-4.24 7.275-2.61 13.415-3.69 18.445-3.27 13.63 1.1 23.87 6.49 30.68 16.22-12.19 7.39-18.22 17.74-18.1 31.01.11 10.33 3.86 18.93 11.23 25.77 3.34 3.17 7.07 5.62 11.22 7.36-.9 2.61-1.85 5.11-2.86 7.51zM119.11 7.24c0 8.1-2.96 15.67-8.86 22.68-7.12 8.32-15.73 13.13-25.07 12.38-.12-.97-.19-1.99-.19-3.07 0-7.77 3.39-16.09 9.4-22.88 3-3.44 6.82-6.3 11.45-8.6 4.62-2.26 8.99-3.51 13.1-3.73.12 1.06.17 2.12.17 3.22z"/>
-      </svg>
-    ),
-    garmin: (
-      <svg width="28" height="28" viewBox="0 0 200 60" fill="none">
-        <text x="0" y="48" fontFamily="Arial Black, sans-serif" fontWeight="900" fontSize="52" fill="#fff" letterSpacing="-2">GARMIN</text>
-      </svg>
-    ),
-    google: (
-      <svg width="28" height="28" viewBox="0 0 48 48">
-        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-      </svg>
-    ),
-    fitbit: (
-      <svg width="28" height="28" viewBox="0 0 100 100">
-        <circle cx="50" cy="18" r="9" fill="#fff"/>
-        <circle cx="50" cy="50" r="12" fill="#fff"/>
-        <circle cx="50" cy="82" r="9" fill="#fff"/>
-        <circle cx="20" cy="34" r="7" fill="#fff"/>
-        <circle cx="20" cy="66" r="7" fill="#fff"/>
-        <circle cx="80" cy="34" r="7" fill="#fff"/>
+    apple:  '<svg width="26" height="26" viewBox="0 0 170 170" fill="currentColor"><path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.197-2.12-9.973-3.17-14.34-3.17-4.58 0-9.492 1.05-14.746 3.17-5.262 2.13-9.501 3.24-12.742 3.35-4.929.21-9.842-1.96-14.746-6.52-3.13-2.73-7.045-7.41-11.735-14.04-5.032-7.08-9.169-15.29-12.41-24.65-3.471-10.11-5.211-19.9-5.211-29.38 0-10.86 2.345-20.21 7.045-28.03 3.688-6.31 8.591-11.3 14.739-14.97 6.148-3.67 12.798-5.54 19.961-5.66 3.922 0 9.069 1.21 15.462 3.59 6.376 2.39 10.465 3.6 12.254 3.6 1.34 0 5.877-1.42 13.57-4.24 7.275-2.61 13.415-3.69 18.445-3.27 13.63 1.1 23.87 6.49 30.68 16.22-12.19 7.39-18.22 17.74-18.1 31.01.11 10.33 3.86 18.93 11.23 25.77 3.34 3.17 7.07 5.62 11.22 7.36-.9 2.61-1.85 5.11-2.86 7.51z"/></svg>',
+    garmin: '<svg width="28" height="28" viewBox="0 0 200 60"><text x="0" y="48" font-family="Arial" font-weight="900" font-size="52" fill="currentColor">GARMIN</text></svg>',
+    google: '<svg width="28" height="28" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>',
+    fitbit: '<svg width="28" height="28" viewBox="0 0 100 100"><circle cx="50" cy="18" r="9" fill="currentColor"/><circle cx="50" cy="50" r="12" fill="currentColor"/><circle cx="50" cy="82" r="9" fill="currentColor"/><circle cx="20" cy="34" r="7" fill="currentColor"/><circle cx="20" cy="66" r="7" fill="currentColor"/><circle cx="80" cy="34" r="7" fill="currentColor"/>
         <circle cx="80" cy="66" r="7" fill="#fff"/>
       </svg>
     ),
@@ -4329,7 +4307,7 @@ function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onI
             <div key={p.id} style={{ background: p.bg, borderRadius: 18, padding: "20px", marginBottom: 14, position: "relative", overflow: "hidden" }}>
               <div style={{ position: "absolute", top: -20, right: -20, width: 100, height: 100, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
               <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
-                <div style={{ width: 52, height: 52, borderRadius: 14, background: "rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{PLATFORM_LOGOS[p.id]}</div>
+                <div style={{ width: 52, height: 52, borderRadius: 14, background: "rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><span dangerouslySetInnerHTML={{ __html: PLATFORM_LOGOS[p.id] }} /></div>
                 <div style={{ flex: 1 }}>
                   <div style={{ color: "#fff", fontSize: 17, fontWeight: 800 }}>{p.name}</div>
                   <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, marginTop: 2 }}>{p.subtitle}</div>
@@ -4359,7 +4337,7 @@ function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onI
       <div style={{ color: TEXT, fontSize: 24, fontWeight: 800, marginBottom: 4 }}>Connection</div>
       <div style={{ color: TEXT2, fontSize: 14, marginBottom: 16 }}>Recent workouts from {activePlatform.name}</div>
       <div style={{ background: activePlatform.bg, borderRadius: 16, padding: "14px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 12 }}>
-        <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{PLATFORM_LOGOS[activePlatform.id]}</div>
+        <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><span dangerouslySetInnerHTML={{ __html: PLATFORM_LOGOS[activePlatform.id] }} /></div>
         <div style={{ flex: 1 }}>
           <div style={{ color: "#fff", fontSize: 14, fontWeight: 700 }}>{activePlatform.name} Connected</div>
           <div style={{ color: syncStatus === "done" ? "#7DFF9B" : activePlatform.accent, fontSize: 12, marginTop: 2, transition: "color 0.3s" }}>
@@ -4379,7 +4357,7 @@ function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onI
           return (
             <button key={p.id} onClick={function() { if (!isActive) handleConnect(p.id); }} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 99, background: isActive ? p.bg : SURFACE, border: "1.5px solid "+(isActive ? p.bg : BORDER), cursor: "pointer", flexShrink: 0 }}>
               <div style={{ width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                {React.cloneElement(PLATFORM_LOGOS[p.id], { width: 18, height: 18 })}
+                <span dangerouslySetInnerHTML={{ __html: PLATFORM_LOGOS[p.id] }} />
               </div>
               <span style={{ color: isActive ? "#fff" : TEXT2, fontSize: 11, fontWeight: isActive ? 700 : 500 }}>{p.name.split(" ")[0]}</span>
             </button>
@@ -4395,7 +4373,7 @@ function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onI
         return (
           <div key={w.id} style={{ background: CARD, border: "1.5px solid "+(isImported ? GREEN+"66" : BORDER), borderRadius: 16, marginBottom: 10, overflow: "hidden" }}>
             <div onClick={function() { setExpandedId(isExpanded ? null : w.id); }} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", cursor: "pointer" }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: activePlatform.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{PLATFORM_LOGOS[activePlatform.id]}</div>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: activePlatform.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><span dangerouslySetInnerHTML={{ __html: PLATFORM_LOGOS[activePlatform.id] }} /></div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <span style={{ color: TEXT, fontSize: 14, fontWeight: 700 }}>{w.type}</span>

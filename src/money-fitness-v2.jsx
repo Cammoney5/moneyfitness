@@ -7771,3 +7771,4 @@ export default function App() {
   return <MainApp initCoach={isCoach} newClientName={newClientName} onLogout={function() { setAuthed(false); setAuthScreen("welcome"); setNewClientName(null); }} />;
 }
 
+// updated

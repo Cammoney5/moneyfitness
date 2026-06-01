@@ -281,11 +281,12 @@ const sb = {
     return Array.isArray(data) ? data[0] : null;
   },
   async getCoachByCode(token, code) {
-    // Use anon headers so this works before user is fully authed
-    const r = await fetch(this.url + "/rest/v1/coach_settings?coach_code=eq." + code.toUpperCase() + "&select=coach_id", {
-      headers: this.headers
-    });
+    const url = this.url + "/rest/v1/coach_settings?coach_code=eq." + code.toUpperCase() + "&select=coach_id";
+    const r = await fetch(url, { headers: this.headers });
     const data = await r.json();
+    console.log("getCoachByCode url:", url);
+    console.log("getCoachByCode headers:", JSON.stringify(this.headers));
+    console.log("getCoachByCode response:", JSON.stringify(data));
     if (Array.isArray(data) && data.length > 0) {
       return { id: data[0].coach_id };
     }
@@ -7871,10 +7872,10 @@ function MainApp({ initCoach, onLogout, newClientName }) {
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ display: "flex", background: SURFACE, borderRadius: 10, padding: 3, gap: 2 }}>
+          {initCoach && <div style={{ display: "flex", background: SURFACE, borderRadius: 10, padding: 3, gap: 2 }}>
             <button onClick={function() { setIsCoach(true); setSelected(null); goTo("home"); }} style={{ padding: "6px 12px", background: isCoach ? CARD : "transparent", borderRadius: 8, border: "none", color: isCoach ? TEXT : TEXT3, fontSize: 12, fontWeight: isCoach ? 700 : 500, cursor: "pointer", boxShadow: isCoach ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}>Coach</button>
             <button onClick={function() { setIsCoach(false); setSelected(null); goTo("home"); }} style={{ padding: "6px 12px", background: !isCoach ? CARD : "transparent", borderRadius: 8, border: "none", color: !isCoach ? TEXT : TEXT3, fontSize: 12, fontWeight: !isCoach ? 700 : 500, cursor: "pointer", boxShadow: !isCoach ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}>Client</button>
-          </div>
+          </div>}
           <SettingsMenu isCoach={isCoach} goTo={goTo} tab={tab} onLogout={onLogout} onReplayTutorial={function() { setShowTutorial(true); }} notifSettings={notifSettings} setNotifSettings={setNotifSettings} />
           <button onClick={function() { goTo("directmessage"); }} style={{ width: 36, height: 36, borderRadius: 99, background: tab === "directmessage" ? ORANGE_BG : SURFACE, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={tab === "directmessage" ? ORANGE : TEXT2} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>

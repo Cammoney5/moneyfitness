@@ -7331,7 +7331,7 @@ function CoachInbox({ messages, handleSendMessage }) {
   );
 }
 
-function MainApp({ initCoach, onLogout, newClientName }) {
+function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId }) {
   const [tab, setTab]           = useState("home");
   const [isCoach, setIsCoach]   = useState(initCoach !== undefined ? initCoach : true);
   const [showTutorial, setShowTutorial] = useState(true); // show on first launch
@@ -7398,11 +7398,83 @@ function MainApp({ initCoach, onLogout, newClientName }) {
   });
 
   const [activityLogs, setActivityLogs] = useState({ [currentMonthKey]: initLogs });
+  const [logsLoaded, setLogsLoaded] = useState(false);
+
+  // Load activity logs from Supabase on mount
+  useEffect(function() {
+    if (!authUserId || !authToken) return;
+    fetch(SUPABASE_URL + "/rest/v1/activity_logs?client_id=eq." + authUserId + "&order=logged_date.desc&limit=200", {
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(rows) {
+      if (!Array.isArray(rows) || rows.length === 0) { setLogsLoaded(true); return; }
+      var built = {};
+      rows.forEach(function(row) {
+        var d = new Date(row.logged_date);
+        var mk = d.getFullYear() + "-" + d.getMonth();
+        var day = d.getDate();
+        if (!built[mk]) built[mk] = {};
+        if (!built[mk][day]) built[mk][day] = [];
+        built[mk][day].push({
+          id: row.id,
+          type: row.type,
+          notes: row.notes || row.label,
+          miles: row.miles ? String(row.miles) : "",
+          duration: row.duration || "",
+          calories: row.calories ? String(row.calories) : "",
+          steps: row.steps ? String(row.steps) : "",
+          pace: row.pace || "",
+          source: row.source || "",
+          fromDevice: row.source && row.source !== "manual",
+        });
+      });
+      setActivityLogs(built);
+      setLogsLoaded(true);
+    })
+    .catch(function() { setLogsLoaded(true); });
+  }, [authUserId, authToken]);
 
   function handleLogsChange(monthKey, newLogs) {
     setActivityLogs(function(prev) {
       return Object.assign({}, prev, { [monthKey]: newLogs });
     });
+    // Save new/changed entries to Supabase
+    if (!authUserId || !authToken) return;
+    var allEntries = [];
+    Object.keys(newLogs).forEach(function(day) {
+      (newLogs[day] || []).forEach(function(entry) {
+        if (!entry.id || String(entry.id).indexOf("device-") === 0) return; // skip mock device entries
+        var year = parseInt(monthKey.split("-")[0]);
+        var month = parseInt(monthKey.split("-")[1]);
+        var dateStr = year + "-" + String(month+1).padStart(2,"0") + "-" + String(day).padStart(2,"0");
+        allEntries.push({
+          id: entry.id && String(entry.id).length > 10 ? entry.id : undefined,
+          client_id: authUserId,
+          logged_date: dateStr,
+          type: entry.type || "workout",
+          label: entry.notes || "",
+          notes: entry.notes || "",
+          duration: entry.duration || "",
+          miles: entry.miles ? parseFloat(entry.miles) : null,
+          calories: entry.calories ? parseInt(entry.calories) : null,
+          steps: entry.steps ? parseInt(entry.steps) : null,
+          pace: entry.pace || "",
+          source: entry.source || "manual",
+        });
+      });
+    });
+    if (allEntries.length === 0) return;
+    fetch(SUPABASE_URL + "/rest/v1/activity_logs", {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": "Bearer " + authToken,
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates"
+      },
+      body: JSON.stringify(allEntries)
+    }).catch(function(e) { console.log("log save error", e); });
   }
 
   // Computed stats from activityLogs for current month

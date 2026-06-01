@@ -4975,7 +4975,7 @@ function CoachDashboard() {
   );
 }
 
-function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps }) {
+function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activityLogs }) {
   const stats = monthStats || { totalWorkouts: 15, totalMiles: "18.0", restDays: 5 };
   const totalWorkouts = CLIENTS.reduce(function(s, c) { return s + c.workedOut.length; }, 0);
   const avgStreak = Math.round(CLIENTS.reduce(function(s, c) { return s + c.streak; }, 0) / CLIENTS.length);
@@ -5005,6 +5005,27 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps }) {
 
 
   const [activeType, setActiveType] = useState("total");
+
+  var loggedTypes = { total: true };
+  if (activityLogs) {
+    Object.values(activityLogs).forEach(function(monthData) {
+      Object.values(monthData).forEach(function(dayLogs) {
+        (dayLogs || []).forEach(function(entry) {
+          var t = (entry.type || "").toLowerCase();
+          if (t.indexOf("run") !== -1) loggedTypes.run = true;
+          else if (t.indexOf("workout") !== -1 || t.indexOf("strength") !== -1 || t.indexOf("circuit") !== -1) loggedTypes.workout = true;
+          else if (t.indexOf("bike") !== -1 || t.indexOf("cycling") !== -1) loggedTypes.bike = true;
+          else if (t.indexOf("swim") !== -1) loggedTypes.swim = true;
+          else if (t.indexOf("maintenance") !== -1 || t.indexOf("body") !== -1 || t.indexOf("mobility") !== -1) loggedTypes.maintenance = true;
+          else if (t) loggedTypes.other = true;
+        });
+      });
+    });
+  } else {
+    if (stats.totalMiles && parseFloat(stats.totalMiles) > 0) loggedTypes.run = true;
+    if (stats.totalWorkouts && stats.totalWorkouts > 0) loggedTypes.workout = true;
+  }
+
   const validActiveType = loggedTypes[activeType] ? activeType : "total";
   const trend = TREND_DATA[validActiveType];
 
@@ -7842,7 +7863,7 @@ function MainApp({ initCoach, onLogout, newClientName }) {
         {tab === "library"       && <LibraryScreen isCoach={isCoach} favorites={favorites} toggleFavorite={toggleFavorite} />}
         {tab === "watch"         && <AppleWatchScreen connected={watchConnected} onConnect={function() { setWatchConnected(true); }} onDisconnect={function() { setWatchConnected(false); setImportedIds({}); setWatchDays({}); }} importedIds={importedIds} onImport={handleImport} />}
         {tab === "activity"      && <ActivityScreen isCoach={isCoach} watchDays={watchDays} activityLogs={activityLogs} onLogsChange={handleLogsChange} />}
-        {tab === "analytics"     && <AnalyticsScreen isCoach={isCoach} monthStats={monthStats} todaySteps={monthStats.todaySteps} last7Steps={monthStats.last7Steps} />}
+        {tab === "analytics"     && <AnalyticsScreen isCoach={isCoach} monthStats={monthStats} todaySteps={monthStats.todaySteps} last7Steps={monthStats.last7Steps} activityLogs={activityLogs} />}
         {tab === "race"          && <RaceScreen activityLogs={activityLogs} raceCollapsed={raceCollapsed} setRaceCollapsed={setRaceCollapsed} plans={myPlans} setPlans={setMyPlans} />}
         {tab === "notifications" && <NotificationsScreen notifications={notifications} onRead={function(id) { setNotifications(function(p) { return p.map(function(n) { return n.id === id ? Object.assign({}, n, { read: true }) : n; }); }); }} onClearAll={function() { setNotifications(function(p) { return p.map(function(n) { return Object.assign({}, n, { read: true }); }); }); }} isCoach={isCoach} goTo={goTo} onNavigateToClient={function(clientId, defaultTab) {
     var client = CLIENTS.find(function(c) { return c.id === clientId; });

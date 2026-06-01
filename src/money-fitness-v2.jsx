@@ -4327,7 +4327,7 @@ function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onI
       <div style={{ color: TEXT, fontSize: 24, fontWeight: 800, marginBottom: 4 }}>Connection</div>
       <div style={{ color: TEXT2, fontSize: 14, marginBottom: 16 }}>Recent workouts from {activePlatform.name}</div>
       <div style={{ background: activePlatform.bg, borderRadius: 16, padding: "14px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 12 }}>
-        <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><span dangerouslySetInnerHTML={{ __html: PLATFORM_LOGOS[activePlatform.id] }} /></div>
+        <div style={{ width: 44, height: 44, borderRadius: 12, background: activePlatform.id === "apple" ? "#1C1C1E" : "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><span dangerouslySetInnerHTML={{ __html: PLATFORM_LOGOS[activePlatform.id] }} /></div>
         <div style={{ flex: 1 }}>
           <div style={{ color: "#fff", fontSize: 14, fontWeight: 700 }}>{activePlatform.name} Connected</div>
           <div style={{ color: syncStatus === "done" ? "#7DFF9B" : activePlatform.accent, fontSize: 12, marginTop: 2, transition: "color 0.3s" }}>

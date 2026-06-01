@@ -6519,11 +6519,9 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
   var [activeTab,    setActiveTab]    = useState("plan");
   var [raceDateStr,  setRaceDateStr]  = useState("2026-10-11");
   var [raceName,     setRaceName]     = useState("Chicago Marathon");
-  var [goalTime,     setGoalTime]     = useState("3:45:00");
-  var [raceDistKey,  setRaceDistKey]  = useState("full");
+  var [goalTime,     setGoalTime]     = useState("3:45:00");  var [raceDistKey,  setRaceDistKey]  = useState("full");
   var [paceInput,    setPaceInput]    = useState("3:45:00");
   var [showSetup,    setShowSetup]    = useState(false);
-  var [showPaceCalc, setShowPaceCalc] = useState(false);
   var [weekOffset,   setWeekOffset]   = useState(0);
   // plans state is lifted to MainApp so HomeScreen can read it
   var safePlans = plans || {};
@@ -6651,7 +6649,6 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
                 <div style={{ background: "rgba(0,0,0,0.3)", borderRadius: 14, padding: 14, marginBottom: 14, border: "1px solid rgba(255,255,255,0.1)" }}>
                   {[
                     { label: "RACE NAME", value: raceName, set: setRaceName, placeholder: "Race name" },
-                    { label: "GOAL TIME", value: goalTime, set: function(v) { setGoalTime(v); setPaceInput(v); }, placeholder: "3:45:00" },
                   ].map(function(f) {
                     return (
                       <div key={f.label} style={{ marginBottom: 10 }}>
@@ -6660,6 +6657,27 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
                       </div>
                     );
                   })}
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 5 }}>GOAL TIME</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      {[
+                        { label: "HRS", max: 23, val: parseInt(goalTime.split(":")[0]) || 0, set: function(v) { var p = goalTime.split(":"); p[0] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); } },
+                        { label: "MIN", max: 59, val: parseInt(goalTime.split(":")[1]) || 0, set: function(v) { var p = goalTime.split(":"); p[1] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); } },
+                        { label: "SEC", max: 59, val: parseInt(goalTime.split(":")[2]) || 0, set: function(v) { var p = goalTime.split(":"); p[2] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); } },
+                      ].map(function(seg, si) {
+                        return (
+                          <div key={seg.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                            <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 9, fontWeight: 700, letterSpacing: 1 }}>{seg.label}</div>
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, overflow: "hidden", width: "100%" }}>
+                              <button onClick={function() { seg.set(Math.min(seg.max, seg.val + 1)); }} style={{ width: "100%", padding: "6px 0", background: "none", border: "none", color: "rgba(255,255,255,0.6)", cursor: "pointer", fontSize: 14, lineHeight: 1 }}>▲</button>
+                              <div style={{ color: WHITE, fontSize: 22, fontWeight: 900, lineHeight: 1, padding: "4px 0", minWidth: 40, textAlign: "center" }}>{String(seg.val).padStart(2,"0")}</div>
+                              <button onClick={function() { seg.set(Math.max(0, seg.val - 1)); }} style={{ width: "100%", padding: "6px 0", background: "none", border: "none", color: "rgba(255,255,255,0.6)", cursor: "pointer", fontSize: 14, lineHeight: 1 }}>▼</button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                   <div style={{ marginBottom: 10 }}>
                     <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 5 }}>RACE DATE</div>
                     <input type="date" value={raceDateStr} onChange={function(e) { setRaceDateStr(e.target.value); }} style={{ width: "100%", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, padding: "10px 12px", color: WHITE, fontSize: 14, fontWeight: 600, outline: "none", boxSizing: "border-box", colorScheme: "dark" }} />
@@ -6707,43 +6725,9 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
                   <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 10, fontWeight: 700, letterSpacing: 1 }}>GOAL PACE</div>
                   <div style={{ color: WHITE, fontSize: 18, fontWeight: 800, marginTop: 2 }}>{splits ? splits.pace : "--"}<span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontWeight: 500 }}>/mi</span></div>
                 </div>
-                <button onClick={function() { setShowPaceCalc(!showPaceCalc); }} style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 12, padding: "10px 14px", color: WHITE, fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0, lineHeight: 1.3, textAlign: "center" }}>
-                  Pace<br/>Calc
-                </button>
               </div>)}
             </div>
           </div>
-
-          {showPaceCalc && (
-            <div style={{ background: GRAY, padding: "16px 16px 0" }}>
-              <div style={{ background: WHITE, borderRadius: 16, padding: 18, marginBottom: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-                <div style={{ color: TEXT3, fontSize: 10, fontWeight: 700, letterSpacing: 2, marginBottom: 4 }}>PACE CALCULATOR</div>
-                <div style={{ color: TEXT, fontSize: 18, fontWeight: 900, marginBottom: 12 }}>What pace do I need?</div>
-                <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12 }}>
-                  <input value={paceInput} onChange={function(e) { setPaceInput(e.target.value); }} placeholder="3:45:00" style={{ flex: 1, background: GRAY, border: "1.5px solid "+BORDER, borderRadius: 12, padding: "11px 14px", color: TEXT, fontSize: 16, fontWeight: 700, outline: "none" }} />
-                  <button onClick={function() { setGoalTime(paceInput); }} style={{ background: DKGREEN, border: "none", borderRadius: 12, padding: "11px 16px", color: WHITE, fontSize: 13, fontWeight: 800, cursor: "pointer" }}>Set Goal</button>
-                </div>
-                {splits && (
-                  <div>
-                    <div style={{ background: GREEN, borderRadius: 12, padding: "12px 16px", marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>Required pace</div>
-                      <div style={{ color: WHITE, fontSize: 26, fontWeight: 900 }}>{splits.pace}<span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", fontWeight: 500 }}>/mi</span></div>
-                    </div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      {[["10K", splits.split10k], ["Half", splits.splitHalf], ["Full", splits.splitFull]].map(function(s) {
-                        return (
-                          <div key={s[0]} style={{ flex: 1, background: GRAY, border: "1px solid "+BORDER, borderRadius: 10, padding: "10px 6px", textAlign: "center" }}>
-                            <div style={{ color: TEXT3, fontSize: 9, fontWeight: 700, letterSpacing: 1 }}>{s[0]}</div>
-                            <div style={{ color: TEXT, fontSize: 14, fontWeight: 800, marginTop: 3 }}>{s[1]}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
 
           <div style={{ background: GRAY, padding: "16px 16px 24px", minHeight: 400 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>

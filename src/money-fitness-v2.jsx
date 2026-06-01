@@ -5826,20 +5826,20 @@ function SettingsMenu({ isCoach, goTo, tab, onLogout, onReplayTutorial, notifSet
 
               {[
                 ...(isCoach ? [
-                  { key: "message",          label: "Client Messages",       desc: "When a client sends you a message",            html: "&#x1F4AC;" },
-                  { key: "checkin",          label: "Check-in Responses",    desc: "When a client submits a weekly check-in",       html: "&#x1F4CB;" },
-                  { key: "coachCheckinAlert",label: "Client Activity Alert", desc: "When a client completes a logged workout",      html: "&#x1F3CB;" },
-                  { key: "streak",           label: "Inactivity Alerts",     desc: "When a client hasn't logged in 3+ days",        html: "&#x23F0;" },
-                  { key: "newClient",        label: "New Client Signup",     desc: "When someone joins with your coach code",       html: "&#x1F389;" },
-                  { key: "weeklySummary",    label: "Weekly Summary",        desc: "Monday recap of all client activity",           html: "&#x1F4CA;" },
+                  { key: "message",          label: "Client Messages",       desc: "When a client sends you a message",            html: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M216,48H40A16,16,0,0,0,24,64V224a8,8,0,0,0,13,6.22L72,208H216a16,16,0,0,0,16-16V64A16,16,0,0,0,216,48Zm0,144H69.47a8,8,0,0,0-5.19,1.91L40,212.12V64H216Z"/></svg>' },
+                  { key: "checkin",          label: "Check-in Responses",    desc: "When a client submits a weekly check-in",       html: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/></svg>' },
+                  { key: "coachCheckinAlert",label: "Client Activity Alert", desc: "When a client completes a logged workout",      html: ICON_WORKOUT },
+                  { key: "streak",           label: "Inactivity Alerts",     desc: "When a client hasn't logged in 3+ days",        html: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M236.8,188.09,149.35,36.22a24.76,24.76,0,0,0-42.7,0L19.2,188.09a23.51,23.51,0,0,0,0,23.72A24.35,24.35,0,0,0,40.55,224h174.9a24.35,24.35,0,0,0,21.33-12.19A23.51,23.51,0,0,0,236.8,188.09ZM120,104a8,8,0,0,1,16,0v40a8,8,0,0,1-16,0Zm8,88a12,12,0,1,1,12-12A12,12,0,0,1,128,192Z"/></svg>' },
+                  { key: "newClient",        label: "New Client Signup",     desc: "When someone joins with your coach code",       html: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M256,136a8,8,0,0,1-8,8H232v16a8,8,0,0,1-16,0V144H200a8,8,0,0,1,0-16h16V112a8,8,0,0,1,16,0v16h16A8,8,0,0,1,256,136Zm-57.87,58.85a8,8,0,0,1-12.26,10.3C165.78,181.19,147.55,172,128,172s-37.78,9.19-57.87,33.15a8,8,0,0,1-12.26-10.3c14.94-17.78,33-28.47,52.28-33.2a72,72,0,1,1,75.7,0C205.1,166.38,223.19,177.07,238.13,194.85ZM128,164a56,56,0,1,0-56-56A56.06,56.06,0,0,0,128,164Z"/></svg>' },
+                  { key: "weeklySummary",    label: "Weekly Summary",        desc: "Monday recap of all client activity",           html: ICON_CHART },
                 ] : [
                   { key: "activityComplete", label: "Activity Encouragement", desc: "A motivating message after each logged activity", html: ICON_FIRE },
-                  { key: "message",          label: "New Messages",           desc: "When " + COACH_FIRST + " sends you a message",    html: "&#x1F4AC;" },
-                  { key: "program",          label: "Program Updates",        desc: "When your training program is updated",           html: "&#x1F4CB;" },
-                  { key: "checkin",          label: "Check-in Reminders",     desc: "When your coach requests a weekly check-in",      html: "&#x1F4DD;" },
-                  { key: "goalMilestone",    label: "Goal Milestones",        desc: "When you hit a goal or personal best",            html: "&#x1F3AF;" },
-                  { key: "streak",           label: "Streak Milestones",      desc: "When you hit a 7, 14 or 30-day streak",           html: "&#x26A1;" },
-                  { key: "streakRisk",       label: "Streak Risk Alert",      desc: "Reminder if you haven't logged by 6pm",           html: "&#x26A0;" },
+                  { key: "message",          label: "New Messages",           desc: "When " + COACH_FIRST + " sends you a message",    html: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M216,48H40A16,16,0,0,0,24,64V224a8,8,0,0,0,13,6.22L72,208H216a16,16,0,0,0,16-16V64A16,16,0,0,0,216,48Zm0,144H69.47a8,8,0,0,0-5.19,1.91L40,212.12V64H216Z"/></svg>' },
+                  { key: "program",          label: "Program Updates",        desc: "When your training program is updated",           html: ICON_SNEAKER },
+                  { key: "checkin",          label: "Check-in Reminders",     desc: "When your coach requests a weekly check-in",      html: ICON_PENCIL },
+                  { key: "goalMilestone",    label: "Goal Milestones",        desc: "When you hit a goal or personal best",            html: ICON_STAR },
+                  { key: "streak",           label: "Streak Milestones",      desc: "When you hit a 7, 14 or 30-day streak",           html: ICON_LIGHTNING },
+                  { key: "streakRisk",       label: "Streak Risk Alert",      desc: "Reminder if you haven't logged by 6pm",           html: ICON_MOON },
                 ]),
               ].map(function(item) {
                 var on = notifSettings[item.key];
@@ -5870,7 +5870,7 @@ function NotificationBell({ notifications, onOpen, onClear }) {
   const recent = (notifications || []).slice(0, 3);
 
   const typeColors = { streak: "#1B8C4E", message: "#1B8C4E", program: "#3B7DD8", checkin: "#9B6FD4" };
-  const typeIcons  = { streak: "&#x1F525;", message: "&#x1F4AC;", program: "&#x1F4CB;", checkin: "&#x23F0;" };
+  const typeIcons  = { streak: ICON_LIGHTNING, message: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M216,48H40A16,16,0,0,0,24,64V224a8,8,0,0,0,13,6.22L72,208H216a16,16,0,0,0,16-16V64A16,16,0,0,0,216,48Zm0,144H69.47a8,8,0,0,0-5.19,1.91L40,212.12V64H216Z"/></svg>', program: ICON_SNEAKER, checkin: ICON_PENCIL };
 
   return (
     <div style={{ position: "relative" }}>
@@ -5928,7 +5928,7 @@ function NotificationBell({ notifications, onOpen, onClear }) {
 
 function NotificationsScreen({ notifications, onRead, onClearAll, isCoach, goTo, onNavigateToClient }) {
   const typeColors = { streak: "#1B8C4E", message: "#1B8C4E", program: "#3B7DD8", checkin: "#9B6FD4" };
-  const typeIcons  = { streak: "&#x1F525;", message: "&#x1F4AC;", program: "&#x1F4CB;", checkin: "&#x23F0;" };
+  const typeIcons  = { streak: ICON_LIGHTNING, message: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M216,48H40A16,16,0,0,0,24,64V224a8,8,0,0,0,13,6.22L72,208H216a16,16,0,0,0,16-16V64A16,16,0,0,0,216,48Zm0,144H69.47a8,8,0,0,0-5.19,1.91L40,212.12V64H216Z"/></svg>', program: ICON_SNEAKER, checkin: ICON_PENCIL };
   const typeLabels = { streak: "Streak", message: "Message", program: "Program", checkin: "Check-in" };
   const unread = notifications.filter(function(n) { return !n.read; }).length;
 

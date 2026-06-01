@@ -281,12 +281,10 @@ const sb = {
     return Array.isArray(data) ? data[0] : null;
   },
   async getCoachByCode(token, code) {
-    const url = this.url + "/rest/v1/coach_settings?coach_code=eq." + code.toUpperCase() + "&select=coach_id";
-    const r = await fetch(url, { headers: this.headers });
+    const r = await fetch(this.url + "/rest/v1/coach_settings?coach_code=eq." + code.toUpperCase() + "&select=coach_id", {
+      headers: this.headers
+    });
     const data = await r.json();
-    console.log("getCoachByCode url:", url);
-    console.log("getCoachByCode headers:", JSON.stringify(this.headers));
-    console.log("getCoachByCode response:", JSON.stringify(data));
     if (Array.isArray(data) && data.length > 0) {
       return { id: data[0].coach_id };
     }

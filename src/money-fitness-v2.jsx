@@ -4361,7 +4361,7 @@ function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onI
         return (
           <div key={w.id} style={{ background: CARD, border: "1.5px solid "+(isImported ? GREEN+"66" : BORDER), borderRadius: 16, marginBottom: 10, overflow: "hidden" }}>
             <div onClick={function() { setExpandedId(isExpanded ? null : w.id); }} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", cursor: "pointer" }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: activePlatform.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><span dangerouslySetInnerHTML={{ __html: PLATFORM_LOGOS[activePlatform.id] }} /></div>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: activePlatform.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#fff" }}><span style={{ filter: "brightness(100)" }} dangerouslySetInnerHTML={{ __html: PLATFORM_LOGOS[activePlatform.id] }} /></div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <span style={{ color: TEXT, fontSize: 14, fontWeight: 700 }}>{w.type}</span>

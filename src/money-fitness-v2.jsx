@@ -4345,11 +4345,9 @@ function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onI
         {PLATFORMS.map(function(p) {
           const isActive = p.id === connectedPlatform;
           return (
-            <button key={p.id} onClick={function() { if (!isActive) handleConnect(p.id); }} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 99, background: isActive ? p.bg : SURFACE, border: "1.5px solid "+(isActive ? p.bg : BORDER), cursor: "pointer", flexShrink: 0 }}>
-              <div style={{ width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <span dangerouslySetInnerHTML={{ __html: PLATFORM_LOGOS[p.id] }} />
-              </div>
-              <span style={{ color: isActive ? "#fff" : TEXT2, fontSize: 11, fontWeight: isActive ? 700 : 500 }}>{p.name.split(" ")[0]}</span>
+            <button key={p.id} onClick={function() { if (!isActive) handleConnect(p.id); }} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 99, background: isActive ? p.bg : SURFACE, border: "1.5px solid "+(isActive ? p.bg : BORDER), cursor: "pointer", flexShrink: 0 }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: isActive ? "rgba(255,255,255,0.7)" : p.bg, flexShrink: 0 }} />
+              <span style={{ color: isActive ? "#fff" : TEXT2, fontSize: 12, fontWeight: isActive ? 700 : 500 }}>{p.name.split(" ")[0]}</span>
             </button>
           );
         })}

@@ -3599,7 +3599,7 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
         <div>
           {/* Client card 1 -- Program */}
           <div style={{ position: "relative", overflow: "hidden", marginBottom: 3 }}>
-            <img src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&q=80" alt="" style={{ width: "100%", height: 340, objectFit: "cover", display: "block" }} />
+            <img src="https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=600&q=80" alt="" style={{ width: "100%", height: 340, objectFit: "cover", display: "block" }} />
             <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(10,26,15,0.2) 0%, rgba(10,26,15,0.85) 55%, #0A1A0F 100%)" }} />
             <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "24px 20px 28px" }}>
               <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>THIS WEEK</div>
@@ -3657,7 +3657,7 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
 
           {/* Client card 2 -- Stats */}
           <div style={{ position: "relative", overflow: "hidden", marginBottom: 3 }}>
-            <img src="https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=600&q=80" alt="" style={{ width: "100%", height: 300, objectFit: "cover", display: "block" }} />
+            <img src="https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=600&q=80" alt="" style={{ width: "100%", height: 300, objectFit: "cover", display: "block" }} />
             <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(13,31,58,0.2) 0%, rgba(13,31,58,0.85) 55%, #0D1F3A 100%)" }} />
             <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "24px 20px 28px" }}>
               <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>THIS MONTH</div>
@@ -3686,7 +3686,7 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
 
           {/* Client card 3 -- Library */}
           <div style={{ position: "relative", overflow: "hidden", marginBottom: 3 }}>
-            <img src="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=600&q=80" alt="" style={{ width: "100%", height: 280, objectFit: "cover", display: "block" }} />
+            <img src="https://images.unsplash.com/photo-1574680096145-d05b474e2155?w=600&q=80" alt="" style={{ width: "100%", height: 280, objectFit: "cover", display: "block" }} />
             <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(26,13,46,0.2) 0%, rgba(26,13,46,0.85) 55%, #1A0D2E 100%)" }} />
             <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "24px 20px 28px" }}>
               <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>EXERCISE DEMOS</div>
@@ -3702,7 +3702,7 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
 
           {/* Client card 4 -- Messages */}
           <div style={{ position: "relative", overflow: "hidden" }}>
-            <img src="https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?w=600&q=80" alt="" style={{ width: "100%", height: 280, objectFit: "cover", display: "block" }} />
+            <img src="https://images.unsplash.com/photo-1571731956672-f2b94d7dd0cb?w=600&q=80" alt="" style={{ width: "100%", height: 280, objectFit: "cover", display: "block" }} />
             <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(10,26,15,0.2) 0%, rgba(10,26,15,0.85) 55%, #0A1A0F 100%)" }} />
             <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "24px 20px 28px" }}>
               <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>YOUR COACH</div>

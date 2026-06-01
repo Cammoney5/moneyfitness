@@ -7403,21 +7403,19 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId }) 
     setActivityLogs(function(prev) {
       return Object.assign({}, prev, { [monthKey]: newLogs });
     });
-    // Save new/changed entries to Supabase
     if (!authUserId || !authToken) return;
     var allEntries = [];
     Object.keys(newLogs).forEach(function(day) {
       (newLogs[day] || []).forEach(function(entry) {
-        if (!entry.id || String(entry.id).indexOf("device-") === 0) return; // skip mock device entries
+        if (String(entry.id || "").indexOf("device-") === 0) return; // skip mock device entries
         var year = parseInt(monthKey.split("-")[0]);
         var month = parseInt(monthKey.split("-")[1]);
         var dateStr = year + "-" + String(month+1).padStart(2,"0") + "-" + String(day).padStart(2,"0");
-        allEntries.push({
-          id: entry.id && String(entry.id).length > 10 ? entry.id : undefined,
+        // Only include id if it looks like a real UUID
+        var entryData = {
           client_id: authUserId,
           logged_date: dateStr,
           type: entry.type || "workout",
-          label: entry.notes || "",
           notes: entry.notes || "",
           duration: entry.duration || "",
           miles: entry.miles ? parseFloat(entry.miles) : null,
@@ -7425,7 +7423,13 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId }) 
           steps: entry.steps ? parseInt(entry.steps) : null,
           pace: entry.pace || "",
           source: entry.source || "manual",
-        });
+        };
+        // Only include id if it looks like a real UUID, otherwise let Supabase generate one
+        var idStr = String(entry.id || "");
+        if (idStr.length === 36 && idStr.includes("-")) {
+          entryData.id = entry.id;
+        }
+        allEntries.push(entryData);
       });
     });
     if (allEntries.length === 0) return;
@@ -7435,10 +7439,12 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId }) 
         "apikey": SUPABASE_ANON_KEY,
         "Authorization": "Bearer " + authToken,
         "Content-Type": "application/json",
-        "Prefer": "resolution=merge-duplicates"
+        "Prefer": "return=minimal"
       },
       body: JSON.stringify(allEntries)
-    }).catch(function(e) { console.log("log save error", e); });
+    }).then(function(r) {
+      if (!r.ok) r.text().then(function(t) { console.log("log save error:", r.status, t); });
+    }).catch(function(e) { console.log("log save network error", e); });
   }
 
   // Computed stats from activityLogs for current month

@@ -7375,15 +7375,18 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId }) 
       if (!Array.isArray(rows) || rows.length === 0) { setLogsLoaded(true); return; }
       var built = {};
       rows.forEach(function(row) {
-        var d = new Date(row.logged_date);
-        var mk = d.getFullYear() + "-" + d.getMonth();
-        var day = d.getDate();
+        // Parse date parts directly to avoid timezone offset
+        var parts = row.logged_date.split("-");
+        var year = parseInt(parts[0]);
+        var month = parseInt(parts[1]) - 1; // 0-indexed
+        var day = parseInt(parts[2]);
+        var mk = year + "-" + month;
         if (!built[mk]) built[mk] = {};
         if (!built[mk][day]) built[mk][day] = [];
         built[mk][day].push({
           id: row.id,
           type: row.type,
-          notes: row.notes || row.label,
+          notes: row.notes || "",
           miles: row.miles ? String(row.miles) : "",
           duration: row.duration || "",
           calories: row.calories ? String(row.calories) : "",

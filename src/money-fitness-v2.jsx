@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 
 /*
  * ─────────────────────────────────────────────────────────────
@@ -3952,7 +3952,7 @@ function RecentActivityTimeline({ activityLogs }) {
     );
   }
 
-  var PLATFORM_COLORS = { apple: "#1C1C1E", garmin: "#003087", google: "#4285F4", fitbit: "#00B0B9", coros: "#E94560" };
+  var PLATFORM_COLORS = { apple: "#3A3A3C", garmin: "#003087", google: "#4285F4", fitbit: "#00B0B9", coros: "#E94560" };
 
   function iconForType(type, fromWatch, fromDevice, notes) {
     var n = (notes || "").toLowerCase();
@@ -4205,43 +4205,11 @@ function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onI
   const [importing, setImporting]     = useState(null);
 
   const PLATFORM_LOGOS = {
-    apple: (
-      <svg width="26" height="26" viewBox="0 0 170 170" fill="#fff">
-        <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.197-2.12-9.973-3.17-14.34-3.17-4.58 0-9.492 1.05-14.746 3.17-5.262 2.13-9.501 3.24-12.742 3.35-4.929.21-9.842-1.96-14.746-6.52-3.13-2.73-7.045-7.41-11.735-14.04-5.032-7.08-9.169-15.29-12.41-24.65-3.471-10.11-5.211-19.9-5.211-29.38 0-10.86 2.345-20.21 7.045-28.03 3.688-6.31 8.591-11.3 14.739-14.97 6.148-3.67 12.798-5.54 19.961-5.66 3.922 0 9.069 1.21 15.462 3.59 6.376 2.39 10.465 3.6 12.254 3.6 1.34 0 5.877-1.42 13.57-4.24 7.275-2.61 13.415-3.69 18.445-3.27 13.63 1.1 23.87 6.49 30.68 16.22-12.19 7.39-18.22 17.74-18.1 31.01.11 10.33 3.86 18.93 11.23 25.77 3.34 3.17 7.07 5.62 11.22 7.36-.9 2.61-1.85 5.11-2.86 7.51zM119.11 7.24c0 8.1-2.96 15.67-8.86 22.68-7.12 8.32-15.73 13.13-25.07 12.38-.12-.97-.19-1.99-.19-3.07 0-7.77 3.39-16.09 9.4-22.88 3-3.44 6.82-6.3 11.45-8.6 4.62-2.26 8.99-3.51 13.1-3.73.12 1.06.17 2.12.17 3.22z"/>
-      </svg>
-    ),
-    garmin: (
-      <svg width="28" height="28" viewBox="0 0 200 60" fill="none">
-        <text x="0" y="48" fontFamily="Arial Black, sans-serif" fontWeight="900" fontSize="52" fill="#fff" letterSpacing="-2">GARMIN</text>
-      </svg>
-    ),
-    google: (
-      <svg width="28" height="28" viewBox="0 0 48 48">
-        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-      </svg>
-    ),
-    fitbit: (
-      <svg width="28" height="28" viewBox="0 0 100 100">
-        <circle cx="50" cy="18" r="9" fill="#fff"/>
-        <circle cx="50" cy="50" r="12" fill="#fff"/>
-        <circle cx="50" cy="82" r="9" fill="#fff"/>
-        <circle cx="20" cy="34" r="7" fill="#fff"/>
-        <circle cx="20" cy="66" r="7" fill="#fff"/>
-        <circle cx="80" cy="34" r="7" fill="#fff"/>
-        <circle cx="80" cy="66" r="7" fill="#fff"/>
-      </svg>
-    ),
-    coros: (
-      <svg width="30" height="30" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="46" stroke="#E94560" strokeWidth="8" fill="none"/>
-        <circle cx="50" cy="50" r="30" stroke="#E94560" strokeWidth="5" fill="none"/>
-        <circle cx="50" cy="50" r="8" fill="#E94560"/>
-        <line x1="50" y1="4" x2="50" y2="20" stroke="#E94560" strokeWidth="6" strokeLinecap="round"/>
-      </svg>
-    ),
+    apple:  '<svg width="22" height="26" viewBox="0 0 256 315" fill="currentColor"><path d="M213.803 167.03c.442 47.58 41.74 63.413 42.197 63.615-.35 1.116-6.599 22.563-21.757 44.716-13.104 19.153-26.705 38.235-48.13 38.63-21.05.388-27.82-12.498-51.888-12.498-24.061 0-31.582 12.105-51.51 12.886-20.723.782-36.577-20.44-49.8-39.526C5.977 247.185-14.816 181.661 11.366 136.51c13.053-22.407 36.395-36.593 61.735-36.98 19.288-.36 37.476 12.981 49.28 12.981 11.804 0 33.948-16.06 57.188-13.7 9.726.4 37.05 3.93 54.595 29.622zm-62.76-96.18c10.95-13.281 18.368-31.79 16.353-50.24-15.826.636-34.996 10.546-46.35 23.827-10.18 11.798-19.09 30.729-16.698 48.783 17.644 1.368 35.658-8.998 46.695-22.37z"/></svg>',
+    garmin: '<svg width="20" height="20" viewBox="0 0 100 100" fill="currentColor"><circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" stroke-width="8"/><path d="M72 50H50v15h14c-3 8-11 14-21 14-13 0-23-10-23-23s10-23 23-23c6 0 11 2 15 6l10-10c-6-6-15-10-25-10-21 0-38 17-38 37s17 37 38 37 37-16 37-37v-6z"/></svg>',
+    google: '<svg width="28" height="28" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>',
+    fitbit: '<svg width="28" height="28" viewBox="0 0 100 100"><circle cx="50" cy="18" r="9" fill="currentColor"/><circle cx="50" cy="50" r="12" fill="currentColor"/><circle cx="50" cy="82" r="9" fill="currentColor"/><circle cx="20" cy="34" r="7" fill="currentColor"/><circle cx="20" cy="66" r="7" fill="currentColor"/><circle cx="80" cy="34" r="7" fill="currentColor"/><circle cx="80" cy="66" r="7" fill="currentColor"/></svg>',
+    coros:  '<svg width="28" height="28" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" stroke="currentColor" stroke-width="8" fill="none"/><circle cx="50" cy="50" r="28" stroke="currentColor" stroke-width="5" fill="none"/><circle cx="50" cy="50" r="8" fill="currentColor"/></svg>',
   };
 
   const PLATFORMS = [
@@ -4329,7 +4297,7 @@ function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onI
             <div key={p.id} style={{ background: p.bg, borderRadius: 18, padding: "20px", marginBottom: 14, position: "relative", overflow: "hidden" }}>
               <div style={{ position: "absolute", top: -20, right: -20, width: 100, height: 100, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
               <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
-                <div style={{ width: 52, height: 52, borderRadius: 14, background: "rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{PLATFORM_LOGOS[p.id]}</div>
+                <div style={{ width: 52, height: 52, borderRadius: 14, background: "rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><span dangerouslySetInnerHTML={{ __html: PLATFORM_LOGOS[p.id] }} /></div>
                 <div style={{ flex: 1 }}>
                   <div style={{ color: "#fff", fontSize: 17, fontWeight: 800 }}>{p.name}</div>
                   <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, marginTop: 2 }}>{p.subtitle}</div>
@@ -4358,8 +4326,8 @@ function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onI
     <div>
       <div style={{ color: TEXT, fontSize: 24, fontWeight: 800, marginBottom: 4 }}>Connection</div>
       <div style={{ color: TEXT2, fontSize: 14, marginBottom: 16 }}>Recent workouts from {activePlatform.name}</div>
-      <div style={{ background: activePlatform.bg, borderRadius: 16, padding: "14px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 12 }}>
-        <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{PLATFORM_LOGOS[activePlatform.id]}</div>
+      <div style={{ background: "#1C1C1E", borderRadius: 16, padding: "14px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ width: 44, height: 44, borderRadius: 12, background: "#1C1C1E", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#fff" }}><span dangerouslySetInnerHTML={{ __html: PLATFORM_LOGOS[activePlatform.id] }} /></div>
         <div style={{ flex: 1 }}>
           <div style={{ color: "#fff", fontSize: 14, fontWeight: 700 }}>{activePlatform.name} Connected</div>
           <div style={{ color: syncStatus === "done" ? "#7DFF9B" : activePlatform.accent, fontSize: 12, marginTop: 2, transition: "color 0.3s" }}>
@@ -4377,11 +4345,9 @@ function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onI
         {PLATFORMS.map(function(p) {
           const isActive = p.id === connectedPlatform;
           return (
-            <button key={p.id} onClick={function() { if (!isActive) handleConnect(p.id); }} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 99, background: isActive ? p.bg : SURFACE, border: "1.5px solid "+(isActive ? p.bg : BORDER), cursor: "pointer", flexShrink: 0 }}>
-              <div style={{ width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                {React.cloneElement(PLATFORM_LOGOS[p.id], { width: 18, height: 18 })}
-              </div>
-              <span style={{ color: isActive ? "#fff" : TEXT2, fontSize: 11, fontWeight: isActive ? 700 : 500 }}>{p.name.split(" ")[0]}</span>
+            <button key={p.id} onClick={function() { if (!isActive) handleConnect(p.id); }} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 99, background: isActive ? p.bg : SURFACE, border: "1.5px solid "+(isActive ? p.bg : BORDER), cursor: "pointer", flexShrink: 0 }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: isActive ? "rgba(255,255,255,0.7)" : p.bg, flexShrink: 0 }} />
+              <span style={{ color: isActive ? "#fff" : TEXT2, fontSize: 12, fontWeight: isActive ? 700 : 500 }}>{p.name.split(" ")[0]}</span>
             </button>
           );
         })}
@@ -4395,15 +4361,15 @@ function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onI
         return (
           <div key={w.id} style={{ background: CARD, border: "1.5px solid "+(isImported ? GREEN+"66" : BORDER), borderRadius: 16, marginBottom: 10, overflow: "hidden" }}>
             <div onClick={function() { setExpandedId(isExpanded ? null : w.id); }} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", cursor: "pointer" }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: activePlatform.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{PLATFORM_LOGOS[activePlatform.id]}</div>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: activePlatform.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#fff" }}><span style={{ filter: "brightness(100)" }} dangerouslySetInnerHTML={{ __html: PLATFORM_LOGOS[activePlatform.id] }} /></div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <span style={{ color: TEXT, fontSize: 14, fontWeight: 700 }}>{w.type}</span>
                   {isImported && <span style={{ background: GREEN_BG, color: GREEN, fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 6 }}>IMPORTED</span>}
                 </div>
-                <div style={{ color: TEXT3, fontSize: 12, marginTop: 2 }}>{w.date}</div>
+                <div style={{ color: activePlatform.accent, fontSize: 12, marginTop: 2 }}>{w.date}</div>
                 <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-                  <span style={{ color: TEXT2, fontSize: 12 }}>[timer] {w.duration}</span>
+                  <span style={{ color: TEXT2, fontSize: 12 }}>{w.duration}</span>
                   {w.distance && <span style={{ color: TEXT2, fontSize: 12 }}> {w.distance}</span>}
                   <span style={{ color: TEXT2, fontSize: 12 }}> {w.calories} cal</span>
                 </div>
@@ -5730,10 +5696,10 @@ function SettingsMenu({ isCoach, goTo, tab, onLogout, onReplayTutorial, notifSet
   const inputS = { width: "100%", background: SURFACE, border: "1.5px solid "+BORDER, borderRadius: 10, padding: "11px 14px", color: TEXT, fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 12 };
 
   var menuItems = [
-    { icon: SVG_ICONS.people, label: "My Profile",       action: function() { setView("profile"); } },
-    { icon: (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>), label: "Connections",      action: function() { goTo("watch"); setOpen(false); } },
-    { icon: SVG_ICONS.target, label: "Reset Password",   action: function() { setView("reset"); } },
-    { icon: (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>), label: "Notifications", action: function() { setView("notifications"); } },
+    { icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>', label: "My Profile", action: function() { setView("profile"); } },
+    { icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>', label: "Connections", action: function() { goTo("watch"); setOpen(false); } },
+    { icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>', label: "Reset Password", action: function() { setView("reset"); } },
+    { icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>', label: "Notifications", action: function() { setView("notifications"); } },
   ];
 
   return (
@@ -5767,18 +5733,19 @@ function SettingsMenu({ isCoach, goTo, tab, onLogout, onReplayTutorial, notifSet
                   </button>
                 );
               })}
-              <button onClick={function() { if (onReplayTutorial) { setOpen(false); onReplayTutorial(); } }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "13px 16px", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}
-                onMouseEnter={function(e) { e.currentTarget.style.background = ORANGE_BG; }}
+              <button onClick={function() { if (onReplayTutorial) { setOpen(false); onReplayTutorial(); } }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "13px 16px", background: "none", border: "none", cursor: "pointer", borderBottom: "1px solid "+SURFACE2, textAlign: "left" }}
+                onMouseEnter={function(e) { e.currentTarget.style.background = SURFACE; }}
                 onMouseLeave={function(e) { e.currentTarget.style.background = "none"; }}>
-                <span style={{ fontSize: 18 }}>🎓</span>
-                <span style={{ color: ORANGE, fontSize: 14, fontWeight: 600 }}>Replay Tutorial</span>
+                <span style={{ display:"flex", alignItems:"center" }} dangerouslySetInnerHTML={{ __html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>' }} />
+                <span style={{ color: TEXT, fontSize: 14, fontWeight: 500 }}>Replay Tutorial</span>
                 <svg style={{ marginLeft: "auto" }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={TEXT3} strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
               <button onClick={function() { setOpen(false); onLogout(); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "13px 16px", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}
-                onMouseEnter={function(e) { e.currentTarget.style.background = "#FFF0F0"; }}
+                onMouseEnter={function(e) { e.currentTarget.style.background = SURFACE; }}
                 onMouseLeave={function(e) { e.currentTarget.style.background = "none"; }}>
-                <span style={{ fontSize: 18 }}><span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span></span>
-                <span style={{ color: "#E05252", fontSize: 14, fontWeight: 600 }}>Log Out</span>
+                <span style={{ display:"flex", alignItems:"center" }} dangerouslySetInnerHTML={{ __html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>' }} />
+                <span style={{ color: TEXT, fontSize: 14, fontWeight: 500 }}>Log Out</span>
+                <svg style={{ marginLeft: "auto" }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={TEXT3} strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
             </div>
           )}
@@ -7770,4 +7737,5 @@ export default function App() {
   }
   return <MainApp initCoach={isCoach} newClientName={newClientName} onLogout={function() { setAuthed(false); setAuthScreen("welcome"); setNewClientName(null); }} />;
 }
+
 

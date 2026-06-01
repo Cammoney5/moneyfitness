@@ -1946,41 +1946,43 @@ function WorkoutFullscreenModal({ workout, color, onClose }) {
   );
 }
 
-function MyWorkouts({ color, favorites, importedWorkouts }) {
+function MyWorkouts({ color, favorites, importedWorkouts, customWorkouts, setCustomWorkouts }) {
   const c = color || ORANGE;
-  const [workouts, setWorkouts]     = useState([]);
+  const workouts = customWorkouts || [];
   const [building, setBuilding]     = useState(false);
   const [editingId, setEditingId]   = useState(null);
   const [wkName, setWkName]         = useState("");
   const [exercises, setExercises]   = useState([]);
   const [showPicker, setShowPicker] = useState(false);
-  const [expandedWk, setExpandedWk] = useState(null);
   const [fullscreenWk, setFullscreenWk] = useState(null);
+  const [exLogs, setExLogs]         = useState({});
+  const [videoModal, setVideoModal] = useState(null);
 
   var CIRCUIT_COLORS = ["#9B6FD4","#1B8C4E","#3B7DD8","#E0A020","#E05252"];
 
-  // Get a stable color for a circuit label
   function circuitColor(label) {
     var letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     var idx = letters.indexOf((label || "A").toUpperCase());
     return CIRCUIT_COLORS[Math.max(0, idx) % CIRCUIT_COLORS.length];
   }
 
-  // Combine library imports with custom workouts for display
+  function logWeight(key, val) {
+    setExLogs(function(prev) { return Object.assign({}, prev, { [key]: val }); });
+  }
+
   var importedList = (importedWorkouts || []).map(function(iw) {
-    // Handle string-format exercises from coach (with [C:label] prefixes)
     var exs = iw.exercises.map(function(ex) {
       if (typeof ex === "string") {
         var cl = getCircuitLabel(ex);
         var p = parseExStr(ex);
         return { name: p.name, sets: p.sets, reps: p.reps, weight: "", circuit: cl || "" };
       }
-      return ex;
+      return Object.assign({}, ex);
     });
     return { id: iw.id, name: iw.name, exercises: exs, fromLibrary: true };
   });
-  var allWorkouts = importedList.concat(workouts.filter(function(w) {
-    return !importedList.find(function(i) { return i.id === w.id; });
+  var allWorkouts = workouts.concat(importedList.filter(function(i) {
+    return !workouts.find(function(w) { return String(w.id) === String(i.id); });
   }));
 
   function parseExStr(ex) {
@@ -1989,77 +1991,6 @@ function MyWorkouts({ color, favorites, importedWorkouts }) {
     return m ? {name:m[1].trim(),sets:m[2],reps:m[3]} : {name:s.trim(),sets:"",reps:""};
   }
 
-  function startEdit(w) {
-    setEditingId(w.id);
-    setWkName(w.name);
-    setExercises(w.exercises.map(function(e) { return Object.assign({}, e); }));
-    setBuilding(true);
-    setExpandedWk(null);
-  }
-  function startNew() {
-    setEditingId(null); setWkName(""); setExercises([]); setBuilding(true);
-  }
-  function addExercise(name) {
-    setExercises(exercises.concat([{ name: name, sets: "", reps: "", weight: "", circuit: "" }]));
-    setShowPicker(false);
-  }
-  function updateEx(idx, field, val) {
-    setExercises(exercises.map(function(e, i) { return i === idx ? Object.assign({}, e, { [field]: val }) : e; }));
-  }
-  function removeEx(idx) {
-    setExercises(exercises.filter(function(_, i) { return i !== idx; }));
-  }
-  function moveEx(idx, dir) {
-    var arr = exercises.slice();
-    var to = idx + dir;
-    if (to < 0 || to >= arr.length) return;
-    var tmp = arr[idx]; arr[idx] = arr[to]; arr[to] = tmp;
-    setExercises(arr);
-  }
-  function toggleCircuit(idx) {
-    var ex = exercises[idx];
-    if (ex.circuit) {
-      // Remove from circuit
-      updateEx(idx, "circuit", "");
-    } else {
-      // Find which circuit labels are adjacent or used
-      var letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-      var prev = idx > 0 ? exercises[idx-1].circuit : "";
-      var next = idx < exercises.length-1 ? exercises[idx+1].circuit : "";
-      // Join adjacent circuit if exists
-      var joinLabel = prev || next;
-      if (joinLabel) {
-        updateEx(idx, "circuit", joinLabel);
-      } else {
-        // Pick next unused label
-        var used = exercises.map(function(e){return e.circuit;}).filter(Boolean);
-        var label = letters.split("").find(function(l){return used.indexOf(l)===-1;}) || "A";
-        updateEx(idx, "circuit", label);
-      }
-    }
-  }
-
-  function saveWorkout() {
-    if (!wkName.trim() || exercises.length === 0) return;
-    if (editingId !== null) {
-      setWorkouts(workouts.map(function(w) {
-        return w.id === editingId ? { id: w.id, name: wkName, exercises: exercises } : w;
-      }));
-    } else {
-      setWorkouts(workouts.concat([{ id: Date.now(), name: wkName, exercises: exercises }]));
-    }
-    setWkName(""); setExercises([]); setBuilding(false); setEditingId(null);
-  }
-  function deleteWorkout(id) {
-    setWorkouts(workouts.filter(function(w) { return w.id !== id; }));
-  }
-  function cancelEdit() {
-    setBuilding(false); setEditingId(null); setWkName(""); setExercises([]);
-  }
-
-  const inputS = { background: CARD, border: "1.5px solid "+BORDER, borderRadius: 10, padding: "9px 11px", color: TEXT, fontSize: 13, outline: "none", boxSizing: "border-box" };
-
-  // Build groups for rendering exercises (in builder or card)
   function buildGroups(exs) {
     var groups = [];
     exs.forEach(function(ex, i) {
@@ -2067,169 +1998,272 @@ function MyWorkouts({ color, favorites, importedWorkouts }) {
       if (cl && groups.length > 0 && groups[groups.length-1].label === cl) {
         groups[groups.length-1].items.push({ ex: ex, idx: i });
       } else {
-        groups.push({ label: cl, items: [{ ex: ex, idx: i }] });
+        groups.push({ label: cl, items: [{ ex: ex, idx: i }], color: cl ? circuitColor(cl) : null });
       }
     });
     return groups;
   }
 
+  function startEdit(w) {
+    setEditingId(w.id);
+    setWkName(w.name);
+    setExercises(w.exercises.map(function(e) { return Object.assign({}, e); }));
+    setBuilding(true);
+  }
+  function startNew() {
+    setEditingId(null); setWkName(""); setExercises([]); setBuilding(true);
+  }
+  function addExercise(name) {
+    setExercises(function(prev) { return prev.concat([{ name: name, sets: "", reps: "", weight: "", circuit: "" }]); });
+    setShowPicker(false);
+  }
+  function updateEx(idx, field, val) {
+    setExercises(function(prev) { return prev.map(function(e, i) { return i === idx ? Object.assign({}, e, { [field]: val }) : e; }); });
+  }
+  function removeEx(idx) {
+    setExercises(function(prev) { return prev.filter(function(_, i) { return i !== idx; }); });
+  }
+  function moveEx(idx, dir) {
+    setExercises(function(prev) {
+      var arr = prev.slice();
+      var to = idx + dir;
+      if (to < 0 || to >= arr.length) return arr;
+      var tmp = arr[idx]; arr[idx] = arr[to]; arr[to] = tmp;
+      return arr;
+    });
+  }
+  function toggleCircuit(idx) {
+    setExercises(function(prev) {
+      var exs = prev.slice();
+      var ex = exs[idx];
+      if (ex.circuit) {
+        exs[idx] = Object.assign({}, ex, { circuit: "" });
+      } else {
+        var letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        var prevC = idx > 0 ? exs[idx-1].circuit : "";
+        var nextC = idx < exs.length-1 ? exs[idx+1].circuit : "";
+        var joinLabel = prevC || nextC;
+        if (joinLabel) {
+          exs[idx] = Object.assign({}, ex, { circuit: joinLabel });
+        } else {
+          var used = exs.map(function(e){return e.circuit;}).filter(Boolean);
+          var label = letters.split("").find(function(l){return used.indexOf(l)===-1;}) || "A";
+          exs[idx] = Object.assign({}, ex, { circuit: label });
+        }
+      }
+      return exs;
+    });
+  }
+
+  function saveWorkout() {
+    if (!wkName.trim() || exercises.length === 0) return;
+    var saved = exercises.map(function(e) { return Object.assign({}, e); });
+    var eid = editingId;
+    if (eid !== null && eid !== undefined) {
+      setCustomWorkouts(function(prev) {
+        var found = prev.some(function(w) { return String(w.id) === String(eid); });
+        if (found) {
+          return prev.map(function(w) {
+            return String(w.id) === String(eid) ? { id: w.id, name: wkName.trim(), exercises: saved } : w;
+          });
+        } else {
+          // Was editing an imported workout — add as new custom
+          return prev.concat([{ id: eid, name: wkName.trim(), exercises: saved }]);
+        }
+      });
+    } else {
+      setCustomWorkouts(function(prev) { return prev.concat([{ id: Date.now(), name: wkName.trim(), exercises: saved }]); });
+    }
+    setWkName(""); setExercises([]); setBuilding(false); setEditingId(null);
+  }
+  function deleteWorkout(id) {
+    setCustomWorkouts(function(prev) { return prev.filter(function(w) { return String(w.id) !== String(id); }); });
+  }
+  function cancelEdit() {
+    setBuilding(false); setEditingId(null); setWkName(""); setExercises([]);
+  }
+
+  var ACCENT = ["#1B8C4E","#3B7DD8","#9B6FD4","#E0A020","#E05252","#1B8C4E"];
+  function ac(i) { return ACCENT[i % ACCENT.length]; }
+
+  const inputS = { background: "#F0F5F2", border: "1.5px solid #E8E4DE", borderRadius: 8, padding: "8px 10px", color: "#0A1A0F", fontSize: 13, outline: "none", boxSizing: "border-box" };
+
+  if (videoModal) {
+    return <VideoModal video={videoModal.video} exName={videoModal.name} onClose={function(){setVideoModal(null);}} />;
+  }
+
+  if (fullscreenWk) {
+    return <WorkoutFullscreenModal workout={fullscreenWk} color={c} onClose={function() { setFullscreenWk(null); }} />;
+  }
+
+  if (showPicker) {
+    return <ExercisePicker color={c} onAdd={addExercise} onClose={function() { setShowPicker(false); }} favorites={favorites} />;
+  }
+
   return (
-    <div>
-      {fullscreenWk && <WorkoutFullscreenModal workout={fullscreenWk} color={c} onClose={function() { setFullscreenWk(null); }} />}
-      {showPicker ? <ExercisePicker color={c} onAdd={addExercise} onClose={function() { setShowPicker(false); }} favorites={favorites} /> : null}
+    <div style={{ background: "#F0F5F2", margin: "0 -16px", padding: "16px 16px 24px" }}>
 
-      {/* Custom workouts list */}
-      {allWorkouts.length > 0 && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ color: TEXT2, fontSize: 11, fontWeight: 700, letterSpacing: 1, marginBottom: 10 }}>MY CUSTOM WORKOUTS</div>
-          {allWorkouts.map(function(w) {
-            const open = expandedWk === w.id;
-            const isCurrentlyEditing = editingId === w.id;
-            // Count circuits
-            var circuitLabels = [...new Set(w.exercises.map(function(e){return e.circuit||"";}).filter(Boolean))];
-            return (
-              <div key={w.id} style={{ background: CARD, border: "1.5px solid "+(isCurrentlyEditing ? c : BORDER), borderRadius: 16, marginBottom: 10, overflow: "hidden" }}>
-                <div style={{ display: "flex", alignItems: "center", padding: "14px 16px", cursor: "pointer" }} onClick={function() { if (!building) setExpandedWk(open ? null : w.id); }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: c+"18", display: "flex", alignItems: "center", justifyContent: "center", marginRight: 12, flexShrink: 0, fontSize: 20 }}
-                    dangerouslySetInnerHTML={{ __html: (function() {
-                      var n = w.name.toLowerCase();
-                      if (n.indexOf("run") !== -1 || n.indexOf("cardio") !== -1) return ICON_RUN;
-                      if (n.indexOf("upper") !== -1 || n.indexOf("push") !== -1 || n.indexOf("chest") !== -1) return ICON_WORKOUT;
-                      if (n.indexOf("leg") !== -1 || n.indexOf("squat") !== -1) return ICON_WORKOUT;
-                      if (n.indexOf("pull") !== -1 || n.indexOf("back") !== -1) return ICON_WORKOUT;
-                      if (n.indexOf("core") !== -1 || n.indexOf("ab") !== -1) return ICON_FIRE;
-                      if (n.indexOf("hiit") !== -1 || n.indexOf("circuit") !== -1) return "&#x26A1;";
-                      return ICON_WORKOUT;
-                    })() }}
-                  />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ color: TEXT, fontSize: 14, fontWeight: 700 }}>{w.name}</div>
-                    <div style={{ color: TEXT3, fontSize: 12, marginTop: 2, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                      <span>{w.exercises.length} exercise{w.exercises.length !== 1 ? "s" : ""}</span>
-                      {circuitLabels.map(function(l){
-                        return <span key={l} style={{ background: circuitColor(l)+"22", color: circuitColor(l), fontSize: 9, fontWeight: 800, padding: "2px 6px", borderRadius: 4 }}>Circuit {l}</span>;
-                      })}
-                      {w.fromLibrary && <span style={{ background: c+"18", color: c, fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4 }}>From Library</span>}
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    {!isCurrentlyEditing && (
-                      <button onClick={function(e) { e.stopPropagation(); setFullscreenWk(w); }} style={{ background: SURFACE, border: "1.5px solid "+BORDER, borderRadius: 8, padding: "6px 8px", color: TEXT2, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center" }}>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
-                      </button>
-                    )}
-                    {!isCurrentlyEditing && (
-                      <button onClick={function(e) { e.stopPropagation(); startEdit(w); }} style={{ background: c+"15", border: "1.5px solid "+c+"44", borderRadius: 8, padding: "6px 12px", color: c, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Edit</button>
-                    )}
-                    {isCurrentlyEditing && <span style={{ background: c, color: "#fff", fontSize: 10, fontWeight: 700, padding: "4px 8px", borderRadius: 6 }}>Editing</span>}
-                    {!building && (
-                      <button onClick={function(e) { e.stopPropagation(); deleteWorkout(w.id); }} style={{ background: "none", border: "none", color: "#E05252", fontSize: 13, cursor: "pointer", padding: "4px 6px" }}>×</button>
-                    )}
-                  </div>
-                </div>
+      {/* Workout cards */}
+      {allWorkouts.map(function(w, wi) {
+        var dc = ac(wi);
+        var groups = buildGroups(w.exercises);
+        var isEditing = editingId === w.id && building;
+        return (
+          <div key={w.id} style={{ background: "#fff", borderRadius: 20, overflow: "hidden", marginBottom: 12, border: "1.5px solid "+dc+"66", boxShadow: "0 4px 20px "+dc+"22" }}>
+            {/* Accent bar */}
+            <div style={{ height: 3, background: dc, width: "100%" }} />
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px 10px" }}>
+              <div style={{ flex: 1 }}>
+                {w.fromLibrary && <div style={{ color: dc, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 3 }}>FROM LIBRARY</div>}
+                <div style={{ color: "#0A1A0F", fontSize: 20, fontWeight: 900, lineHeight: 1.1 }}>{w.name.toUpperCase()}</div>
+                <div style={{ color: "#7AAB8A", fontSize: 12, marginTop: 3 }}>{w.exercises.length} exercise{w.exercises.length !== 1 ? "s" : ""}</div>
               </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Builder */}
-      {!building ? (
-        <button onClick={startNew} style={{ width: "100%", padding: "13px", borderRadius: 14, background: c, border: "none", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-          <span style={{ fontSize: 20 }}>+</span> Build a Custom Workout
-        </button>
-      ) : (
-        <div style={{ background: CARD, border: "1.5px solid "+BORDER, borderRadius: 16, padding: "18px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <div style={{ color: TEXT, fontSize: 16, fontWeight: 700 }}>{editingId !== null ? "Edit Workout" : "New Workout"}</div>
-            {editingId !== null && <span style={{ background: c+"18", color: c, fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 6 }}>Editing</span>}
-          </div>
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ color: TEXT2, fontSize: 11, fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>WORKOUT NAME</div>
-            <input value={wkName} onChange={function(e) { setWkName(e.target.value); }} placeholder="e.g. My Upper Body Day" style={Object.assign({}, inputS, { width: "100%" })} />
-          </div>
-
-          {exercises.length > 0 && (
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ color: TEXT2, fontSize: 11, fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>
-                EXERCISES ({exercises.length})
-                <span style={{ color: TEXT3, fontWeight: 500, fontSize: 10, letterSpacing: 0, marginLeft: 6 }}>· tap ⚡ to group into a circuit</span>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                {!building && <button onClick={function(e){e.stopPropagation();startEdit(w);}} style={{ background: dc+"15", border: "1.5px solid "+dc+"44", borderRadius: 8, padding: "6px 12px", color: dc, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{ICON_PENCIL ? <span style={{display:"flex",alignItems:"center",gap:4}} dangerouslySetInnerHTML={{__html: ICON_PENCIL+' Edit'}} /> : "Edit"}</button>}
+                {!building && <button onClick={function(e){e.stopPropagation();deleteWorkout(w.id);}} style={{ background: "none", border: "none", color: "#E05252", fontSize: 18, cursor: "pointer", lineHeight: 1 }}>×</button>}
+                {isEditing && <span style={{ background: dc, color: "#fff", fontSize: 10, fontWeight: 700, padding: "4px 10px", borderRadius: 6 }}>Editing</span>}
               </div>
-              {buildGroups(exercises).map(function(group, gi) {
+            </div>
+            {/* Exercise list */}
+            <div style={{ padding: "0 16px 14px" }}>
+              {groups.map(function(group, gi) {
                 var isCircuit = !!group.label;
-                var cc = isCircuit ? circuitColor(group.label) : null;
+                var cc = group.color;
                 var inner = group.items.map(function(item) {
-                  var ex = item.ex; var idx = item.idx; var total = exercises.length;
+                  var ex = item.ex; var idx = item.idx;
+                  var vid = findVideo(ex.name);
                   return (
-                    <div key={ex.name+"-"+idx} style={{ background: isCircuit ? cc+"0A" : SURFACE, borderRadius: isCircuit ? 0 : 12, padding: "12px", marginBottom: isCircuit ? 0 : 8, borderTop: isCircuit && group.items.indexOf(item) > 0 ? "1px dashed "+cc+"55" : "none" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          {/* Move arrows */}
-                          <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                            <button onClick={function() { moveEx(idx, -1); }} disabled={idx === 0} style={{ background: "none", border: "none", cursor: idx===0?"default":"pointer", color: idx===0?SURFACE2:TEXT3, padding: "1px 3px", lineHeight: 1 }}>
-                              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="18 15 12 9 6 15"/></svg>
-                            </button>
-                            <div style={{ display: "flex", flexDirection: "column", gap: 1.5, padding: "1px 3px" }}>
-                              <div style={{ width: 9, height: 1.5, background: TEXT3, borderRadius: 99 }} />
-                              <div style={{ width: 9, height: 1.5, background: TEXT3, borderRadius: 99 }} />
-                              <div style={{ width: 9, height: 1.5, background: TEXT3, borderRadius: 99 }} />
-                            </div>
-                            <button onClick={function() { moveEx(idx, 1); }} disabled={idx>=total-1} style={{ background: "none", border: "none", cursor: idx>=total-1?"default":"pointer", color: idx>=total-1?SURFACE2:TEXT3, padding: "1px 3px", lineHeight: 1 }}>
-                              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
-                            </button>
-                          </div>
-                          <span style={{ color: TEXT, fontSize: 13, fontWeight: 600 }}>{ex.name}</span>
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          {/* Circuit toggle */}
-                          <button
-                            onClick={function() { toggleCircuit(idx); }}
-                            title={ex.circuit ? "Remove from circuit "+ex.circuit : "Add to circuit"}
-                            style={{ background: ex.circuit ? cc+"22" : SURFACE, border: "1.5px solid "+(ex.circuit ? cc : BORDER), color: ex.circuit ? cc : TEXT3, borderRadius: 7, padding: "3px 7px", fontSize: 11, fontWeight: 800, cursor: "pointer", flexShrink: 0 }}>
-                            ⚡{ex.circuit ? " "+ex.circuit : ""}
-                          </button>
-                          <button onClick={function() { removeEx(idx); }} style={{ background: "none", border: "none", color: TEXT3, fontSize: 16, cursor: "pointer" }}>×</button>
-                        </div>
-                      </div>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
-                        {[{ label: "SETS", field: "sets", ph: "4" }, { label: "REPS", field: "reps", ph: "8" }, { label: "WEIGHT", field: "weight", ph: "lbs" }].map(function(f) {
-                          return (
-                            <div key={f.field}>
-                              <div style={{ color: TEXT3, fontSize: 9, fontWeight: 700, marginBottom: 4, textAlign: "center" }}>{f.label}</div>
-                              <input type={f.field==="weight"?"text":"number"} value={ex[f.field]} onChange={function(e) { updateEx(idx, f.field, e.target.value); }} placeholder={f.ph} style={Object.assign({}, inputS, { width: "100%", textAlign: "center", fontSize: 13, padding: "8px 6px" })} />
-                            </div>
-                          );
-                        })}
+                    <div key={"ex"+idx} style={{ padding: "9px 0", borderBottom: "1px solid #F0EFEC" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ width: 28, height: 28, borderRadius: 8, background: isCircuit ? cc+"18" : "#F0F5F2", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: isCircuit ? cc : "#7AAB8A", fontFamily: "monospace", flexShrink: 0 }}>{idx+1}</div>
+                        <div style={{ color: "#0A1A0F", fontSize: 14, fontWeight: 500, flex: 1 }}>{ex.name}</div>
+                        {ex.sets && ex.reps && <div style={{ fontSize: 11, fontWeight: 600, color: "#7AAB8A", background: "#F0F5F2", padding: "4px 8px", borderRadius: 8, fontFamily: "monospace", flexShrink: 0 }}>{ex.sets}×{ex.reps}</div>}
+                        <input type="number" placeholder="lbs" value={exLogs[w.id+"-"+idx]||""} onChange={function(e){logWeight(w.id+"-"+idx, e.target.value);}} style={{ width: 52, background: "#F0F5F2", border: "1.5px solid #E8E4DE", borderRadius: 8, padding: "4px 6px", fontSize: 11, fontWeight: 600, color: "#0A1A0F", textAlign: "center", outline: "none", flexShrink: 0 }} />
+                        {vid && <button onClick={function(){setVideoModal({video:vid,name:ex.name});}} style={{ background: dc+"18", border: "none", borderRadius: 7, padding: "4px 8px", color: dc, fontSize: 10, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>▶</button>}
                       </div>
                     </div>
                   );
                 });
                 if (isCircuit) {
                   return (
-                    <div key={"grp-"+gi} style={{ border: "2px solid "+cc, borderRadius: 12, marginBottom: 8, overflow: "hidden" }}>
-                      <div style={{ background: cc, padding: "5px 12px", display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ color: "#fff", fontSize: 10, fontWeight: 800, letterSpacing: 1 }}>⚡ CIRCUIT {group.label}</span>
-                        <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 10, marginLeft: "auto" }}>{group.items.length} exercises · no rest between</span>
+                    <div key={"grp"+gi} style={{ border: "1.5px solid "+cc+"55", borderRadius: 12, marginBottom: 6, overflow: "hidden" }}>
+                      <div style={{ background: cc, padding: "5px 12px", display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ color: "#fff", fontSize: 10, fontWeight: 800, letterSpacing: 1 }}>⚡ {group.label.toUpperCase()}</span>
+                        <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 10, marginLeft: "auto" }}>{group.items.length} exercises</span>
                       </div>
-                      {inner}
+                      <div style={{ padding: "0 12px" }}>{inner}</div>
                     </div>
                   );
                 }
-                return <div key={"grp-"+gi}>{inner}</div>;
+                return <div key={"grp"+gi}>{inner}</div>;
               })}
             </div>
-          )}
+            {/* Expand button */}
+            <div style={{ padding: "0 16px 14px" }}>
+              <button onClick={function(){setFullscreenWk(w);}} style={{ width: "100%", padding: "9px 14px", borderRadius: 10, background: dc, border: "none", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                Expand
+              </button>
+            </div>
+          </div>
+        );
+      })}
 
-          <button onClick={function() { setShowPicker(true); }} style={{ width: "100%", padding: "12px", borderRadius: 12, background: SURFACE, border: "1.5px dashed "+BORDER, color: TEXT2, fontSize: 13, fontWeight: 600, cursor: "pointer", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-            <span style={{ color: c, fontSize: 18 }}>+</span> Add Exercise
-          </button>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={saveWorkout} style={{ flex: 1, padding: "12px", borderRadius: 12, background: wkName && exercises.length > 0 ? c : SURFACE2, border: "none", color: wkName && exercises.length > 0 ? "#fff" : TEXT3, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-              {editingId !== null ? "Save Changes" : "Save Workout"}
+      {/* Builder */}
+      {building ? (
+        <div style={{ background: "#fff", border: "1.5px solid "+c+"66", borderRadius: 20, overflow: "hidden", marginBottom: 12 }}>
+          <div style={{ height: 3, background: c, width: "100%" }} />
+          <div style={{ padding: "16px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <div style={{ color: "#0A1A0F", fontSize: 16, fontWeight: 900 }}>{editingId !== null ? "EDIT WORKOUT" : "NEW WORKOUT"}</div>
+              {editingId !== null && <span style={{ background: c+"18", color: c, fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 6 }}>Editing</span>}
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ color: "#7AAB8A", fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>WORKOUT NAME</div>
+              <input value={wkName} onChange={function(e) { setWkName(e.target.value); }} placeholder="e.g. My Upper Body Day" style={Object.assign({}, inputS, { width: "100%" })} />
+            </div>
+
+            {exercises.length > 0 && (
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ color: "#7AAB8A", fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 8 }}>
+                  EXERCISES ({exercises.length})
+                  <span style={{ color: "#7AAB8A", fontWeight: 500, fontSize: 10, letterSpacing: 0, marginLeft: 6 }}>· tap ⚡ to group into a circuit</span>
+                </div>
+                {buildGroups(exercises).map(function(group, gi) {
+                  var isCircuit = !!group.label;
+                  var cc = group.color;
+                  var inner = group.items.map(function(item) {
+                    var ex = item.ex; var idx = item.idx; var total = exercises.length;
+                    return (
+                      <div key={"builder-ex-"+idx} style={{ background: isCircuit ? cc+"0A" : "#F0F5F2", borderRadius: isCircuit ? 0 : 12, padding: "12px", marginBottom: isCircuit ? 0 : 8, borderTop: isCircuit && group.items.indexOf(item) > 0 ? "1px dashed "+cc+"55" : "none" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                              <button onClick={function() { moveEx(idx, -1); }} disabled={idx === 0} style={{ background: "none", border: "none", cursor: idx===0?"default":"pointer", color: idx===0?"#ccc":"#7AAB8A", padding: "1px 3px", lineHeight: 1 }}>
+                                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="18 15 12 9 6 15"/></svg>
+                              </button>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 1.5, padding: "1px 3px" }}>
+                                <div style={{ width: 9, height: 1.5, background: "#7AAB8A", borderRadius: 99 }} />
+                                <div style={{ width: 9, height: 1.5, background: "#7AAB8A", borderRadius: 99 }} />
+                                <div style={{ width: 9, height: 1.5, background: "#7AAB8A", borderRadius: 99 }} />
+                              </div>
+                              <button onClick={function() { moveEx(idx, 1); }} disabled={idx>=total-1} style={{ background: "none", border: "none", cursor: idx>=total-1?"default":"pointer", color: idx>=total-1?"#ccc":"#7AAB8A", padding: "1px 3px", lineHeight: 1 }}>
+                                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                              </button>
+                            </div>
+                            <span style={{ color: "#0A1A0F", fontSize: 13, fontWeight: 600 }}>{ex.name}</span>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <button onClick={function() { toggleCircuit(idx); }} style={{ background: ex.circuit ? (cc||"#9B6FD4")+"22" : "#F0F5F2", border: "1.5px solid "+(ex.circuit ? (cc||"#9B6FD4") : "#D0E6D8"), color: ex.circuit ? (cc||"#9B6FD4") : "#7AAB8A", borderRadius: 7, padding: "3px 7px", fontSize: 11, fontWeight: 800, cursor: "pointer", flexShrink: 0 }}>
+                              ⚡{ex.circuit ? " "+ex.circuit : ""}
+                            </button>
+                            <button onClick={function() { removeEx(idx); }} style={{ background: "none", border: "none", color: "#7AAB8A", fontSize: 18, cursor: "pointer" }}>×</button>
+                          </div>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+                          {[{ label: "SETS", field: "sets", ph: "4" }, { label: "REPS", field: "reps", ph: "8" }, { label: "WEIGHT", field: "weight", ph: "lbs" }].map(function(f) {
+                            return (
+                              <div key={f.field}>
+                                <div style={{ color: "#7AAB8A", fontSize: 9, fontWeight: 700, marginBottom: 4, textAlign: "center" }}>{f.label}</div>
+                                <input type={f.field==="weight"?"text":"number"} value={ex[f.field]||""} onChange={function(e) { updateEx(idx, f.field, e.target.value); }} placeholder={f.ph} style={Object.assign({}, inputS, { width: "100%", textAlign: "center", fontSize: 13, padding: "8px 6px" })} />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  });
+                  if (isCircuit) {
+                    return (
+                      <div key={"grp-"+gi} style={{ border: "2px solid "+cc, borderRadius: 12, marginBottom: 8, overflow: "hidden" }}>
+                        <div style={{ background: cc, padding: "5px 12px", display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ color: "#fff", fontSize: 10, fontWeight: 800, letterSpacing: 1 }}>⚡ CIRCUIT {group.label}</span>
+                          <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 10, marginLeft: "auto" }}>{group.items.length} exercises · no rest between</span>
+                        </div>
+                        {inner}
+                      </div>
+                    );
+                  }
+                  return <div key={"grp-"+gi}>{inner}</div>;
+                })}
+              </div>
+            )}
+
+            <button onClick={function() { setShowPicker(true); }} style={{ width: "100%", padding: "12px", borderRadius: 12, background: "#F0F5F2", border: "1.5px dashed #D0E6D8", color: "#7AAB8A", fontSize: 13, fontWeight: 600, cursor: "pointer", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+              <span style={{ color: c, fontSize: 18 }}>+</span> Add Exercise
             </button>
-            <button onClick={cancelEdit} style={{ padding: "12px 16px", borderRadius: 12, background: "none", border: "1.5px solid "+BORDER, color: TEXT2, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={saveWorkout} style={{ flex: 1, padding: "12px", borderRadius: 12, background: wkName && exercises.length > 0 ? c : "#D0E6D8", border: "none", color: wkName && exercises.length > 0 ? "#fff" : "#7AAB8A", fontSize: 13, fontWeight: 700, cursor: wkName && exercises.length > 0 ? "pointer" : "default" }}>
+                {editingId !== null ? "Save Changes" : "Save Workout"}
+              </button>
+              <button onClick={cancelEdit} style={{ padding: "12px 16px", borderRadius: 12, background: "none", border: "1.5px solid #D0E6D8", color: "#7AAB8A", fontSize: 13, cursor: "pointer" }}>Cancel</button>
+            </div>
           </div>
         </div>
+      ) : (
+        <button onClick={startNew} style={{ width: "100%", padding: "13px", borderRadius: 14, background: c, border: "none", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <span style={{ fontSize: 20 }}>+</span> Build a Custom Workout
+        </button>
       )}
     </div>
   );
@@ -2242,6 +2276,7 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
   const [section, setSection] = useState("coach");
   const [exLogs, setExLogs] = useState({});
   const [savedSessions, setSavedSessions] = useState([]);
+  const [customWorkouts, setCustomWorkouts] = useState([]);
 
   function logWeight(key, weight) {
     setExLogs(function(prev) { return Object.assign({}, prev, { [key]: weight }); });
@@ -2383,7 +2418,7 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
       </div>
 
       {section === "mine" && (
-        <MyWorkouts color={c} favorites={favorites} importedWorkouts={savedSessions} />
+        <MyWorkouts color={c} favorites={favorites} importedWorkouts={savedSessions} customWorkouts={customWorkouts} setCustomWorkouts={setCustomWorkouts} />
       )}
 
       {section === "goals" && (

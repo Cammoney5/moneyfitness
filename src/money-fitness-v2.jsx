@@ -7359,45 +7359,9 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId }) 
 
   // -- SHARED ACTIVITY LOGS -------------------------------------
   // activityLogs: { "YYYY-M": { day: [ {type, notes, miles, ...} ] } }
-  // Seeded with the client's existing workedOut days for current month
+  // Start empty - real data loads from Supabase
   const currentMonthKey = TODAY.getFullYear() + "-" + TODAY.getMonth();
-  var MANUAL_SEED = [
-    { type: "workout", notes: "Push Day",    duration: "48:00", calories: 390, steps: "1820" },
-    { type: "run",     notes: "Easy Run",    duration: "32:10", miles: "2.8",  pace: "11:30", steps: "4120", calories: 280 },
-    { type: "workout", notes: "Pull Day",    duration: "55:00", calories: 420, steps: "2100" },
-    { type: "run",     notes: "Tempo Run",   duration: "26:45", miles: "3.0",  pace: "8:55",  steps: "4500", calories: 310 },
-    { type: "workout", notes: "Leg Day",     duration: "60:00", calories: 510, steps: "2300" },
-    { type: "maintenance", notes: "Yoga",    duration: "30:00", calories: 120, steps: "400"  },
-    { type: "workout", notes: "Upper Body",  duration: "45:00", calories: 360, steps: "1600" },
-    { type: "run",     notes: "Long Run",    duration: "52:00", miles: "4.8",  pace: "10:50", steps: "7200", calories: 480 },
-    { type: "workout", notes: "Full Body",   duration: "50:00", calories: 400, steps: "1900" },
-    { type: "run",     notes: "Easy Run",    duration: "28:00", miles: "2.5",  pace: "11:12", steps: "3700", calories: 245 },
-  ];
-  const initLogs = {};
-  CLIENTS[0].workedOut.forEach(function(d, idx) {
-    var seed = MANUAL_SEED[idx % MANUAL_SEED.length];
-    initLogs[d] = [Object.assign({ id: d }, seed)];
-  });
-
-  // Pre-seed Apple Health imports so the timeline is visible on first load
-  var todayDay = TODAY.getDate();
-  var appleImports = [
-    { day: todayDay,   entry: { id: "device-aw-1", type: "run",     notes: "Outdoor Run",       miles: "3.1", steps: "4823", calories: 312, duration: "28:42", pace: "9:15", fromDevice: true, platform: "apple", source: "Apple Health" }},
-    { day: todayDay-1, entry: { id: "device-aw-2", type: "workout", notes: "Strength Training",  miles: "",    steps: "1204", calories: 428, duration: "52:18", fromDevice: true, platform: "apple", source: "Apple Health" }},
-    { day: todayDay-2, entry: { id: "device-aw-3", type: "run",     notes: "Outdoor Run",        miles: "3.6", steps: "5231", calories: 374, duration: "34:05", pace: "9:28", fromDevice: true, platform: "apple", source: "Apple Health" }},
-    { day: todayDay-3, entry: { id: "device-aw-4", type: "workout", notes: "HIIT",               miles: "",    steps: "987",  calories: 285, duration: "22:00", fromDevice: true, platform: "apple", source: "Apple Health" }},
-    { day: todayDay-4, entry: { id: "device-aw-5", type: "run",     notes: "Cycling",            miles: "14.2",steps: "2341", calories: 511, duration: "1:04:33", fromDevice: true, platform: "apple", source: "Apple Health" }},
-  ];
-  appleImports.forEach(function(imp) {
-    if (imp.day > 0) {
-      var existing = initLogs[imp.day] || [];
-      if (!existing.find(function(e) { return e.id === imp.entry.id; })) {
-        initLogs[imp.day] = [imp.entry].concat(existing);
-      }
-    }
-  });
-
-  const [activityLogs, setActivityLogs] = useState({ [currentMonthKey]: initLogs });
+  const [activityLogs, setActivityLogs] = useState({});
   const [logsLoaded, setLogsLoaded] = useState(false);
 
   // Load activity logs from Supabase on mount

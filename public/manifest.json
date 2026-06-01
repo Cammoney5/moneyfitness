@@ -1,0 +1,17 @@
+{
+  "name": "MoneyFitness",
+  "short_name": "MoneyFitness",
+  "description": "Consistency + Performance",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A1A0F",
+  "theme_color": "#1B8C4E",
+  "icons": [
+    {
+      "src": "/mf-logo.png",
+      "sizes": "1254x1254",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

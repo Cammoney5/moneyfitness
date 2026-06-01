@@ -3795,7 +3795,7 @@ function ClientsScreen({ isCoach, selected, setSelected, clientDefaultTab, setCl
   );
 }
 
-const LIB_CATS = ["All","Chest","Back","Legs","Shoulders","Arms"];
+const DEFAULT_LIB_CATS = ["All","Chest","Back","Legs","Shoulders","Arms","Core","Cardio"];
 
 function LibraryScreen({ isCoach, favorites, toggleFavorite }) {
   const [search, setSearch]     = useState("");
@@ -3805,6 +3805,29 @@ function LibraryScreen({ isCoach, favorites, toggleFavorite }) {
   const [editUrl, setEditUrl]   = useState("");
   const [lib, setLib]           = useState(VIDEO_LIBRARY);
   const [showFavs, setShowFavs] = useState(false);
+  const [libCats, setLibCats]   = useState(DEFAULT_LIB_CATS);
+  const [showAddEx, setShowAddEx] = useState(false);
+  const [showAddTag, setShowAddTag] = useState(false);
+  const [newExName, setNewExName] = useState("");
+  const [newExCat, setNewExCat]   = useState("Chest");
+  const [newExUrl, setNewExUrl]   = useState("");
+  const [newTagName, setNewTagName] = useState("");
+
+  function addExercise() {
+    if (!newExName.trim()) return;
+    var newEx = { id: "custom-" + Date.now(), name: newExName.trim(), cat: newExCat, url: newExUrl.trim() };
+    setLib(function(prev) { return prev.concat([newEx]); });
+    setNewExName(""); setNewExUrl(""); setShowAddEx(false);
+  }
+  function addTag() {
+    var t = newTagName.trim();
+    if (!t || libCats.indexOf(t) !== -1) return;
+    setLibCats(function(prev) { return prev.concat([t]); });
+    setNewTagName(""); setShowAddTag(false);
+  }
+  function removeExercise(id) {
+    setLib(function(prev) { return prev.filter(function(v) { return v.id !== id; }); });
+  }
 
   const favIds = Object.keys(favorites || {}).filter(function(k) { return favorites[k]; });
 
@@ -3869,6 +3892,52 @@ function LibraryScreen({ isCoach, favorites, toggleFavorite }) {
           <span style={{ color: showFavs ? "#F5C518" : TEXT3, fontSize: 13, fontWeight: 600 }}>{showFavs ? "Show All" : "View"}</span>
         </div>
       )}
+{isCoach && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+            <button onClick={function() { setShowAddEx(!showAddEx); setShowAddTag(false); }} style={{ flex: 1, padding: "11px", borderRadius: 12, background: showAddEx ? ORANGE : CARD, border: "1.5px solid "+(showAddEx ? ORANGE : BORDER), color: showAddEx ? "#fff" : TEXT, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Add Exercise</button>
+            <button onClick={function() { setShowAddTag(!showAddTag); setShowAddEx(false); }} style={{ flex: 1, padding: "11px", borderRadius: 12, background: showAddTag ? "#3B7DD8" : CARD, border: "1.5px solid "+(showAddTag ? "#3B7DD8" : BORDER), color: showAddTag ? "#fff" : TEXT, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Add Tag</button>
+          </div>
+          {showAddEx && (
+            <div style={{ background: CARD, border: "1.5px solid "+ORANGE, borderRadius: 14, padding: 16, marginBottom: 4 }}>
+              <div style={{ color: TEXT, fontSize: 14, fontWeight: 800, marginBottom: 14 }}>New Exercise</div>
+              <div style={{ marginBottom: 10 }}>
+                <div style={{ color: TEXT3, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 5 }}>EXERCISE NAME</div>
+                <input value={newExName} onChange={function(e) { setNewExName(e.target.value); }} placeholder="e.g. Romanian Deadlift" style={{ width: "100%", background: SURFACE, border: "1.5px solid "+BORDER, borderRadius: 10, padding: "10px 12px", color: TEXT, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+              </div>
+              <div style={{ marginBottom: 10 }}>
+                <div style={{ color: TEXT3, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 5 }}>CATEGORY TAG</div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {libCats.filter(function(c) { return c !== "All"; }).map(function(c) {
+                    var active = newExCat === c;
+                    return <button key={c} onClick={function() { setNewExCat(c); }} style={{ padding: "6px 14px", borderRadius: 99, background: active ? ORANGE : SURFACE, border: "1.5px solid "+(active ? ORANGE : BORDER), color: active ? "#fff" : TEXT2, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{c}</button>;
+                  })}
+                </div>
+              </div>
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ color: TEXT3, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 5 }}>YOUTUBE URL <span style={{ fontWeight: 400 }}>(optional)</span></div>
+                <input value={newExUrl} onChange={function(e) { setNewExUrl(e.target.value); }} placeholder="https://www.youtube.com/watch?v=..." style={{ width: "100%", background: SURFACE, border: "1.5px solid "+BORDER, borderRadius: 10, padding: "10px 12px", color: TEXT, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={addExercise} style={{ flex: 1, padding: "11px", borderRadius: 10, background: newExName.trim() ? ORANGE : SURFACE2, border: "none", color: newExName.trim() ? "#fff" : TEXT3, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Save Exercise</button>
+                <button onClick={function() { setShowAddEx(false); setNewExName(""); setNewExUrl(""); }} style={{ padding: "11px 16px", borderRadius: 10, background: "none", border: "1.5px solid "+BORDER, color: TEXT2, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+              </div>
+            </div>
+          )}
+          {showAddTag && (
+            <div style={{ background: CARD, border: "1.5px solid #3B7DD8", borderRadius: 14, padding: 16, marginBottom: 4 }}>
+              <div style={{ color: TEXT, fontSize: 14, fontWeight: 800, marginBottom: 14 }}>New Category Tag</div>
+              <div style={{ color: TEXT3, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>TAG NAME</div>
+              <input value={newTagName} onChange={function(e) { setNewTagName(e.target.value); }} placeholder="e.g. Mobility, Olympic, Glutes..." style={{ width: "100%", background: SURFACE, border: "1.5px solid "+BORDER, borderRadius: 10, padding: "10px 12px", color: TEXT, fontSize: 14, outline: "none", boxSizing: "border-box", marginBottom: 10 }} />
+              <div style={{ color: TEXT3, fontSize: 11, marginBottom: 14 }}>Existing: {libCats.filter(function(c){return c!=="All";}).join(", ")}</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={addTag} style={{ flex: 1, padding: "11px", borderRadius: 10, background: newTagName.trim() ? "#3B7DD8" : SURFACE2, border: "none", color: newTagName.trim() ? "#fff" : TEXT3, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Add Tag</button>
+                <button onClick={function() { setShowAddTag(false); setNewTagName(""); }} style={{ padding: "11px 16px", borderRadius: 10, background: "none", border: "1.5px solid "+BORDER, color: TEXT2, fontSize: 13, cursor: "pointer" }}>Cancel</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 {!showFavs && (
         <>
           <div style={{ position: "relative", marginBottom: 12 }}>
@@ -3876,7 +3945,7 @@ function LibraryScreen({ isCoach, favorites, toggleFavorite }) {
             <span style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)", color: TEXT3, fontSize: 15 }}><span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span></span>
           </div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
-            {LIB_CATS.map(function(c) {
+            {libCats.map(function(c) {
               const active = cat === c;
               const cColor = { "All":ORANGE,"Chest":"#1B8C4E","Back":BLUE,"Legs":PURPLE,"Shoulders":"#1B8C4E","Arms":GOLD,"Core":ORANGE,"Cardio":RED }[c] || ORANGE;
               return (
@@ -3930,13 +3999,57 @@ function LibraryScreen({ isCoach, favorites, toggleFavorite }) {
               </div>
 {isCoach && isOpen && (
                 <div style={{ background: ORANGE_BG, border: "1.5px solid "+ORANGE, borderTop: "1px solid "+ORANGE_BR, borderRadius: "0 0 14px 14px", padding: "14px 14px 16px" }}>
-                  <div style={{ color: TEXT2, fontSize: 12, fontWeight: 600, marginBottom: 8 }}>Paste YouTube URL</div>
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ color: TEXT2, fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Exercise Name</div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <input defaultValue={v.name} id={"name-"+v.id} style={{ flex: 1, background: CARD, border: "1.5px solid "+BORDER, borderRadius: 10, padding: "9px 12px", color: TEXT, fontSize: 13, outline: "none" }} />
+                      <button onClick={function() { var el = document.getElementById("name-"+v.id); if (el && el.value.trim()) { setLib(lib.map(function(x) { return x.id === v.id ? Object.assign({}, x, { name: el.value.trim() }) : x; })); } }} style={{ padding: "9px 14px", borderRadius: 10, background: ORANGE, border: "none", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Save</button>
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ color: TEXT2, fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Key Cues</div>
+                    {(v.cues || []).map(function(cue, ci) {
+                      return (
+                        <div key={ci} style={{ display: "flex", gap: 6, marginBottom: 6, alignItems: "center" }}>
+                          <div style={{ width: 20, height: 20, borderRadius: 99, background: ORANGE, color: "#fff", fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{ci+1}</div>
+                          <input defaultValue={cue} id={"cue-"+v.id+"-"+ci} style={{ flex: 1, background: CARD, border: "1.5px solid "+BORDER, borderRadius: 8, padding: "7px 10px", color: TEXT, fontSize: 13, outline: "none" }} />
+                          <button onClick={function() {
+                            setLib(lib.map(function(x) {
+                              if (x.id !== v.id) return x;
+                              var newCues = (x.cues || []).filter(function(_, i) { return i !== ci; });
+                              return Object.assign({}, x, { cues: newCues });
+                            }));
+                          }} style={{ background: "none", border: "none", color: TEXT3, fontSize: 18, cursor: "pointer", padding: "0 4px" }}>×</button>
+                        </div>
+                      );
+                    })}
+                    <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                      <button onClick={function() {
+                        var newCues = (v.cues || []).slice();
+                        newCues.forEach(function(_, ci) {
+                          var el = document.getElementById("cue-"+v.id+"-"+ci);
+                          if (el) newCues[ci] = el.value;
+                        });
+                        newCues.push("");
+                        setLib(lib.map(function(x) { return x.id === v.id ? Object.assign({}, x, { cues: newCues }) : x; }));
+                      }} style={{ flex: 1, padding: "8px", borderRadius: 8, background: CARD, border: "1.5px dashed "+BORDER, color: TEXT2, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>+ Add Cue</button>
+                      <button onClick={function() {
+                        var newCues = (v.cues || []).map(function(_, ci) {
+                          var el = document.getElementById("cue-"+v.id+"-"+ci);
+                          return el ? el.value.trim() : _;
+                        }).filter(Boolean);
+                        setLib(lib.map(function(x) { return x.id === v.id ? Object.assign({}, x, { cues: newCues }) : x; }));
+                      }} style={{ flex: 1, padding: "8px", borderRadius: 8, background: ORANGE, border: "none", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Save Cues</button>
+                    </div>
+                  </div>
+                  <div style={{ color: TEXT2, fontSize: 12, fontWeight: 600, marginBottom: 8 }}>YouTube URL</div>
                   <input value={editUrl} onChange={function(e) { setEditUrl(e.target.value); }} placeholder="https://www.youtube.com/watch?v=..." style={{ width: "100%", background: CARD, border: "1.5px solid "+BORDER, borderRadius: 10, padding: "10px 12px", color: TEXT, fontSize: 12, outline: "none", boxSizing: "border-box", marginBottom: 10 }} />
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button onClick={function() { saveUrl(v.id); }} style={{ flex: 1, padding: 11, borderRadius: 10, background: ORANGE, border: "none", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Save</button>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                    <button onClick={function() { saveUrl(v.id); }} style={{ flex: 1, padding: 11, borderRadius: 10, background: ORANGE, border: "none", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Save URL</button>
                     <button onClick={function() { saveUrl(v.id); setTimeout(function() { setModal(Object.assign({}, v, { url: editUrl })); }, 100); }} style={{ flex: 1, padding: 11, borderRadius: 10, background: CARD, border: "1.5px solid "+BORDER, color: TEXT2, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Save + Preview</button>
                   </div>
-                  {v.url && <button onClick={function() { setLib(lib.map(function(x) { return x.id === v.id ? Object.assign({}, x, { url: "" }) : x; })); setEditing(null); }} style={{ width: "100%", marginTop: 8, padding: 8, background: "none", border: "none", color: TEXT3, fontSize: 12, cursor: "pointer" }}>Remove video</button>}
+                  {v.url && <button onClick={function() { setLib(lib.map(function(x) { return x.id === v.id ? Object.assign({}, x, { url: "" }) : x; })); setEditing(null); }} style={{ width: "100%", padding: 8, background: "none", border: "none", color: TEXT3, fontSize: 12, cursor: "pointer" }}>Remove video</button>}
+                  <button onClick={function() { removeExercise(v.id); setEditing(null); }} style={{ width: "100%", marginTop: 4, padding: 9, background: "none", border: "1.5px solid #E05252", borderRadius: 10, color: "#E05252", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Delete Exercise</button>
                 </div>
               )}
             </div>

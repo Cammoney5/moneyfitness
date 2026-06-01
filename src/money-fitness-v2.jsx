@@ -5005,7 +5005,26 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps }) {
 
 
   const [activeType, setActiveType] = useState("total");
-  const trend = TREND_DATA[activeType];
+  const validActiveType = loggedTypes[activeType] ? activeType : "total";
+  const trend = TREND_DATA[validActiveType];
+
+  // Derive which activity types have been logged
+  var loggedTypes = { total: true };
+  if (activityLogs) {
+    Object.values(activityLogs).forEach(function(monthData) {
+      Object.values(monthData).forEach(function(dayLogs) {
+        (dayLogs || []).forEach(function(entry) {
+          var t = (entry.type || "").toLowerCase();
+          if (t.indexOf("run") !== -1) loggedTypes.run = true;
+          else if (t.indexOf("workout") !== -1 || t.indexOf("strength") !== -1 || t.indexOf("circuit") !== -1) loggedTypes.workout = true;
+          else if (t.indexOf("bike") !== -1 || t.indexOf("cycling") !== -1) loggedTypes.bike = true;
+          else if (t.indexOf("swim") !== -1) loggedTypes.swim = true;
+          else if (t.indexOf("maintenance") !== -1 || t.indexOf("body") !== -1 || t.indexOf("mobility") !== -1) loggedTypes.maintenance = true;
+          else if (t) loggedTypes.other = true;
+        });
+      });
+    });
+  }
 
   return (
     <div>
@@ -5143,9 +5162,9 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps }) {
         <div>
           <div style={{ color: TEXT3, fontSize: 11, fontWeight: 700, letterSpacing: 1.5, marginBottom: 12 }}>ACTIVITY TRENDS</div>
           <div style={{ display: "flex", gap: 8, marginBottom: 14, overflowX: "auto", paddingBottom: 2 }}>
-            {Object.keys(TREND_DATA).map(function(key) {
+            {Object.keys(TREND_DATA).filter(function(key) { return !!loggedTypes[key]; }).map(function(key) {
               const t = TREND_DATA[key];
-              const active = activeType === key;
+              const active = validActiveType === key;
               return (
                 <button key={key} onClick={function() { setActiveType(key); }}
                   style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 99, background: active ? t.color : CARD, border: "1.5px solid "+(active ? t.color : BORDER), cursor: "pointer", flexShrink: 0, transition: "all 0.2s" }}>
@@ -5156,11 +5175,11 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps }) {
             })}
           </div>
           <WorkoutTrendChart
-            workoutType={activeType}
+            workoutType={validActiveType}
             color={trend.color}
             data={trend.data}
             unit={trend.unit}
-            livePace={activeType === "run" && stats.avgPace ? stats.avgPace : null}
+            livePace={validActiveType === "run" && stats.avgPace ? stats.avgPace : null}
           />
         </div>
       )}

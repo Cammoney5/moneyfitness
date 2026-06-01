@@ -4371,7 +4371,7 @@ function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onI
                 </div>
                 <div style={{ color: TEXT3, fontSize: 12, marginTop: 2 }}>{w.date}</div>
                 <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-                  <span style={{ color: TEXT2, fontSize: 12 }}>[timer] {w.duration}</span>
+                  <span style={{ color: TEXT2, fontSize: 12 }}>{w.duration}</span>
                   {w.distance && <span style={{ color: TEXT2, fontSize: 12 }}> {w.distance}</span>}
                   <span style={{ color: TEXT2, fontSize: 12 }}> {w.calories} cal</span>
                 </div>

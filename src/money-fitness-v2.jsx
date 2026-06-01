@@ -6711,7 +6711,7 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
     }
   }
 
-  var raceDate  = new Date(raceDateStr);
+  var raceDate  = (function(){ var p = raceDateStr.split("-"); return new Date(+p[0], +p[1]-1, +p[2]); })();
   var countdown = useCountdown(raceDate);
   var RACE_MILES = { "5k": 3.1069, "10k": 6.2137, "half": 13.1094, "full": 26.2188, "ultra": 31.0686 };
 
@@ -6780,7 +6780,7 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
                     <div style={{ color: WHITE, fontSize: raceCollapsed ? 15 : 22, fontWeight: 900, lineHeight: 1.1, letterSpacing: -0.5 }}>{raceName}</div>
                     {raceCollapsed && <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }}>· {countdown.days}d {countdown.hours}h {countdown.mins}m</div>}
                   </div>
-                  {!raceCollapsed && <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, marginTop: 3 }}>{new Date(raceDateStr).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</div>}
+                  {!raceCollapsed && <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, marginTop: 3 }}>{(function(){ var p = raceDateStr.split("-"); var d = new Date(+p[0], +p[1]-1, +p[2]); return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }); })()}</div>}
                 </div>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0, marginLeft: 12 }}>
                   {!raceCollapsed && (

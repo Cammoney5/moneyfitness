@@ -7366,14 +7366,12 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId }) 
 
   // Load activity logs from Supabase on mount
   useEffect(function() {
-    if (!authUserId || !authToken) { console.log("skipping load - no auth", authUserId, !!authToken); return; }
-    console.log("loading logs for user:", authUserId, "token:", authToken.substring(0,20));
+    if (!authUserId || !authToken) return;
     fetch(SUPABASE_URL + "/rest/v1/activity_logs?client_id=eq." + authUserId + "&order=logged_date.desc&limit=200", {
       headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
     })
     .then(function(r) { return r.json(); })
     .then(function(rows) {
-      console.log("activity_logs rows:", JSON.stringify(rows));
       if (!Array.isArray(rows) || rows.length === 0) { setLogsLoaded(true); return; }
       var built = {};
       rows.forEach(function(row) {

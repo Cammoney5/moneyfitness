@@ -281,11 +281,15 @@ const sb = {
     return Array.isArray(data) ? data[0] : null;
   },
   async getCoachByCode(token, code) {
-    const r = await fetch(this.url + "/rest/v1/profiles?coach_code=eq." + code.toUpperCase() + "&role=eq.coach&select=id,name,coach_code", {
-      headers: this.authHeaders(token)
+    // Use anon headers so this works before user is fully authed
+    const r = await fetch(this.url + "/rest/v1/coach_settings?coach_code=eq." + code.toUpperCase() + "&select=coach_id", {
+      headers: this.headers
     });
     const data = await r.json();
-    return Array.isArray(data) ? data[0] : null;
+    if (Array.isArray(data) && data.length > 0) {
+      return { id: data[0].coach_id };
+    }
+    return null;
   }
 };
 const TODAY     = new Date();
@@ -5565,7 +5569,15 @@ function AuthFlow({ screen, setScreen, onAuth }) {
     setLoading(true);
     setAuthError("");
     try {
-      // 1. Create auth user
+      // 1. Validate coach code first (before creating user)
+      var coachId = null;
+      if (role === "client") {
+        var coach = await sb.getCoachByCode(null, coachCode.trim());
+        if (!coach) { setAuthError("Invalid coach code — check with your coach"); setLoading(false); return; }
+        coachId = coach.id;
+      }
+
+      // 2. Create auth user
       var signUpRes = await sb.signUp(email, password);
       if (signUpRes.error) { setAuthError(signUpRes.error.message); setLoading(false); return; }
 
@@ -5576,14 +5588,6 @@ function AuthFlow({ screen, setScreen, onAuth }) {
         setAuthError("Signup failed — please try again");
         setLoading(false);
         return;
-      }
-
-      // 2. Find coach if client
-      var coachId = null;
-      if (role === "client") {
-        var coach = await sb.getCoachByCode(token, coachCode.trim());
-        if (!coach) { setAuthError("Invalid coach code — check with your coach"); setLoading(false); return; }
-        coachId = coach.id;
       }
 
       // 3. Insert profile

@@ -7390,6 +7390,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
     activityComplete: true, goalMilestone: true, coachCheckinAlert: true, all: true,
   });
   const [messages, setMessages] = useState({});
+  const seenMessageIds = React.useRef(new Set());
 
   // Load messages from Supabase + poll every 5 seconds
   function fetchMessages() {
@@ -7413,16 +7414,14 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
           read: row.read,
         });
       });
-      setMessages(function(prev) {
-        // Detect new incoming messages - fire notification
-        var newNotifs = [];
-        console.log("polling - built keys:", Object.keys(built), "prev keys:", Object.keys(prev));
-        Object.keys(built).forEach(function(otherId) {
-          var prevIds = new Set((prev[otherId] || []).map(function(m) { return m.id; }));
-          console.log("checking thread", otherId, "- prev count:", prevIds.size, "new count:", (built[otherId]||[]).length);
-          (built[otherId] || []).forEach(function(msg) {
-            console.log("msg:", msg.id, "from:", msg.from, "isNew:", !prevIds.has(msg.id), "isIncoming:", msg.from !== (isCoach ? "coach" : "client"));
-            if (!prevIds.has(msg.id) && msg.from !== (isCoach ? "coach" : "client")) {
+      // Detect new incoming messages using seenMessageIds ref
+      var newNotifs = [];
+      var isFirstLoad = seenMessageIds.current.size === 0;
+      Object.keys(built).forEach(function(otherId) {
+        (built[otherId] || []).forEach(function(msg) {
+          if (!seenMessageIds.current.has(msg.id)) {
+            seenMessageIds.current.add(msg.id);
+            if (!isFirstLoad && msg.from !== (isCoach ? "coach" : "client")) {
               newNotifs.push({
                 id: "msg-" + msg.id,
                 type: "message",
@@ -7432,13 +7431,13 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
                 read: false,
               });
             }
-          });
+          }
         });
-        if (newNotifs.length > 0) {
-          setNotifications(function(prevN) { return newNotifs.concat(prevN); });
-        }
-        return built;
       });
+      if (newNotifs.length > 0) {
+        setNotifications(function(prevN) { return newNotifs.concat(prevN); });
+      }
+      setMessages(built);
     })
     .catch(function(e) { console.log("messages load error", e); });
   }

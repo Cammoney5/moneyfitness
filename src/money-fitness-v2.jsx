@@ -2379,7 +2379,7 @@ function MyWorkouts({ color, favorites, importedWorkouts, customWorkouts, setCus
     </div>
   );
 }
-function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIndexUsed, myPlans }) {
+function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIndexUsed, myPlans, authUserId, authToken, onGoToMainTab }) {
   const c = color || ORANGE;
   const [activeWk, setActiveWk] = useState(0);
   const [videoModal, setVideoModal] = useState(null);
@@ -2539,7 +2539,7 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
       )}
 
       {section === "goals" && (
-        <GoalProgressTab client={CLIENTS[0]} isCoach={false} color={c} onTabChange={function(){}} />
+        <GoalProgressTab client={CLIENTS[0]} isCoach={false} color={c} onTabChange={function(){}} authUserId={authUserId} authToken={authToken} onGoToMainTab={onGoToMainTab} />
       )}
 
       {section === "coach" && <div>
@@ -3081,8 +3081,7 @@ function GoalProgressTab({ client, isCoach, color, onTabChange, authUserId, auth
   }, [authUserId, authToken]);
 
   function saveGoalToSupabase(goal) {
-    console.log("saveGoal called - authUserId:", authUserId, "authToken:", !!authToken, "goal:", goal.label);
-    if (!authUserId || !authToken) { console.log("No auth - skipping save"); return; }
+    if (!authUserId || !authToken) return;
     var isNew = typeof goal.id === "number" && goal.id > 1000000000;
     var url = isNew
       ? SUPABASE_URL + "/rest/v1/goals"
@@ -3245,7 +3244,6 @@ function GoalProgressTab({ client, isCoach, color, onTabChange, authUserId, auth
       {/* Message coach button */}
       {!isCoach && (
         <button onClick={function() { 
-          console.log("Message Cameron clicked - onGoToMainTab:", !!onGoToMainTab, "onTabChange:", !!onTabChange);
           if (onGoToMainTab) onGoToMainTab("directmessage"); else if (onTabChange) onTabChange("directmessage"); 
         }}
           style={{ width: "100%", padding: "14px", borderRadius: 14, background: c, border: "none", color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer", marginTop: 4 }}>
@@ -3682,7 +3680,7 @@ function ClientDetail({ client, onBack, isCoach, defaultTab, favorites, watchDay
       {tab === "Program" && (
         <div>
           {!isCoach && (
-            <ProgramWithCustom program={coachProgram} color={c} favorites={favorites} initialDayIndex={programDayIndex} onDayIndexUsed={function() { if (setProgramDayIndex) setProgramDayIndex(null); }} myPlans={myPlans} />
+            <ProgramWithCustom program={coachProgram} color={c} favorites={favorites} initialDayIndex={programDayIndex} onDayIndexUsed={function() { if (setProgramDayIndex) setProgramDayIndex(null); }} myPlans={myPlans} authUserId={authUserId} authToken={authToken} onGoToMainTab={onGoToMainTab} />
           )}
           {isCoach && (
             <CoachProgramTabView program={coachProgram} color={c} onUpdate={setCoachProgram} />

@@ -7552,7 +7552,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
         },
         body: JSON.stringify({
           user_id: authUserId,
-          subscription: JSON.stringify(sub),
+          subscription: sub,
           updated_at: new Date().toISOString()
         })
       }).catch(function(e) { console.log("push sub save error", e); });

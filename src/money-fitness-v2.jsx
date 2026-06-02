@@ -7933,8 +7933,52 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
   const [importedIds, setImportedIds]         = useState({ "aw-1": true, "aw-2": true, "aw-3": true });
   const [coachProgram, setCoachProgram] = useState(DEFAULT_PROGRAM);
 
+  // Load program from Supabase on mount
+  useEffect(function() {
+    if (!authToken || !authUserId) return;
+    fetch(SUPABASE_URL + "/rest/v1/programs?coach_id=eq." + authUserId + "&order=updated_at.desc&limit=1", {
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(rows) {
+      if (!Array.isArray(rows) || rows.length === 0) return;
+      var prog = rows[0].weeks;
+      if (prog && prog.length > 0) setCoachProgram(prog);
+    })
+    .catch(function(e) { console.log("program load error", e); });
+  }, [authUserId, authToken]);
+
+  function saveProgram(program) {
+    if (!authToken || !authUserId) return;
+    fetch(SUPABASE_URL + "/rest/v1/programs?coach_id=eq." + authUserId, {
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(rows) {
+      var method = (Array.isArray(rows) && rows.length > 0) ? "PATCH" : "POST";
+      var url = method === "PATCH"
+        ? SUPABASE_URL + "/rest/v1/programs?coach_id=eq." + authUserId
+        : SUPABASE_URL + "/rest/v1/programs";
+      return fetch(url, {
+        method: method,
+        headers: {
+          "apikey": SUPABASE_ANON_KEY,
+          "Authorization": "Bearer " + authToken,
+          "Content-Type": "application/json",
+          "Prefer": "return=minimal"
+        },
+        body: JSON.stringify(method === "POST"
+          ? { coach_id: authUserId, name: "My Program", weeks: program, updated_at: new Date().toISOString() }
+          : { weeks: program, updated_at: new Date().toISOString() }
+        )
+      });
+    })
+    .catch(function(e) { console.log("program save error", e); });
+  }
+
   function handleProgramUpdate(newProgram) {
     setCoachProgram(newProgram);
+    saveProgram(newProgram);
     if (notifSettings.program) {
       addNotification({
         id: Date.now() + 333,

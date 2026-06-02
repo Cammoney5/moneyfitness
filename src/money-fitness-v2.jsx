@@ -7413,16 +7413,14 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
           read: row.read,
         });
       });
-      // Detect new incoming messages and add notification
       setMessages(function(prev) {
+        // Detect new incoming messages - fire notification
+        var newNotifs = [];
         Object.keys(built).forEach(function(otherId) {
-          var prevMsgs = prev[otherId] || [];
-          var newMsgs = built[otherId] || [];
-          var prevIds = new Set(prevMsgs.map(function(m) { return m.id; }));
-          newMsgs.forEach(function(msg) {
+          var prevIds = new Set((prev[otherId] || []).map(function(m) { return m.id; }));
+          (built[otherId] || []).forEach(function(msg) {
             if (!prevIds.has(msg.id) && msg.from !== (isCoach ? "coach" : "client")) {
-              // New message from the other person
-              addNotification({
+              newNotifs.push({
                 id: "msg-" + msg.id,
                 type: "message",
                 title: "New message",
@@ -7433,6 +7431,9 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
             }
           });
         });
+        if (newNotifs.length > 0) {
+          setNotifications(function(prevN) { return newNotifs.concat(prevN); });
+        }
         return built;
       });
     })

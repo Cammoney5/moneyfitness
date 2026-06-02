@@ -5215,8 +5215,8 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
   const avgStepsStr = avgSteps >= 1000 ? (Math.floor(avgSteps/100)/10).toFixed(1)+"k" : String(avgSteps);
 
   // Leaderboard based on real clients
-  const LEADERS = CLIENT_DATA.slice(0, 4).map(function(c) {
-    return { initials: c.initials, name: c.name, val: c.streak + "d", color: c.color };
+  const LEADERS = (realClients || []).slice(0, 4).map(function(c) {
+    return { initials: c.avatar, name: c.name, val: (c.streak || 0) + "d", color: c.color };
   });
 
   const clientStats = [

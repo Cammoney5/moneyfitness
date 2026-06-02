@@ -6226,7 +6226,21 @@ function SettingsMenu({ isCoach, goTo, tab, onLogout, onReplayTutorial, notifSet
                 <div style={{ color: TEXT, fontSize: 15, fontWeight: 700 }}>Notifications</div>
               </div>
 
-              {/* Master toggle */}
+              {/* Push notification enable button */}
+              <div style={{ background: CARD, borderRadius: 14, padding: "14px 16px", marginBottom: 16, border: "1.5px solid "+BORDER }}>
+                <div style={{ color: TEXT, fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Push Notifications</div>
+                <div style={{ color: TEXT3, fontSize: 12, marginBottom: 12 }}>Get notified even when the app is closed</div>
+                <button onClick={function() {
+                  if (!('Notification' in window)) { alert('Notifications not supported on this device'); return; }
+                  if (Notification.permission === 'granted') { alert('Notifications already enabled!'); return; }
+                  Notification.requestPermission().then(function(perm) {
+                    if (perm === 'granted') alert('Notifications enabled!');
+                    else alert('Please enable notifications in your device settings');
+                  });
+                }} style={{ background: GREEN, border: "none", color: "#fff", padding: "10px 20px", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                  {typeof Notification !== 'undefined' && Notification.permission === 'granted' ? '✓ Enabled' : 'Enable Push Notifications'}
+                </button>
+              </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid "+SURFACE2, marginBottom: 8 }}>
                 <div>
                   <div style={{ color: TEXT, fontSize: 14, fontWeight: 700 }}>All Notifications</div>

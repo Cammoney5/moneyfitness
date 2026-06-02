@@ -2937,7 +2937,7 @@ function CheckInForm({ onDone }) {
   );
 }
 
-const GOAL_COLORS = ["#1B8C4E","#3B7DD8","#1B8C4E","#9B6FD4","#E0A020","#E05252","#1B8C4E"];
+const GOAL_COLORS = ["#1B8C4E","#3B7DD8","#9B6FD4","#E0A020","#E05252","#0E7490","#B45309"];
 const GOAL_UNITS  = ["lbs","kg","mi","km","min/mi","steps","reps","days","sessions","ft","in",""];
 
 function GoalEditModal({ goal, onSave, onDelete, onClose, color }) {
@@ -2957,6 +2957,7 @@ function GoalEditModal({ goal, onSave, onDelete, onClose, color }) {
     if (!label.trim() || !target) return;
     onSave({
       label: label.trim(),
+      start: parseFloat(current) || 0,
       current: parseFloat(current) || 0,
       target: parseFloat(target),
       unit: unit,
@@ -3038,7 +3039,7 @@ function GoalEditModal({ goal, onSave, onDelete, onClose, color }) {
   );
 }
 
-function GoalProgressTab({ client, isCoach, color, onTabChange, authUserId, authToken }) {
+function GoalProgressTab({ client, isCoach, color, onTabChange, authUserId, authToken, onGoToMainTab }) {
   const c = color || ORANGE;
   const [goals, setGoals] = useState([]);
   const [goalsLoaded, setGoalsLoaded] = useState(false);
@@ -3048,10 +3049,10 @@ function GoalProgressTab({ client, isCoach, color, onTabChange, authUserId, auth
   // Load goals from Supabase
   useEffect(function() {
     if (!authUserId || !authToken) {
-      // Fallback to mock data
-      setGoals(client.goals.map(function(g, i) {
+      // Fallback to mock data only if no auth
+      setGoals(client.goals ? client.goals.map(function(g, i) {
         return Object.assign({ id: i, updatedAt: "May 27, 2025" }, g);
-      }));
+      }) : []);
       setGoalsLoaded(true);
       return;
     }
@@ -3080,7 +3081,8 @@ function GoalProgressTab({ client, isCoach, color, onTabChange, authUserId, auth
   }, [authUserId, authToken]);
 
   function saveGoalToSupabase(goal) {
-    if (!authUserId || !authToken) return;
+    console.log("saveGoal called - authUserId:", authUserId, "authToken:", !!authToken, "goal:", goal.label);
+    if (!authUserId || !authToken) { console.log("No auth - skipping save"); return; }
     var isNew = typeof goal.id === "number" && goal.id > 1000000000;
     var url = isNew
       ? SUPABASE_URL + "/rest/v1/goals"
@@ -3104,7 +3106,7 @@ function GoalProgressTab({ client, isCoach, color, onTabChange, authUserId, auth
         updated_at: new Date().toISOString(),
       })
     })
-    .then(function(r) { return r.json(); })
+    .then(function(r) { if (!r.ok) r.clone().text().then(function(t){ console.log("goal save HTTP error:", r.status, t); }); return r.json(); })
     .then(function(data) {
       // Update goal with real UUID from Supabase
       if (isNew && Array.isArray(data) && data[0] && data[0].id) {
@@ -3241,8 +3243,8 @@ function GoalProgressTab({ client, isCoach, color, onTabChange, authUserId, auth
       })}
 
       {/* Message coach button */}
-      {!isCoach && goals.length > 0 && (
-        <button onClick={function() { if (onTabChange) onTabChange("Messages"); }}
+      {!isCoach && (
+        <button onClick={function() { if (onGoToMainTab) onGoToMainTab("directmessage"); else if (onTabChange) onTabChange("directmessage"); }}
           style={{ width: "100%", padding: "14px", borderRadius: 14, background: c, border: "none", color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer", marginTop: 4 }}>
           Message Cameron
         </button>
@@ -3641,7 +3643,7 @@ function CoachProgramTabView({ program, color, onUpdate }) {
   );
 }
 
-function ClientDetail({ client, onBack, isCoach, defaultTab, favorites, watchDays, messages, onSend, coachProgram, setCoachProgram, programDayIndex, setProgramDayIndex, myPlans, activityLogs, authUserId, authToken }) {
+function ClientDetail({ client, onBack, isCoach, defaultTab, favorites, watchDays, messages, onSend, coachProgram, setCoachProgram, programDayIndex, setProgramDayIndex, myPlans, activityLogs, authUserId, authToken, onGoToMainTab }) {
   const tabs = isCoach ? ["Progress","Program","My Plan","Calendar","Messages"] : [];
   const [tab, setTab] = useState(defaultTab || "Progress");
   const [currentGoal, setCurrentGoal] = useState(client.goal);
@@ -3671,7 +3673,7 @@ function ClientDetail({ client, onBack, isCoach, defaultTab, favorites, watchDay
       )}
 
       {(tab === "Progress" || tab === "Goals") && isCoach && (
-        <GoalProgressTab client={client} isCoach={isCoach} color={c} onTabChange={setTab} authUserId={authUserId} authToken={authToken} />
+        <GoalProgressTab client={client} isCoach={isCoach} color={c} onTabChange={setTab} authUserId={authUserId} authToken={authToken} onGoToMainTab={onGoToMainTab} />
       )}
 
       {tab === "Program" && (
@@ -3982,13 +3984,13 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
   );
 }
 
-function ClientsScreen({ isCoach, selected, setSelected, clientDefaultTab, setClientDefaultTab, favorites, watchDays, messages, onSend, coachProgram, setCoachProgram, activityLogs, onLogsChange, programDayIndex, setProgramDayIndex, myPlans, realClients, authUserId, authToken }) {
+function ClientsScreen({ isCoach, selected, setSelected, clientDefaultTab, setClientDefaultTab, favorites, watchDays, messages, onSend, coachProgram, setCoachProgram, activityLogs, onLogsChange, programDayIndex, setProgramDayIndex, myPlans, realClients, authUserId, authToken, goTo }) {
   var displayClients = (realClients && realClients.length > 0) ? realClients : CLIENTS;
   if (selected) {
-    return <ClientDetail client={selected} onBack={function() { setSelected(null); setClientDefaultTab("Progress"); }} isCoach={isCoach} defaultTab={clientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages[selected.id] || []} onSend={onSend} coachProgram={coachProgram} setCoachProgram={setCoachProgram} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} activityLogs={activityLogs} authUserId={authUserId} authToken={authToken} />;
+    return <ClientDetail client={selected} onBack={function() { setSelected(null); setClientDefaultTab("Progress"); }} isCoach={isCoach} defaultTab={clientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages[selected.id] || []} onSend={onSend} coachProgram={coachProgram} setCoachProgram={setCoachProgram} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} activityLogs={activityLogs} authUserId={authUserId} authToken={authToken} onGoToMainTab={goTo} />;
   }
   if (!isCoach) {
-    return <ClientDetail client={CLIENTS[0]} onBack={null} isCoach={false} defaultTab={clientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages[CLIENTS[0].id] || []} onSend={onSend} coachProgram={coachProgram} setCoachProgram={setCoachProgram} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} activityLogs={activityLogs} authUserId={authUserId} authToken={authToken} />;
+    return <ClientDetail client={CLIENTS[0]} onBack={null} isCoach={false} defaultTab={clientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages[CLIENTS[0].id] || []} onSend={onSend} coachProgram={coachProgram} setCoachProgram={setCoachProgram} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} activityLogs={activityLogs} authUserId={authUserId} authToken={authToken} onGoToMainTab={goTo} />;
   }
   return (
     <div>
@@ -8344,7 +8346,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
           });
           return <HomeScreen isCoach={isCoach} goTo={goTo} setClient={setSelected} goToClientTab={goToClientTab} messages={messages} monthStats={monthStats} coachProgram={coachProgram} activityLogs={activityLogs} myPlans={myPlans} thisWeekPlanned={_planned} realClients={realClients} />;
         })()}
-        {tab === "clients"       && <ClientsScreen isCoach={isCoach} selected={selected} setSelected={setSelected} clientDefaultTab={clientDefaultTab} setClientDefaultTab={setClientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages} onSend={handleSendMessage} coachProgram={coachProgram} setCoachProgram={handleProgramUpdate} activityLogs={activityLogs} onLogsChange={handleLogsChange} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} realClients={realClients} authUserId={authUserId} authToken={authToken} />}
+        {tab === "clients"       && <ClientsScreen isCoach={isCoach} selected={selected} setSelected={setSelected} clientDefaultTab={clientDefaultTab} setClientDefaultTab={setClientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages} onSend={handleSendMessage} coachProgram={coachProgram} setCoachProgram={handleProgramUpdate} activityLogs={activityLogs} onLogsChange={handleLogsChange} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} realClients={realClients} authUserId={authUserId} authToken={authToken} goTo={goTo} />}
         {tab === "directmessage" && (
           <div style={{ padding: "0 0 24px" }}>
             <div style={{ padding: "12px 16px 10px", display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid "+BORDER, background: CARD }}>

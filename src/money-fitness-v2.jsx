@@ -7287,9 +7287,23 @@ function OnboardingTutorial({ isCoach, onComplete }) {
   );
 }
 
-function CoachInbox({ messages, handleSendMessage, realClients }) {
+function CoachInbox({ messages, handleSendMessage, realClients, viewedCounts, setViewedCounts }) {
   var displayClients = (realClients && realClients.length > 0) ? realClients : CLIENTS;
   var [inboxOpen, setInboxOpen] = useState(null);
+
+  function markViewed(threadId) {
+    if (setViewedCounts) {
+      setViewedCounts(function(prev) {
+        return Object.assign({}, prev, { [threadId]: (messages[threadId] || []).length });
+      });
+    }
+  }
+
+  function getUnread(threadId) {
+    var thread = messages[threadId] || [];
+    var lastViewed = viewedCounts && viewedCounts[threadId] !== undefined ? viewedCounts[threadId] : thread.length;
+    return thread.slice(lastViewed).filter(function(m) { return m.from === "client"; }).length;
+  }
 
   if (inboxOpen !== null) {
     var cl = displayClients[inboxOpen];
@@ -7305,7 +7319,7 @@ function CoachInbox({ messages, handleSendMessage, realClients }) {
             <div style={{ fontSize: 11, color: TEXT3 }}>Client</div>
           </div>
         </div>
-        <MessagingInbox clientId={cl.id} clientName={cl.name} clientColor={cl.color} isCoach={true} messages={messages[cl.id] || []} onSend={function(cid, msg) { handleSendMessage(cl.id, msg); }} />
+        <MessagingInbox clientId={cl.id} clientName={cl.name} clientColor={cl.color} isCoach={true} messages={messages[cl.id] || []} onSend={function(cid, msg) { handleSendMessage(cl.id, msg); }} onOpen={function() { markViewed(cl.id); }} />
       </div>
     );
   }
@@ -7320,9 +7334,9 @@ function CoachInbox({ messages, handleSendMessage, realClients }) {
       {displayClients.map(function(cl, i) {
         var clMsgs = messages[cl.id] || [];
         var lastMsg = clMsgs[clMsgs.length - 1];
-        var unread = clMsgs.filter(function(m) { return !m.fromCoach && !m.read; }).length;
+        var unread = getUnread(cl.id);
         return (
-          <div key={cl.id} onClick={function(){ setInboxOpen(i); }}
+          <div key={cl.id} onClick={function(){ setInboxOpen(i); markViewed(cl.id); }}
             style={{ display: "flex", alignItems: "center", gap: 13, padding: "14px 16px", borderBottom: "1px solid "+BORDER, background: CARD, cursor: "pointer" }}>
             <div style={{ position: "relative", flexShrink: 0 }}>
               <div style={{ width: 48, height: 48, borderRadius: 99, background: cl.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: "#fff" }}>{cl.avatar}</div>
@@ -7334,7 +7348,7 @@ function CoachInbox({ messages, handleSendMessage, realClients }) {
                 {lastMsg && <div style={{ fontSize: 10, color: TEXT3, flexShrink: 0 }}>{lastMsg.time || ""}</div>}
               </div>
               <div style={{ fontSize: 12, color: TEXT3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: unread > 0 ? 600 : 400 }}>
-                {lastMsg ? (lastMsg.fromCoach ? "You: " : cl.name.split(" ")[0]+": ") + lastMsg.text : "No messages yet"}
+                {lastMsg ? (lastMsg.from === "coach" ? "You: " : cl.name.split(" ")[0]+": ") + lastMsg.text : "No messages yet"}
               </div>
             </div>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={TEXT3} strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -8023,6 +8037,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
   function goTo(t) {
     setTab(t);
     if (t !== "clients") setSelected(null);
+    // Client: mark coach thread as viewed when opening messages
     if (t === "directmessage" && !isCoach && authCoachId) {
       var threadId = authCoachId;
       setViewedCounts(function(prev) {
@@ -8113,7 +8128,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
               </div>
             </div>
             {isCoach ? (
-              <CoachInbox messages={messages} handleSendMessage={handleSendMessage} realClients={realClients} />
+              <CoachInbox messages={messages} handleSendMessage={handleSendMessage} realClients={realClients} viewedCounts={viewedCounts} setViewedCounts={setViewedCounts} />
             ) : (
               <MessagingInbox clientId={authCoachId || CLIENTS[0].id} clientName={COACH_NAME} clientColor={CLIENTS[0].color} isCoach={false} messages={messages[authCoachId || CLIENTS[0].id] || []} onSend={function(cid, msg) { handleSendMessage(authCoachId || CLIENTS[0].id, msg); }} onOpen={function() { var threadId = authCoachId || CLIENTS[0].id; setViewedCounts(function(prev) { return Object.assign({}, prev, { [threadId]: (messages[threadId] || []).length }); }); }} />
             )}

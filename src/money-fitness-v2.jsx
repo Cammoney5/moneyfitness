@@ -232,6 +232,7 @@ const COACH_FIRST = "Cameron";
 const COACH_CODE  = "CMONEY5"; // Clients enter this on signup to link to this coach
 const SUPABASE_URL = "https://ebphyejgauwgguwcbmgj.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVicGh5ZWpnYXV3Z2d1d2NibWdqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNjM3NDcsImV4cCI6MjA5NTczOTc0N30.oWMeatIKpuSLfHuxWLReqU9mgaZRQgTQyBtqISuPltY";
+const VAPID_PUBLIC_KEY = "BKoleS-Q0aLsVfOqY5y0A922Lk74NiQQvUrpXW_MCQS_5ygxc8gOk2vrDPbT4yl0nEHg41LD-ErV8FJJFJB8mcA";
 
 // Lightweight Supabase client (no SDK needed)
 const sb = {
@@ -7521,6 +7522,42 @@ function CoachInbox({ messages, handleSendMessage, realClients, viewedCounts, se
 function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, authCoachId }) {
   const [tab, setTab]           = useState("home");
   const [isCoach, setIsCoach]   = useState(initCoach !== undefined ? initCoach : true);
+
+  // Register service worker and subscribe to push notifications
+  useEffect(function() {
+    if (!authUserId || !authToken) return;
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    navigator.serviceWorker.register('/sw.js').then(function(reg) {
+      return Notification.requestPermission().then(function(perm) {
+        if (perm !== 'granted') return;
+        return reg.pushManager.getSubscription().then(function(existing) {
+          if (existing) return existing;
+          var key = VAPID_PUBLIC_KEY;
+          var padding = '='.repeat((4 - key.length % 4) % 4);
+          var raw = atob((key + padding).replace(/-/g, '+').replace(/_/g, '/'));
+          var buffer = new Uint8Array(raw.length);
+          for (var i = 0; i < raw.length; i++) buffer[i] = raw.charCodeAt(i);
+          return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: buffer });
+        });
+      });
+    }).then(function(sub) {
+      if (!sub) return;
+      fetch(SUPABASE_URL + "/rest/v1/push_subscriptions", {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_ANON_KEY,
+          "Authorization": "Bearer " + authToken,
+          "Content-Type": "application/json",
+          "Prefer": "resolution=merge-duplicates"
+        },
+        body: JSON.stringify({
+          user_id: authUserId,
+          subscription: JSON.stringify(sub),
+          updated_at: new Date().toISOString()
+        })
+      }).catch(function(e) { console.log("push sub save error", e); });
+    }).catch(function(e) { console.log("push registration error", e); });
+  }, [authUserId, authToken]);
   const [realClients, setRealClients] = useState([]);
 
   // Load real clients from Supabase (coach only)

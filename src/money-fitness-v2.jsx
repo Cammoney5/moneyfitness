@@ -1084,6 +1084,14 @@ function CoachProgramEditor({ program, onSave, onClose }) {
     });
   }
 
+  function updateDayNotes(wkIdx, dayIdx, val) {
+    setDraft(function(prev) {
+      const next = JSON.parse(JSON.stringify(prev));
+      next[wkIdx].days[dayIdx].notes = val;
+      return next;
+    });
+  }
+
   const week = draft[activeWk];
 
   return (
@@ -1308,6 +1316,16 @@ function CoachProgramEditor({ program, onSave, onClose }) {
                     );
                   });
                 })()}
+              </div>
+      <div style={{ marginBottom: 8 }}>
+                <div style={{ color: TEXT3, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 5 }}>WORKOUT NOTES</div>
+                <textarea
+                  value={day.notes || ""}
+                  onChange={function(e) { updateDayNotes(activeWk, dayIdx, e.target.value); }}
+                  placeholder="Add notes for this workout — cues, tips, goals..."
+                  rows={2}
+                  style={{ width: "100%", background: SURFACE, border: "1.5px solid "+BORDER, borderRadius: 10, padding: "8px 10px", color: TEXT, fontSize: 12, outline: "none", resize: "none", fontFamily: "inherit", boxSizing: "border-box", lineHeight: 1.5 }}
+                />
               </div>
       <button onClick={function() { setShowPicker(activeWk + "-" + dayIdx); }} style={{ width: "100%", padding: "8px", borderRadius: 10, background: "transparent", border: "1.5px dashed "+BORDER, color: TEXT3, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
                 <span style={{ color: ORANGE, fontSize: 16 }}>+</span> Add Exercise
@@ -1542,6 +1560,12 @@ function ProgramView({ program, color, isClient, initialDayIndex, onDayIndexUsed
             </div>
           )}
         </div>
+        {fday.notes ? (
+          <div style={{ margin: "16px 16px 0", background: "rgba(255,255,255,0.1)", borderRadius: 14, padding: "14px 16px", border: "1px solid rgba(255,255,255,0.15)" }}>
+            <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>COACH NOTES</div>
+            <p style={{ color: "#fff", fontSize: 14, lineHeight: 1.6, margin: 0 }}>{fday.notes}</p>
+          </div>
+        ) : null}
       </div>
     );
   }

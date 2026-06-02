@@ -7291,6 +7291,19 @@ function CoachInbox({ messages, handleSendMessage, realClients, viewedCounts, se
   var displayClients = (realClients && realClients.length > 0) ? realClients : CLIENTS;
   var [inboxOpen, setInboxOpen] = useState(null);
 
+  // Mark all threads viewed when inbox list is showing
+  useEffect(function() {
+    if (inboxOpen === null && setViewedCounts) {
+      setViewedCounts(function(prev) {
+        var updated = Object.assign({}, prev);
+        displayClients.forEach(function(cl) {
+          updated[cl.id] = (messages[cl.id] || []).length;
+        });
+        return updated;
+      });
+    }
+  }, [inboxOpen]);
+
   function markViewed(threadId) {
     if (setViewedCounts) {
       setViewedCounts(function(prev) {
@@ -8037,13 +8050,14 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
   function goTo(t) {
     setTab(t);
     if (t !== "clients") setSelected(null);
-    // Client: mark coach thread as viewed when opening messages
-    if (t === "directmessage" && !isCoach && authCoachId) {
-      var threadId = authCoachId;
-      setViewedCounts(function(prev) {
-        var count = (messages[threadId] || []).length;
-        return Object.assign({}, prev, { [threadId]: count });
-      });
+    if (t === "directmessage") {
+      if (!isCoach && authCoachId) {
+        // Client: mark coach thread as viewed
+        setViewedCounts(function(prev) {
+          return Object.assign({}, prev, { [authCoachId]: (messages[authCoachId] || []).length });
+        });
+      }
+      // Note: coach marks individual threads viewed when opening them in CoachInbox
     }
   }
 

@@ -7413,7 +7413,28 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
           read: row.read,
         });
       });
-      setMessages(built);
+      // Detect new incoming messages and add notification
+      setMessages(function(prev) {
+        Object.keys(built).forEach(function(otherId) {
+          var prevMsgs = prev[otherId] || [];
+          var newMsgs = built[otherId] || [];
+          var prevIds = new Set(prevMsgs.map(function(m) { return m.id; }));
+          newMsgs.forEach(function(msg) {
+            if (!prevIds.has(msg.id) && msg.from !== (isCoach ? "coach" : "client")) {
+              // New message from the other person
+              addNotification({
+                id: "msg-" + msg.id,
+                type: "message",
+                title: "New message",
+                body: msg.text ? msg.text.slice(0, 60) : "New message received",
+                time: "Just now",
+                read: false,
+              });
+            }
+          });
+        });
+        return built;
+      });
     })
     .catch(function(e) { console.log("messages load error", e); });
   }

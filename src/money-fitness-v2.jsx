@@ -2768,6 +2768,9 @@ function MessagingInbox({ clientId, clientName, clientColor, isCoach, messages, 
           const isMe = isCoach ? msg.from === "coach" : msg.from === "client";
 
           if (msg.type === "checkin_request") {
+            // Hide request if already responded to (a checkin_response exists after this message)
+            var responded = messages.slice(i + 1).some(function(m) { return m.type === "checkin_response"; });
+            if (responded) return null;
             return (
               <div key={"msg-"+i} style={{ alignSelf: "center", width: "100%" }}>
                 <div style={{ background: c+"12", border: "1.5px solid "+c+"44", borderRadius: 14, padding: "14px 16px", textAlign: "center" }}>

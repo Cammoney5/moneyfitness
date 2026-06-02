@@ -5069,13 +5069,10 @@ const TREND_DATA = {
   },
 };
 
-function CoachDashboard() {
-  var CLIENT_DATA = [
-    { id:1, name:"Marcus Johnson", initials:"MJ", color:"#1B8C4E", streak:15, lastActive:"Today",      workouts:12, goal:16, status:"active",   since:"Jan 2025", revenue:120, checkIns:4 },
-    { id:2, name:"Sarah Kim",      initials:"SK", color:"#3B7DD8", streak:3,  lastActive:"4 days ago", workouts:7,  goal:16, status:"at-risk",  since:"Mar 2025", revenue:120, checkIns:2 },
-    { id:3, name:"Jake Torres",    initials:"JT", color:"#9B6FD4", streak:21, lastActive:"Today",      workouts:15, goal:16, status:"active",   since:"Nov 2024", revenue:150, checkIns:5 },
-    { id:4, name:"Priya Nair",     initials:"PN", color:"#D97706", streak:0,  lastActive:"12 days ago",workouts:2,  goal:16, status:"inactive", since:"Feb 2025", revenue:120, checkIns:0 },
-  ];
+function CoachDashboard({ realClients }) {
+  var CLIENT_DATA = (realClients && realClients.length > 0) ? realClients.map(function(c) {
+    return { id: c.id, name: c.name, initials: c.avatar, color: c.color, streak: c.streak || 0, lastActive: "Recent", workouts: 0, goal: 16, status: "active", since: c.since || "", revenue: 0, checkIns: 0 };
+  }) : [];
   var REVENUE_DATA = [1800,1800,2040,2040,2280,2400,2400,2520,2520,2640,2640,2760];
   var maxRev = Math.max.apply(null, REVENUE_DATA);
   var active   = CLIENT_DATA.filter(function(c){return c.status==="active";});
@@ -5204,8 +5201,8 @@ function CoachDashboard() {
 function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activityLogs, realClients }) {
   var clientCount = realClients && realClients.length > 0 ? realClients.length : 0;
   const stats = monthStats || { totalWorkouts: 15, totalMiles: "18.0", restDays: 5 };
-  const totalWorkouts = CLIENTS.reduce(function(s, c) { return s + c.workedOut.length; }, 0);
-  const avgStreak = Math.round(CLIENTS.reduce(function(s, c) { return s + c.streak; }, 0) / CLIENTS.length);
+  const totalWorkouts = 0;
+  const avgStreak = 0;
   const [stepGoal, setStepGoal] = useState(10000);
   const [editingGoal, setEditingGoal] = useState(false);
   const [goalDraft, setGoalDraft] = useState("10000");
@@ -5215,13 +5212,10 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
   const avgSteps = 0; // avgSteps is computed inline in the chart from last7Steps (passed via monthStats)
   const avgStepsStr = avgSteps >= 1000 ? (Math.floor(avgSteps/100)/10).toFixed(1)+"k" : String(avgSteps);
 
-  // MOCK: Leaderboard data - in production, query aggregated stats per client from the backend
-  const LEADERS = [
-    { initials: "SK", name: "Sarah Kim",      val: "21d",    color: "#1B8C4E" },
-    { initials: "MJ", name: "Marcus Johnson", val: "15",     color: "#1B8C4E" },
-    { initials: "SK", name: "Sarah Kim",      val: "11.2k",  color: "#1B8C4E" },
-    { initials: "SK", name: "Sarah Kim",      val: "24.5mi", color: "#1B8C4E" },
-  ];
+  // Leaderboard based on real clients
+  const LEADERS = CLIENT_DATA.slice(0, 4).map(function(c) {
+    return { initials: c.initials, name: c.name, val: c.streak + "d", color: c.color };
+  });
 
   const clientStats = [
     { val: "12d",                       label: "Day Streak",          html: ICON_FIRE },
@@ -5323,7 +5317,7 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
       </div>
 
       {/* COACH-SPECIFIC DASHBOARD */}
-      {isCoach && <CoachDashboard />}
+      {isCoach && <CoachDashboard realClients={realClients} />}
 
 
 

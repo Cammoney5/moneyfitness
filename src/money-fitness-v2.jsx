@@ -7390,6 +7390,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
     activityComplete: true, goalMilestone: true, coachCheckinAlert: true, all: true,
   });
   const [messages, setMessages] = useState({});
+  const [viewedThreads, setViewedThreads] = useState(new Set());
 
   // Load messages from Supabase + poll every 5 seconds
   function fetchMessages() {
@@ -7989,6 +7990,9 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
   function goTo(t) {
     setTab(t);
     if (t !== "clients") setSelected(null);
+    if (t === "directmessage" && !isCoach && authCoachId) {
+      setViewedThreads(function(prev) { var s = new Set(prev); s.add(authCoachId); return s; });
+    }
   }
 
   function goToClientTab(clientTab, dayIdx) {
@@ -8028,9 +8032,10 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={tab === "directmessage" ? ORANGE : TEXT2} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             {(function() {
               var unreadMsgs = 0;
-              Object.values(messages).forEach(function(thread) {
-                (thread || []).forEach(function(m) {
-                  if (!m.read && m.from !== (isCoach ? "coach" : "client")) unreadMsgs++;
+              Object.keys(messages).forEach(function(threadId) {
+                if (viewedThreads.has(threadId)) return;
+                (messages[threadId] || []).forEach(function(m) {
+                  if (m.from !== (isCoach ? "coach" : "client")) unreadMsgs++;
                 });
               });
               return unreadMsgs > 0 ? <span style={{ position: "absolute", top: -4, right: -4, width: 16, height: 16, borderRadius: 99, background: "#E05252", color: "#fff", fontSize: 9, fontWeight: 800, lineHeight: "16px", textAlign: "center" }}>{unreadMsgs}</span> : null;
@@ -8071,7 +8076,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
             {isCoach ? (
               <CoachInbox messages={messages} handleSendMessage={handleSendMessage} realClients={realClients} />
             ) : (
-              <MessagingInbox clientId={authCoachId || CLIENTS[0].id} clientName={COACH_NAME} clientColor={CLIENTS[0].color} isCoach={false} messages={messages[authCoachId || CLIENTS[0].id] || []} onSend={function(cid, msg) { handleSendMessage(authCoachId || CLIENTS[0].id, msg); }} />
+              <MessagingInbox clientId={authCoachId || CLIENTS[0].id} clientName={COACH_NAME} clientColor={CLIENTS[0].color} isCoach={false} messages={messages[authCoachId || CLIENTS[0].id] || []} onSend={function(cid, msg) { handleSendMessage(authCoachId || CLIENTS[0].id, msg); }} onOpen={function() { setViewedThreads(function(prev) { var s = new Set(prev); s.add(authCoachId || CLIENTS[0].id); return s; }); }} />
             )}
           </div>
         )}

@@ -7414,7 +7414,28 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
           read: row.read,
         });
       });
-      setMessages(built);
+      setMessages(function(prev) {
+        // Check for new incoming messages - unmark thread as viewed
+        var threadsWithNew = new Set();
+        Object.keys(built).forEach(function(otherId) {
+          var prevCount = (prev[otherId] || []).length;
+          var newCount = (built[otherId] || []).length;
+          if (newCount > prevCount) {
+            // Check if the new messages are incoming
+            var newMsgs = built[otherId].slice(prevCount);
+            var hasIncoming = newMsgs.some(function(m) { return m.from !== (isCoach ? "coach" : "client"); });
+            if (hasIncoming) threadsWithNew.add(otherId);
+          }
+        });
+        if (threadsWithNew.size > 0) {
+          setViewedThreads(function(prev) {
+            var s = new Set(prev);
+            threadsWithNew.forEach(function(id) { s.delete(id); });
+            return s;
+          });
+        }
+        return built;
+      });
     })
     .catch(function(e) { console.log("messages load error", e); });
   }

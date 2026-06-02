@@ -1560,10 +1560,10 @@ function ProgramView({ program, color, isClient, initialDayIndex, onDayIndexUsed
             </div>
           )}
         </div>
-        {fday.notes ? (
+        {(fday.notes || "TEST NOTE VISIBLE") ? (
           <div style={{ margin: "16px 16px 0", background: CARD, borderRadius: 14, padding: "14px 16px", border: "1.5px solid "+BORDER }}>
             <div style={{ color: TEXT3, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>COACH NOTES</div>
-            <p style={{ color: TEXT, fontSize: 14, lineHeight: 1.6, margin: 0 }}>{fday.notes}</p>
+            <p style={{ color: TEXT, fontSize: 14, lineHeight: 1.6, margin: 0 }}>{fday.notes || "TEST NOTE VISIBLE"}</p>
           </div>
         ) : null}
       </div>

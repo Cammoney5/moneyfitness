@@ -3038,30 +3038,114 @@ function GoalEditModal({ goal, onSave, onDelete, onClose, color }) {
   );
 }
 
-function GoalProgressTab({ client, isCoach, color, onTabChange }) {
+function GoalProgressTab({ client, isCoach, color, onTabChange, authUserId, authToken }) {
   const c = color || ORANGE;
-  const [goals, setGoals] = useState(
-    client.goals.map(function(g, i) {
-      return Object.assign({ id: i, updatedAt: "May 27, 2025" }, g);
-    })
-  );
+  const [goals, setGoals] = useState([]);
+  const [goalsLoaded, setGoalsLoaded] = useState(false);
   const [editGoal, setEditGoal] = useState(null);
   const [saved, setSaved] = useState(false);
 
+  // Load goals from Supabase
+  useEffect(function() {
+    if (!authUserId || !authToken) {
+      // Fallback to mock data
+      setGoals(client.goals.map(function(g, i) {
+        return Object.assign({ id: i, updatedAt: "May 27, 2025" }, g);
+      }));
+      setGoalsLoaded(true);
+      return;
+    }
+    fetch(SUPABASE_URL + "/rest/v1/goals?client_id=eq." + authUserId + "&order=created_at.asc", {
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(rows) {
+      if (Array.isArray(rows) && rows.length > 0) {
+        setGoals(rows.map(function(r) {
+          return {
+            id: r.id,
+            label: r.label,
+            unit: r.unit,
+            start: r.start_value,
+            current: r.current_value,
+            target: r.target_value,
+            color: r.color || c,
+            updatedAt: new Date(r.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+          };
+        }));
+      }
+      setGoalsLoaded(true);
+    })
+    .catch(function() { setGoalsLoaded(true); });
+  }, [authUserId, authToken]);
+
+  function saveGoalToSupabase(goal) {
+    if (!authUserId || !authToken) return;
+    var isNew = typeof goal.id === "number" && goal.id > 1000000000;
+    var url = isNew
+      ? SUPABASE_URL + "/rest/v1/goals"
+      : SUPABASE_URL + "/rest/v1/goals?id=eq." + goal.id;
+    fetch(url, {
+      method: isNew ? "POST" : "PATCH",
+      headers: {
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": "Bearer " + authToken,
+        "Content-Type": "application/json",
+        "Prefer": isNew ? "return=representation" : "return=minimal"
+      },
+      body: JSON.stringify({
+        client_id: authUserId,
+        label: goal.label,
+        unit: goal.unit || "",
+        start_value: parseFloat(goal.start) || 0,
+        current_value: parseFloat(goal.current) || 0,
+        target_value: parseFloat(goal.target) || 0,
+        color: goal.color || c,
+        updated_at: new Date().toISOString(),
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      // Update goal with real UUID from Supabase
+      if (isNew && Array.isArray(data) && data[0] && data[0].id) {
+        setGoals(function(prev) {
+          return prev.map(function(g) {
+            return g.id === goal.id ? Object.assign({}, g, { id: data[0].id }) : g;
+          });
+        });
+      }
+    })
+    .catch(function(e) { console.log("goal save error", e); });
+  }
+
+  function deleteGoalFromSupabase(id) {
+    if (!authUserId || !authToken) return;
+    fetch(SUPABASE_URL + "/rest/v1/goals?id=eq." + id, {
+      method: "DELETE",
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+    }).catch(function(e) { console.log("goal delete error", e); });
+  }
+
   function handleSave(updatedGoal) {
     var withDate = Object.assign({}, updatedGoal, { updatedAt: new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) });
+    var finalGoal;
     if (editGoal === -1) {
-      setGoals(goals.concat([Object.assign({ id: Date.now() }, withDate)]));
+      finalGoal = Object.assign({ id: Date.now() }, withDate);
+      setGoals(function(prev) { return prev.concat([finalGoal]); });
     } else {
-      setGoals(goals.map(function(g, i) { return i === editGoal ? Object.assign({}, g, withDate) : g; }));
+      finalGoal = Object.assign({}, goals[editGoal], withDate);
+      setGoals(function(prev) { return prev.map(function(g, i) { return i === editGoal ? finalGoal : g; }); });
     }
+    saveGoalToSupabase(finalGoal);
     setSaved(true);
     setTimeout(function() { setSaved(false); }, 2000);
     setEditGoal(null);
   }
 
   function handleDelete() {
-    setGoals(goals.filter(function(_, i) { return i !== editGoal; }));
+    var goalToDelete = goals[editGoal];
+    setGoals(function(prev) { return prev.filter(function(_, i) { return i !== editGoal; }); });
+    if (goalToDelete && goalToDelete.id) deleteGoalFromSupabase(goalToDelete.id);
     setEditGoal(null);
   }
 
@@ -3557,7 +3641,7 @@ function CoachProgramTabView({ program, color, onUpdate }) {
   );
 }
 
-function ClientDetail({ client, onBack, isCoach, defaultTab, favorites, watchDays, messages, onSend, coachProgram, setCoachProgram, programDayIndex, setProgramDayIndex, myPlans, activityLogs }) {
+function ClientDetail({ client, onBack, isCoach, defaultTab, favorites, watchDays, messages, onSend, coachProgram, setCoachProgram, programDayIndex, setProgramDayIndex, myPlans, activityLogs, authUserId, authToken }) {
   const tabs = isCoach ? ["Progress","Program","My Plan","Calendar","Messages"] : [];
   const [tab, setTab] = useState(defaultTab || "Progress");
   const [currentGoal, setCurrentGoal] = useState(client.goal);
@@ -3587,7 +3671,7 @@ function ClientDetail({ client, onBack, isCoach, defaultTab, favorites, watchDay
       )}
 
       {(tab === "Progress" || tab === "Goals") && isCoach && (
-        <GoalProgressTab client={client} isCoach={isCoach} color={c} onTabChange={setTab} />
+        <GoalProgressTab client={client} isCoach={isCoach} color={c} onTabChange={setTab} authUserId={authUserId} authToken={authToken} />
       )}
 
       {tab === "Program" && (
@@ -3898,13 +3982,13 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
   );
 }
 
-function ClientsScreen({ isCoach, selected, setSelected, clientDefaultTab, setClientDefaultTab, favorites, watchDays, messages, onSend, coachProgram, setCoachProgram, activityLogs, onLogsChange, programDayIndex, setProgramDayIndex, myPlans, realClients }) {
+function ClientsScreen({ isCoach, selected, setSelected, clientDefaultTab, setClientDefaultTab, favorites, watchDays, messages, onSend, coachProgram, setCoachProgram, activityLogs, onLogsChange, programDayIndex, setProgramDayIndex, myPlans, realClients, authUserId, authToken }) {
   var displayClients = (realClients && realClients.length > 0) ? realClients : CLIENTS;
   if (selected) {
-    return <ClientDetail client={selected} onBack={function() { setSelected(null); setClientDefaultTab("Progress"); }} isCoach={isCoach} defaultTab={clientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages[selected.id] || []} onSend={onSend} coachProgram={coachProgram} setCoachProgram={setCoachProgram} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} activityLogs={activityLogs} />;
+    return <ClientDetail client={selected} onBack={function() { setSelected(null); setClientDefaultTab("Progress"); }} isCoach={isCoach} defaultTab={clientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages[selected.id] || []} onSend={onSend} coachProgram={coachProgram} setCoachProgram={setCoachProgram} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} activityLogs={activityLogs} authUserId={authUserId} authToken={authToken} />;
   }
   if (!isCoach) {
-    return <ClientDetail client={CLIENTS[0]} onBack={null} isCoach={false} defaultTab={clientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages[CLIENTS[0].id] || []} onSend={onSend} coachProgram={coachProgram} setCoachProgram={setCoachProgram} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} activityLogs={activityLogs} />;
+    return <ClientDetail client={CLIENTS[0]} onBack={null} isCoach={false} defaultTab={clientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages[CLIENTS[0].id] || []} onSend={onSend} coachProgram={coachProgram} setCoachProgram={setCoachProgram} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} activityLogs={activityLogs} authUserId={authUserId} authToken={authToken} />;
   }
   return (
     <div>
@@ -8260,7 +8344,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
           });
           return <HomeScreen isCoach={isCoach} goTo={goTo} setClient={setSelected} goToClientTab={goToClientTab} messages={messages} monthStats={monthStats} coachProgram={coachProgram} activityLogs={activityLogs} myPlans={myPlans} thisWeekPlanned={_planned} realClients={realClients} />;
         })()}
-        {tab === "clients"       && <ClientsScreen isCoach={isCoach} selected={selected} setSelected={setSelected} clientDefaultTab={clientDefaultTab} setClientDefaultTab={setClientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages} onSend={handleSendMessage} coachProgram={coachProgram} setCoachProgram={handleProgramUpdate} activityLogs={activityLogs} onLogsChange={handleLogsChange} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} realClients={realClients} />}
+        {tab === "clients"       && <ClientsScreen isCoach={isCoach} selected={selected} setSelected={setSelected} clientDefaultTab={clientDefaultTab} setClientDefaultTab={setClientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages} onSend={handleSendMessage} coachProgram={coachProgram} setCoachProgram={handleProgramUpdate} activityLogs={activityLogs} onLogsChange={handleLogsChange} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} realClients={realClients} authUserId={authUserId} authToken={authToken} />}
         {tab === "directmessage" && (
           <div style={{ padding: "0 0 24px" }}>
             <div style={{ padding: "12px 16px 10px", display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid "+BORDER, background: CARD }}>

@@ -5190,9 +5190,11 @@ function CoachDashboard({ realClients }) {
             </div>
           );
         })}
-        <div style={{background:"#E8F7EF",borderRadius:10,padding:"10px 12px",marginTop:6}}>
-          <span style={{color:"#1B8C4E",fontSize:12,fontWeight:600}}>Priya Nair has not logged in 12 days - consider reaching out.</span>
-        </div>
+        {inactive.length > 0 && (
+          <div style={{background:"#E8F7EF",borderRadius:10,padding:"10px 12px",marginTop:6}}>
+            <span style={{color:"#1B8C4E",fontSize:12,fontWeight:600}}>{inactive[0].name} has not logged in recently — consider reaching out.</span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -5317,7 +5319,7 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
       </div>
 
       {/* COACH-SPECIFIC DASHBOARD */}
-      {isCoach && <CoachDashboard realClients={realClients} />}
+      {isCoach && <CoachDashboard realClients={realClients || []} />}
 
 
 

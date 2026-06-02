@@ -1076,6 +1076,14 @@ function CoachProgramEditor({ program, onSave, onClose }) {
   }
 
   const inputS = { background: SURFACE, border: "1.5px solid "+BORDER, borderRadius: 9, padding: "8px 10px", color: TEXT, fontSize: 12, outline: "none", boxSizing: "border-box" };
+  function updateNotes(wkIdx, val) {
+    setDraft(function(prev) {
+      const next = JSON.parse(JSON.stringify(prev));
+      next[wkIdx].notes = val;
+      return next;
+    });
+  }
+
   const week = draft[activeWk];
 
   return (
@@ -1118,6 +1126,18 @@ function CoachProgramEditor({ program, onSave, onClose }) {
             );
           })}
         </div>
+        {/* Week Notes */}
+        <div style={{ background: CARD, borderRadius: 14, padding: 14, border: "1.5px solid "+BORDER, marginBottom: 14 }}>
+          <div style={{ color: TEXT3, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>COACH NOTES FOR WEEK {week.week}</div>
+          <textarea
+            value={week.notes || ""}
+            onChange={function(e) { updateNotes(activeWk, e.target.value); }}
+            placeholder="Add notes for your clients about this week — focus, goals, tips..."
+            rows={3}
+            style={{ width: "100%", background: SURFACE, border: "1.5px solid "+BORDER, borderRadius: 10, padding: "10px 12px", color: TEXT, fontSize: 13, outline: "none", resize: "vertical", fontFamily: "inherit", boxSizing: "border-box", lineHeight: 1.5 }}
+          />
+        </div>
+
 {week.days.map(function(day, dayIdx) {
           return (
             <div key={dayIdx} style={{ background: CARD, borderRadius: 16, padding: "16px", border: "1.5px solid "+BORDER, marginBottom: 14 }}>
@@ -3468,6 +3488,18 @@ function CoachProgramTabView({ program, color, onUpdate }) {
               </div>
             );
           })}
+
+          {/* Coach Notes Section */}
+          {program[coachWk] && (
+            <div style={{ background: "#fff", borderRadius: 16, padding: 16, marginTop: 4, border: "1.5px solid #E8E4DE" }}>
+              <div style={{ color: "#7AAB8A", fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 8 }}>COACH NOTES</div>
+              {program[coachWk].notes ? (
+                <p style={{ color: "#0A1A0F", fontSize: 14, lineHeight: 1.6, margin: 0 }}>{program[coachWk].notes}</p>
+              ) : (
+                <p style={{ color: "#B0C4BA", fontSize: 13, margin: 0, fontStyle: "italic" }}>No notes for this week yet.</p>
+              )}
+            </div>
+          )}
         </div>
       )}
 

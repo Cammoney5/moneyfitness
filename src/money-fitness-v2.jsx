@@ -7343,7 +7343,35 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId }) 
     newClient: true, weeklySummary: true, streakRisk: true,
     activityComplete: true, goalMilestone: true, coachCheckinAlert: true, all: true,
   });
-  const [messages, setMessages] = useState(SEED_MESSAGES);
+  const [messages, setMessages] = useState({});
+
+  // Load messages from Supabase
+  useEffect(function() {
+    if (!authUserId || !authToken) return;
+    fetch(SUPABASE_URL + "/rest/v1/messages?or=(sender_id.eq." + authUserId + ",recipient_id.eq." + authUserId + ")&order=created_at.asc&limit=500", {
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(rows) {
+      if (!Array.isArray(rows) || rows.length === 0) return;
+      var built = {};
+      rows.forEach(function(row) {
+        // Group by the other person's ID
+        var otherId = row.sender_id === authUserId ? row.recipient_id : row.sender_id;
+        if (!built[otherId]) built[otherId] = [];
+        built[otherId].push({
+          id: row.id,
+          from: row.sender_id === authUserId ? (isCoach ? "coach" : "client") : (isCoach ? "client" : "coach"),
+          text: row.text,
+          time: new Date(row.created_at).toLocaleTimeString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" }),
+          type: row.type || "text",
+          read: row.read,
+        });
+      });
+      setMessages(built);
+    })
+    .catch(function(e) { console.log("messages load error", e); });
+  }, [authUserId, authToken]);
 
   // Notifications
   const [notifications, setNotifications] = useState([
@@ -7726,10 +7754,36 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId }) 
     setMessages(function(prev) {
       const next = Object.assign({}, prev);
       const thread = (next[clientId] || []).slice();
-      thread.push(Object.assign({ id: thread.length + 1 }, msg));
+      thread.push(Object.assign({ id: Date.now() }, msg));
       next[clientId] = thread;
       return next;
     });
+
+    // Save to Supabase
+    if (authUserId && authToken && msg.text) {
+      var recipientId = isCoach ? clientId : authUserId;
+      var senderId = isCoach ? authUserId : authUserId;
+      // For coach: sender=coach(authUserId), recipient=client(clientId)
+      // For client: sender=client(authUserId), recipient=coach(coachId - use clientId which holds coach's supabase id)
+      fetch(SUPABASE_URL + "/rest/v1/messages", {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_ANON_KEY,
+          "Authorization": "Bearer " + authToken,
+          "Content-Type": "application/json",
+          "Prefer": "return=minimal"
+        },
+        body: JSON.stringify({
+          sender_id: authUserId,
+          recipient_id: clientId,
+          text: msg.text,
+          type: msg.type || "text",
+          read: false,
+        })
+      }).then(function(r) {
+        if (!r.ok) r.text().then(function(t) { console.log("message save error:", r.status, t); });
+      }).catch(function(e) { console.log("message save error", e); });
+    }
     // Notify coach when a client sends a message, check-in, or media
     if (msg.from === "client") {
       var client = CLIENTS.find(function(c) { return c.id === clientId; });

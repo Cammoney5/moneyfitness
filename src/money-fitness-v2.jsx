@@ -3817,7 +3817,8 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
   );
 }
 
-function ClientsScreen({ isCoach, selected, setSelected, clientDefaultTab, setClientDefaultTab, favorites, watchDays, messages, onSend, coachProgram, setCoachProgram, activityLogs, onLogsChange, programDayIndex, setProgramDayIndex, myPlans }) {
+function ClientsScreen({ isCoach, selected, setSelected, clientDefaultTab, setClientDefaultTab, favorites, watchDays, messages, onSend, coachProgram, setCoachProgram, activityLogs, onLogsChange, programDayIndex, setProgramDayIndex, myPlans, realClients }) {
+  var displayClients = (realClients && realClients.length > 0) ? realClients : CLIENTS;
   if (selected) {
     return <ClientDetail client={selected} onBack={function() { setSelected(null); setClientDefaultTab("Progress"); }} isCoach={isCoach} defaultTab={clientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages[selected.id] || []} onSend={onSend} coachProgram={coachProgram} setCoachProgram={setCoachProgram} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} activityLogs={activityLogs} />;
   }
@@ -3827,8 +3828,15 @@ function ClientsScreen({ isCoach, selected, setSelected, clientDefaultTab, setCl
   return (
     <div>
       <div style={{ color: TEXT, fontSize: 24, fontWeight: 800, marginBottom: 4 }}>{isCoach ? "My Clients" : "My Profile"}</div>
-      <div style={{ color: TEXT2, fontSize: 14, marginBottom: 20 }}>{isCoach ? CLIENTS.length+" active clients" : "Select your profile to continue"}</div>
-      {CLIENTS.map(function(c) {
+      <div style={{ color: TEXT2, fontSize: 14, marginBottom: 20 }}>{isCoach ? displayClients.length+" active client"+(displayClients.length !== 1 ? "s" : "") : "Select your profile to continue"}</div>
+      {displayClients.length === 0 && (
+        <div style={{ textAlign: "center", padding: "40px 20px", color: TEXT3 }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>👥</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: TEXT2, marginBottom: 8 }}>No clients yet</div>
+          <div style={{ fontSize: 13 }}>Share your code <strong>CMONEY5</strong> with clients to get started</div>
+        </div>
+      )}
+      {displayClients.map(function(c) {
         return (
           <div key={c.id} onClick={function() { setSelected(c); }} style={{ background: CARD, border: "1.5px solid "+BORDER, borderRadius: 18, padding: "16px", marginBottom: 12, cursor: "pointer", overflow: "hidden", position: "relative" }}
             onMouseEnter={function(e) { e.currentTarget.style.borderColor = c.color; }}
@@ -7279,11 +7287,12 @@ function OnboardingTutorial({ isCoach, onComplete }) {
   );
 }
 
-function CoachInbox({ messages, handleSendMessage }) {
+function CoachInbox({ messages, handleSendMessage, realClients }) {
+  var displayClients = (realClients && realClients.length > 0) ? realClients : CLIENTS;
   var [inboxOpen, setInboxOpen] = useState(null);
 
   if (inboxOpen !== null) {
-    var cl = CLIENTS[inboxOpen];
+    var cl = displayClients[inboxOpen];
     return (
       <div>
         <div style={{ padding: "10px 16px", display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid "+BORDER, background: CARD }}>
@@ -7296,14 +7305,19 @@ function CoachInbox({ messages, handleSendMessage }) {
             <div style={{ fontSize: 11, color: TEXT3 }}>Client</div>
           </div>
         </div>
-        <MessagingInbox clientId={cl.id} clientName={cl.name} clientColor={cl.color} isCoach={true} messages={messages[cl.id] || []} onSend={function(msg) { handleSendMessage(cl.id, msg); }} />
+        <MessagingInbox clientId={cl.id} clientName={cl.name} clientColor={cl.color} isCoach={true} messages={messages[cl.id] || []} onSend={function(cid, msg) { handleSendMessage(cl.id, msg); }} />
       </div>
     );
   }
 
   return (
     <div style={{ padding: "8px 0" }}>
-      {CLIENTS.map(function(cl, i) {
+      {displayClients.length === 0 && (
+        <div style={{ textAlign: "center", padding: "40px 20px", color: TEXT3 }}>
+          <div style={{ fontSize: 13 }}>No clients yet — share code <strong>CMONEY5</strong></div>
+        </div>
+      )}
+      {displayClients.map(function(cl, i) {
         var clMsgs = messages[cl.id] || [];
         var lastMsg = clMsgs[clMsgs.length - 1];
         var unread = clMsgs.filter(function(m) { return !m.fromCoach && !m.read; }).length;
@@ -7334,6 +7348,38 @@ function CoachInbox({ messages, handleSendMessage }) {
 function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, authCoachId }) {
   const [tab, setTab]           = useState("home");
   const [isCoach, setIsCoach]   = useState(initCoach !== undefined ? initCoach : true);
+  const [realClients, setRealClients] = useState([]);
+
+  // Load real clients from Supabase (coach only)
+  useEffect(function() {
+    if (!authToken || !authUserId || !initCoach) return;
+    fetch(SUPABASE_URL + "/rest/v1/profiles?coach_id=eq." + authUserId + "&role=eq.client&select=id,name,email,color,created_at", {
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(rows) {
+      if (!Array.isArray(rows)) return;
+      setRealClients(rows.map(function(r, i) {
+        var initials = (r.name || "?").split(" ").map(function(w) { return w[0]; }).join("").toUpperCase().slice(0,2);
+        return {
+          id: r.id,
+          name: r.name || r.email,
+          email: r.email,
+          avatar: initials,
+          color: r.color || "#1B8C4E",
+          since: new Date(r.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" }),
+          goal: "",
+          type: "Training",
+          streak: 0,
+          checkIns: [],
+          goals: [],
+          workedOut: [],
+          isReal: true,
+        };
+      }));
+    })
+    .catch(function(e) { console.log("clients load error", e); });
+  }, [authToken, authUserId, initCoach]);
   const [showTutorial, setShowTutorial] = useState(true); // show on first launch
   const [selected, setSelected] = useState(null);
   const [clientDefaultTab, setClientDefaultTab] = useState("Progress");
@@ -7994,9 +8040,9 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
             var _k = weekKey(_mon) + "-" + i;
             return { day: dn, date: _d, acts: myPlans[_k] || [], isToday: _d.toDateString() === TODAY.toDateString() };
           });
-          return <HomeScreen isCoach={isCoach} goTo={goTo} setClient={setSelected} goToClientTab={goToClientTab} messages={messages} monthStats={monthStats} coachProgram={coachProgram} activityLogs={activityLogs} myPlans={myPlans} thisWeekPlanned={_planned} />;
+          return <HomeScreen isCoach={isCoach} goTo={goTo} setClient={setSelected} goToClientTab={goToClientTab} messages={messages} monthStats={monthStats} coachProgram={coachProgram} activityLogs={activityLogs} myPlans={myPlans} thisWeekPlanned={_planned} realClients={realClients} />;
         })()}
-        {tab === "clients"       && <ClientsScreen isCoach={isCoach} selected={selected} setSelected={setSelected} clientDefaultTab={clientDefaultTab} setClientDefaultTab={setClientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages} onSend={handleSendMessage} coachProgram={coachProgram} setCoachProgram={handleProgramUpdate} activityLogs={activityLogs} onLogsChange={handleLogsChange} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} />}
+        {tab === "clients"       && <ClientsScreen isCoach={isCoach} selected={selected} setSelected={setSelected} clientDefaultTab={clientDefaultTab} setClientDefaultTab={setClientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages} onSend={handleSendMessage} coachProgram={coachProgram} setCoachProgram={handleProgramUpdate} activityLogs={activityLogs} onLogsChange={handleLogsChange} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} realClients={realClients} />}
         {tab === "directmessage" && (
           <div style={{ padding: "0 0 24px" }}>
             <div style={{ padding: "12px 16px 10px", display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid "+BORDER, background: CARD }}>
@@ -8009,7 +8055,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
               </div>
             </div>
             {isCoach ? (
-              <CoachInbox messages={messages} handleSendMessage={handleSendMessage} />
+              <CoachInbox messages={messages} handleSendMessage={handleSendMessage} realClients={realClients} />
             ) : (
               <MessagingInbox clientId={authCoachId || CLIENTS[0].id} clientName={COACH_NAME} clientColor={CLIENTS[0].color} isCoach={false} messages={messages[authCoachId || CLIENTS[0].id] || []} onSend={function(cid, msg) { handleSendMessage(authCoachId || CLIENTS[0].id, msg); }} />
             )}

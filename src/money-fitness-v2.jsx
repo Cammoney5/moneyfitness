@@ -3715,7 +3715,7 @@ function ClientDetail({ client, onBack, isCoach, defaultTab, favorites, watchDay
 
 // ---
 
-function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthStats, coachProgram, activityLogs, myPlans, thisWeekPlanned, realClients }) {
+function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthStats, coachProgram, activityLogs, myPlans, thisWeekPlanned, realClients, viewedCounts }) {
   const dayHour = TODAY.getHours();
   const greeting = dayHour < 12 ? "Good morning" : dayHour < 17 ? "Good afternoon" : "Good evening";
   const stats = monthStats || { totalWorkouts: 0, totalMiles: "0.0", restDays: 0 };
@@ -3738,8 +3738,10 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
   var rosterClients = realClients && realClients.length > 0 ? realClients : [];
   const inboxItems = isCoach ? rosterClients.map(function(c) {
     const thread = messages[c.id] || [];
-    const latest = thread[thread.length - 1];
-    return { client: c, latest: latest };
+    const lastViewed = viewedCounts && viewedCounts[c.id] !== undefined ? viewedCounts[c.id] : thread.length;
+    const unreadMsgs = thread.slice(lastViewed).filter(function(m) { return m.from === "client"; });
+    const latest = unreadMsgs.length > 0 ? unreadMsgs[unreadMsgs.length - 1] : null;
+    return { client: c, latest: latest, unread: unreadMsgs.length };
   }).filter(function(item) { return !!item.latest; }) : [];
 
   return (
@@ -8326,7 +8328,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
             var _k = weekKey(_mon) + "-" + i;
             return { day: dn, date: _d, acts: myPlans[_k] || [], isToday: _d.toDateString() === TODAY.toDateString() };
           });
-          return <HomeScreen isCoach={isCoach} goTo={goTo} setClient={setSelected} goToClientTab={goToClientTab} messages={messages} monthStats={monthStats} coachProgram={coachProgram} activityLogs={activityLogs} myPlans={myPlans} thisWeekPlanned={_planned} realClients={realClients} />;
+          return <HomeScreen isCoach={isCoach} goTo={goTo} setClient={setSelected} goToClientTab={goToClientTab} messages={messages} monthStats={monthStats} coachProgram={coachProgram} activityLogs={activityLogs} myPlans={myPlans} thisWeekPlanned={_planned} realClients={realClients} viewedCounts={viewedCounts} />;
         })()}
         {tab === "clients"       && <ClientsScreen isCoach={isCoach} selected={selected} setSelected={setSelected} clientDefaultTab={clientDefaultTab} setClientDefaultTab={setClientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages} onSend={handleSendMessage} coachProgram={coachProgram} setCoachProgram={handleProgramUpdate} activityLogs={activityLogs} onLogsChange={handleLogsChange} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} realClients={realClients} authUserId={authUserId} authToken={authToken} goTo={goTo} />}
         {tab === "directmessage" && (

@@ -8013,7 +8013,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
             {isCoach ? (
               <CoachInbox messages={messages} handleSendMessage={handleSendMessage} />
             ) : (
-              <MessagingInbox clientId={CLIENTS[0].id} clientName={COACH_NAME} clientColor={CLIENTS[0].color} isCoach={false} messages={messages[CLIENTS[0].id] || []} onSend={function(msg) { handleSendMessage(CLIENTS[0].id, msg); }} />
+              <MessagingInbox clientId={CLIENTS[0].id} clientName={COACH_NAME} clientColor={CLIENTS[0].color} isCoach={false} messages={messages[CLIENTS[0].id] || []} onSend={function(cid, msg) { handleSendMessage(authCoachId || CLIENTS[0].id, msg); }} />
             )}
           </div>
         )}

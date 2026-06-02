@@ -1595,6 +1595,12 @@ function ProgramView({ program, color, isClient, initialDayIndex, onDayIndexUsed
           );
         })}
       </div>
+      {program[wk] && program[wk].notes && (
+        <div style={{ background: CARD, borderRadius: 14, padding: "12px 16px", marginBottom: 12, border: "1.5px solid "+BORDER }}>
+          <div style={{ color: TEXT3, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>COACH NOTES</div>
+          <p style={{ color: TEXT, fontSize: 14, lineHeight: 1.6, margin: 0 }}>{program[wk].notes}</p>
+        </div>
+      )}
       <div>
       {getDayOrder(wk).map(function(origDayIdx, pos) {
         var day = week.days[origDayIdx];
@@ -3304,6 +3310,12 @@ function CoachProgramTabView({ program, color, onUpdate }) {
               );
             })}
           </div>
+          {fday.notes ? (
+            <div style={{ margin: "0 16px 16px", background: "rgba(255,255,255,0.08)", borderRadius: 14, padding: "14px 16px", border: "1px solid rgba(255,255,255,0.15)" }}>
+              <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>COACH NOTES</div>
+              <p style={{ color: "#fff", fontSize: 14, lineHeight: 1.6, margin: 0 }}>{fday.notes}</p>
+            </div>
+          ) : null}
         </div>
       );
     }
@@ -3410,6 +3422,13 @@ function CoachProgramTabView({ program, color, onUpdate }) {
           </div>
 
           {/* Stacked day cards — mirrors client view exactly */}
+          {/* Coach Notes for this week */}
+          {program[coachWk] && program[coachWk].notes && (
+            <div style={{ background: "#fff", borderRadius: 14, padding: "12px 16px", marginBottom: 12, border: "1.5px solid #E8E4DE" }}>
+              <div style={{ color: "#7AAB8A", fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>COACH NOTES</div>
+              <p style={{ color: "#0A1A0F", fontSize: 14, lineHeight: 1.6, margin: 0 }}>{program[coachWk].notes}</p>
+            </div>
+          )}
           {program[coachWk] && program[coachWk].days.map(function(day, dayIdx) {
             var dc = ac(dayIdx);
             var isFeatured = dayIdx === 0;
@@ -3513,17 +3532,7 @@ function CoachProgramTabView({ program, color, onUpdate }) {
             );
           })}
 
-          {/* Coach Notes Section */}
-          {program[coachWk] && (
-            <div style={{ background: "#fff", borderRadius: 16, padding: 16, marginTop: 4, border: "1.5px solid #E8E4DE" }}>
-              <div style={{ color: "#7AAB8A", fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 8 }}>COACH NOTES</div>
-              {program[coachWk].notes ? (
-                <p style={{ color: "#0A1A0F", fontSize: 14, lineHeight: 1.6, margin: 0 }}>{program[coachWk].notes}</p>
-              ) : (
-                <p style={{ color: "#B0C4BA", fontSize: 13, margin: 0, fontStyle: "italic" }}>No notes for this week yet.</p>
-              )}
-            </div>
-          )}
+
         </div>
       )}
 

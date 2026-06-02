@@ -7760,12 +7760,10 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
     });
 
     // Save to Supabase
-    console.log("handleSendMessage - authUserId:", authUserId, "authToken:", !!authToken, "authCoachId:", authCoachId, "text:", msg.text);
     if (authUserId && authToken && msg.text) {
       // For coach sending: recipient = clientId (their real supabase UUID)
       // For client sending: recipient = their coach's UUID (authCoachId)
       var recipientId = isCoach ? clientId : (authCoachId || clientId);
-      console.log("saving message to Supabase - recipientId:", recipientId);
       fetch(SUPABASE_URL + "/rest/v1/messages", {
         method: "POST",
         headers: {
@@ -8013,7 +8011,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
             {isCoach ? (
               <CoachInbox messages={messages} handleSendMessage={handleSendMessage} />
             ) : (
-              <MessagingInbox clientId={CLIENTS[0].id} clientName={COACH_NAME} clientColor={CLIENTS[0].color} isCoach={false} messages={messages[CLIENTS[0].id] || []} onSend={function(cid, msg) { handleSendMessage(authCoachId || CLIENTS[0].id, msg); }} />
+              <MessagingInbox clientId={authCoachId || CLIENTS[0].id} clientName={COACH_NAME} clientColor={CLIENTS[0].color} isCoach={false} messages={messages[authCoachId || CLIENTS[0].id] || []} onSend={function(cid, msg) { handleSendMessage(authCoachId || CLIENTS[0].id, msg); }} />
             )}
           </div>
         )}

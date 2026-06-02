@@ -7416,9 +7416,12 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
       setMessages(function(prev) {
         // Detect new incoming messages - fire notification
         var newNotifs = [];
+        console.log("polling - built keys:", Object.keys(built), "prev keys:", Object.keys(prev));
         Object.keys(built).forEach(function(otherId) {
           var prevIds = new Set((prev[otherId] || []).map(function(m) { return m.id; }));
+          console.log("checking thread", otherId, "- prev count:", prevIds.size, "new count:", (built[otherId]||[]).length);
           (built[otherId] || []).forEach(function(msg) {
+            console.log("msg:", msg.id, "from:", msg.from, "isNew:", !prevIds.has(msg.id), "isIncoming:", msg.from !== (isCoach ? "coach" : "client"));
             if (!prevIds.has(msg.id) && msg.from !== (isCoach ? "coach" : "client")) {
               newNotifs.push({
                 id: "msg-" + msg.id,

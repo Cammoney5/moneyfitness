@@ -2663,17 +2663,19 @@ const SEED_MESSAGES = {
   ],
 };
 
-function MessagingInbox({ clientId, clientName, clientColor, isCoach, messages, onSend }) {
+function MessagingInbox({ clientId, clientName, clientColor, isCoach, messages, onSend, onOpen }) {
   const c = clientColor || ORANGE;
   const [text, setText] = useState("");
   const [checkInOpen, setCheckInOpen] = useState(false);
   const [motivation, setMotivation] = useState(3);
   const [programEnjoy, setProgramEnjoy] = useState(3);
   const [checkNotes, setCheckNotes] = useState("");
-  const [mediaPreview, setMediaPreview] = useState(null); // { dataUrl, mediaType }
+  const [mediaPreview, setMediaPreview] = useState(null);
   const fileInputRef = { current: null };
   const motivationEmoji = ["😞","😕","😊","😃","🤩"];
   const programEmoji   = ["😴","😐","🙂","💪","🔥"];
+
+  useEffect(function() { if (onOpen) onOpen(); }, []);
 
   function handleSend() {
     if (!text.trim() && !mediaPreview) return;
@@ -7291,19 +7293,6 @@ function CoachInbox({ messages, handleSendMessage, realClients, viewedCounts, se
   var displayClients = (realClients && realClients.length > 0) ? realClients : CLIENTS;
   var [inboxOpen, setInboxOpen] = useState(null);
 
-  // Mark all threads viewed when inbox list is showing
-  useEffect(function() {
-    if (inboxOpen === null && setViewedCounts) {
-      setViewedCounts(function(prev) {
-        var updated = Object.assign({}, prev);
-        displayClients.forEach(function(cl) {
-          updated[cl.id] = (messages[cl.id] || []).length;
-        });
-        return updated;
-      });
-    }
-  }, [inboxOpen]);
-
   function markViewed(threadId) {
     if (setViewedCounts) {
       setViewedCounts(function(prev) {
@@ -7349,7 +7338,7 @@ function CoachInbox({ messages, handleSendMessage, realClients, viewedCounts, se
         var lastMsg = clMsgs[clMsgs.length - 1];
         var unread = getUnread(cl.id);
         return (
-          <div key={cl.id} onClick={function(){ setInboxOpen(i); markViewed(cl.id); }}
+          <div key={cl.id} onClick={function(){ setInboxOpen(i); }}
             style={{ display: "flex", alignItems: "center", gap: 13, padding: "14px 16px", borderBottom: "1px solid "+BORDER, background: CARD, cursor: "pointer" }}>
             <div style={{ position: "relative", flexShrink: 0 }}>
               <div style={{ width: 48, height: 48, borderRadius: 99, background: cl.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: "#fff" }}>{cl.avatar}</div>

@@ -8002,13 +8002,16 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
   useEffect(function() {
     if (!authToken || !authUserId) return;
     function loadProgram(coachId) {
+      console.log("Loading program for coachId:", coachId);
       fetch(SUPABASE_URL + "/rest/v1/programs?coach_id=eq." + coachId + "&order=updated_at.desc&limit=1", {
         headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
       })
       .then(function(r) { return r.json(); })
       .then(function(rows) {
+        console.log("Program rows:", JSON.stringify(rows).slice(0, 200));
         if (!Array.isArray(rows) || rows.length === 0) return;
         var prog = rows[0].weeks;
+        console.log("Program weeks sample:", JSON.stringify(prog && prog[0]).slice(0, 200));
         if (prog && prog.length > 0) setCoachProgram(prog);
       })
       .catch(function(e) { console.log("program load error", e); });

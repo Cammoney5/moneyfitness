@@ -2746,7 +2746,7 @@ function MessagingInbox({ clientId, clientName, clientColor, isCoach, messages, 
   }
 
   function handleCheckinSubmit() {
-    onSend(clientId, { from: "client", text: "", time: "Just now", type: "checkin_response", mood: motivation, energy: programEnjoy, notes: checkNotes });
+    onSend(clientId, { from: "client", text: "📋 Weekly Check-In", time: "Just now", type: "checkin_response", mood: motivation, energy: programEnjoy, notes: checkNotes });
     setCheckInOpen(false);
     setCheckNotes(""); setMotivation(3); setProgramEnjoy(3);
   }
@@ -8013,7 +8013,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
     });
 
     // Save to Supabase
-    if (authUserId && authToken && msg.text) {
+    if (authUserId && authToken && (msg.text || msg.type === "checkin_response" || msg.type === "checkin_request")) {
       // For coach sending: recipient = clientId (their real supabase UUID)
       // For client sending: recipient = their coach's UUID (authCoachId)
       var recipientId = isCoach ? clientId : (authCoachId || clientId);

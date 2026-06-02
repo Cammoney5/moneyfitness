@@ -2557,6 +2557,14 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
         })}
       </div>
 
+      {/* Week coach notes */}
+      {program[activeWk] && program[activeWk].notes && (
+        <div style={{ background: CARD, borderRadius: 14, padding: "12px 16px", marginBottom: 12, border: "1.5px solid "+BORDER }}>
+          <div style={{ color: TEXT3, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>COACH NOTES</div>
+          <p style={{ color: TEXT, fontSize: 14, lineHeight: 1.6, margin: 0 }}>{program[activeWk].notes}</p>
+        </div>
+      )}
+
       {/* Day cards */}
       {days.map(function(day,cardIdx){
         var origIdx = week.days.indexOf(day);

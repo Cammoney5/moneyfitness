@@ -1560,10 +1560,10 @@ function ProgramView({ program, color, isClient, initialDayIndex, onDayIndexUsed
             </div>
           )}
         </div>
-        {(fday.notes || "TEST NOTE VISIBLE") ? (
+        {fday.notes ? (
           <div style={{ margin: "16px 16px 0", background: CARD, borderRadius: 14, padding: "14px 16px", border: "1.5px solid "+BORDER }}>
             <div style={{ color: TEXT3, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>COACH NOTES</div>
-            <p style={{ color: TEXT, fontSize: 14, lineHeight: 1.6, margin: 0 }}>{fday.notes || "TEST NOTE VISIBLE"}</p>
+            <p style={{ color: TEXT, fontSize: 14, lineHeight: 1.6, margin: 0 }}>{fday.notes}</p>
           </div>
         ) : null}
       </div>
@@ -3311,9 +3311,9 @@ function CoachProgramTabView({ program, color, onUpdate }) {
             })}
           </div>
           {fday.notes ? (
-            <div style={{ margin: "0 16px 16px", background: "rgba(255,255,255,0.08)", borderRadius: 14, padding: "14px 16px", border: "1px solid rgba(255,255,255,0.15)" }}>
-              <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>COACH NOTES</div>
-              <p style={{ color: "#fff", fontSize: 14, lineHeight: 1.6, margin: 0 }}>{fday.notes}</p>
+            <div style={{ margin: "0 16px 16px", background: CARD, borderRadius: 14, padding: "14px 16px", border: "1.5px solid "+BORDER }}>
+              <div style={{ color: TEXT3, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>COACH NOTES</div>
+              <p style={{ color: TEXT, fontSize: 14, lineHeight: 1.6, margin: 0 }}>{fday.notes}</p>
             </div>
           ) : null}
         </div>

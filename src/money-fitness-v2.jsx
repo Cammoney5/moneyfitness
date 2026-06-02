@@ -8001,19 +8001,35 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
   // Load program from Supabase on mount
   useEffect(function() {
     if (!authToken || !authUserId) return;
-    // Coach loads their own program; client loads their coach's program
-    var coachId = isCoach ? authUserId : authCoachId;
-    if (!coachId) return;
-    fetch(SUPABASE_URL + "/rest/v1/programs?coach_id=eq." + coachId + "&order=updated_at.desc&limit=1", {
-      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(rows) {
-      if (!Array.isArray(rows) || rows.length === 0) return;
-      var prog = rows[0].weeks;
-      if (prog && prog.length > 0) setCoachProgram(prog);
-    })
-    .catch(function(e) { console.log("program load error", e); });
+    function loadProgram(coachId) {
+      fetch(SUPABASE_URL + "/rest/v1/programs?coach_id=eq." + coachId + "&order=updated_at.desc&limit=1", {
+        headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(rows) {
+        if (!Array.isArray(rows) || rows.length === 0) return;
+        var prog = rows[0].weeks;
+        if (prog && prog.length > 0) setCoachProgram(prog);
+      })
+      .catch(function(e) { console.log("program load error", e); });
+    }
+    if (isCoach) {
+      loadProgram(authUserId);
+    } else if (authCoachId) {
+      loadProgram(authCoachId);
+    } else {
+      // Fetch coach_id from profile
+      fetch(SUPABASE_URL + "/rest/v1/profiles?id=eq." + authUserId + "&select=coach_id", {
+        headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(rows) {
+        if (Array.isArray(rows) && rows.length > 0 && rows[0].coach_id) {
+          loadProgram(rows[0].coach_id);
+        }
+      })
+      .catch(function(e) { console.log("profile load error", e); });
+    }
   }, [authUserId, authToken, authCoachId]);
 
   function saveProgram(program) {

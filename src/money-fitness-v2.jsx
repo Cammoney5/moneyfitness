@@ -7936,7 +7936,10 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
   // Load program from Supabase on mount
   useEffect(function() {
     if (!authToken || !authUserId) return;
-    fetch(SUPABASE_URL + "/rest/v1/programs?coach_id=eq." + authUserId + "&order=updated_at.desc&limit=1", {
+    // Coach loads their own program; client loads their coach's program
+    var coachId = isCoach ? authUserId : authCoachId;
+    if (!coachId) return;
+    fetch(SUPABASE_URL + "/rest/v1/programs?coach_id=eq." + coachId + "&order=updated_at.desc&limit=1", {
       headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
     })
     .then(function(r) { return r.json(); })
@@ -7946,7 +7949,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
       if (prog && prog.length > 0) setCoachProgram(prog);
     })
     .catch(function(e) { console.log("program load error", e); });
-  }, [authUserId, authToken]);
+  }, [authUserId, authToken, authCoachId]);
 
   function saveProgram(program) {
     if (!authToken || !authUserId) return;

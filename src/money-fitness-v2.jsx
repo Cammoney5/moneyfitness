@@ -2957,7 +2957,7 @@ function GoalEditModal({ goal, onSave, onDelete, onClose, color }) {
     if (!label.trim() || !target) return;
     onSave({
       label: label.trim(),
-      start: parseFloat(current) || 0,
+      start: isNew ? 0 : (goal.start || 0),
       current: parseFloat(current) || 0,
       target: parseFloat(target),
       unit: unit,
@@ -3086,6 +3086,17 @@ function GoalProgressTab({ client, isCoach, color, onTabChange, authUserId, auth
     var url = isNew
       ? SUPABASE_URL + "/rest/v1/goals"
       : SUPABASE_URL + "/rest/v1/goals?id=eq." + goal.id;
+    var body = {
+      client_id: authUserId,
+      label: goal.label,
+      unit: goal.unit || "",
+      start_value: isNew ? (parseFloat(goal.start) || parseFloat(goal.current) || 0) : undefined,
+      current_value: parseFloat(goal.current) || 0,
+      target_value: parseFloat(goal.target) || 0,
+      color: goal.color || c,
+      updated_at: new Date().toISOString(),
+    };
+    if (!isNew) delete body.start_value; // Don't overwrite start on edits
     fetch(url, {
       method: isNew ? "POST" : "PATCH",
       headers: {
@@ -3094,16 +3105,7 @@ function GoalProgressTab({ client, isCoach, color, onTabChange, authUserId, auth
         "Content-Type": "application/json",
         "Prefer": isNew ? "return=representation" : "return=minimal"
       },
-      body: JSON.stringify({
-        client_id: authUserId,
-        label: goal.label,
-        unit: goal.unit || "",
-        start_value: parseFloat(goal.start) || 0,
-        current_value: parseFloat(goal.current) || 0,
-        target_value: parseFloat(goal.target) || 0,
-        color: goal.color || c,
-        updated_at: new Date().toISOString(),
-      })
+      body: JSON.stringify(body)
     })
     .then(function(r) { if (!r.ok) r.clone().text().then(function(t){ console.log("goal save HTTP error:", r.status, t); }); return r.json(); })
     .then(function(data) {

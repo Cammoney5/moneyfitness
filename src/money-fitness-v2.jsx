@@ -1561,9 +1561,9 @@ function ProgramView({ program, color, isClient, initialDayIndex, onDayIndexUsed
           )}
         </div>
         {fday.notes ? (
-          <div style={{ margin: "16px 16px 0", background: "rgba(255,255,255,0.1)", borderRadius: 14, padding: "14px 16px", border: "1px solid rgba(255,255,255,0.15)" }}>
-            <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>COACH NOTES</div>
-            <p style={{ color: "#fff", fontSize: 14, lineHeight: 1.6, margin: 0 }}>{fday.notes}</p>
+          <div style={{ margin: "16px 16px 0", background: CARD, borderRadius: 14, padding: "14px 16px", border: "1.5px solid "+BORDER }}>
+            <div style={{ color: TEXT3, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>COACH NOTES</div>
+            <p style={{ color: TEXT, fontSize: 14, lineHeight: 1.6, margin: 0 }}>{fday.notes}</p>
           </div>
         ) : null}
       </div>
@@ -8002,16 +8002,13 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
   useEffect(function() {
     if (!authToken || !authUserId) return;
     function loadProgram(coachId) {
-      console.log("Loading program for coachId:", coachId);
       fetch(SUPABASE_URL + "/rest/v1/programs?coach_id=eq." + coachId + "&order=updated_at.desc&limit=1", {
         headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
       })
       .then(function(r) { return r.json(); })
       .then(function(rows) {
-        console.log("Program rows:", JSON.stringify(rows).slice(0, 200));
         if (!Array.isArray(rows) || rows.length === 0) return;
         var prog = rows[0].weeks;
-        console.log("Program weeks sample:", JSON.stringify(prog && prog[0]).slice(0, 200));
         if (prog && prog.length > 0) setCoachProgram(prog);
       })
       .catch(function(e) { console.log("program load error", e); });

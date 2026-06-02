@@ -3715,7 +3715,7 @@ function ClientDetail({ client, onBack, isCoach, defaultTab, favorites, watchDay
 
 // ---
 
-function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthStats, coachProgram, activityLogs, myPlans, thisWeekPlanned }) {
+function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthStats, coachProgram, activityLogs, myPlans, thisWeekPlanned, realClients }) {
   const dayHour = TODAY.getHours();
   const greeting = dayHour < 12 ? "Good morning" : dayHour < 17 ? "Good afternoon" : "Good evening";
   const stats = monthStats || { totalWorkouts: 0, totalMiles: "0.0", restDays: 0 };
@@ -3735,7 +3735,8 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
   var todaySteps = (monthStats && monthStats.todaySteps) || todayLogs.reduce(function(s, a) { return s + (parseInt(a.steps) || 0); }, 0) || 0;
 
   // Get latest message per client for coach inbox preview
-  const inboxItems = isCoach ? CLIENTS.map(function(c) {
+  var rosterClients = realClients && realClients.length > 0 ? realClients : [];
+  const inboxItems = isCoach ? rosterClients.map(function(c) {
     const thread = messages[c.id] || [];
     const latest = thread[thread.length - 1];
     return { client: c, latest: latest };
@@ -3768,7 +3769,7 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
               <div style={{ position: "absolute", top: -40, right: -40, width: 160, height: 160, borderRadius: "50%", background: "rgba(27,140,78,0.12)" }} />
               <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 700, letterSpacing: 2, marginBottom: 6 }}>YOUR ROSTER</div>
               <div style={{ display: "flex", marginBottom: 12 }}>
-                {CLIENTS.map(function(c, i) {
+                {rosterClients.map(function(c, i) {
                   return (
                     <div key={c.id} style={{ width: 52, height: 52, borderRadius: 99, background: c.color, border: "3px solid #0A1A0F", display: "flex", alignItems: "center", justifyContent: "center", marginLeft: i > 0 ? -16 : 0, fontSize: 16, fontWeight: 800, color: "#fff" }}>
                       {c.avatar}
@@ -3777,7 +3778,7 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
                 })}
               </div>
               <div style={{ color: "#fff", fontSize: 36, fontWeight: 900, lineHeight: 1, letterSpacing: -1, marginBottom: 16, textTransform: "uppercase" }}>
-                {CLIENTS.length} CLIENTS<br/>ACTIVE
+                {rosterClients.length} CLIENTS<br/>ACTIVE
               </div>
               <button onClick={function() { goTo("clients"); }} style={{ background: "#fff", border: "none", color: "#0A1A0F", padding: "12px 24px", borderRadius: 99, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>
                 View All
@@ -4441,8 +4442,9 @@ function RecentActivityTimeline({ activityLogs }) {
   );
 }
 
-function ActivityScreen({ isCoach, watchDays, activityLogs, onLogsChange }) {
-  const myClient = CLIENTS[0];
+function ActivityScreen({ isCoach, watchDays, activityLogs, onLogsChange, realClients }) {
+  var clientList = realClients && realClients.length > 0 ? realClients : [];
+  const myClient = CLIENTS[0]; // Used for client calendar view (non-coach)
 
   if (!isCoach) {
     return (
@@ -4471,7 +4473,7 @@ function ActivityScreen({ isCoach, watchDays, activityLogs, onLogsChange }) {
     <div>
       <div style={{ color: TEXT, fontSize: 24, fontWeight: 800, marginBottom: 4 }}>Activity</div>
       <div style={{ color: TEXT2, fontSize: 14, marginBottom: 20 }}>{MONTH_NAME} overview</div>
-      {CLIENTS.map(function(client) {
+      {clientList.map(function(client) {
         return (
           <div key={client.id} style={{ background: CARD, borderRadius: 18, border: "1.5px solid "+BORDER, padding: "18px", marginBottom: 16 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
@@ -5199,7 +5201,8 @@ function CoachDashboard() {
   );
 }
 
-function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activityLogs }) {
+function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activityLogs, realClients }) {
+  var clientCount = realClients && realClients.length > 0 ? realClients.length : 0;
   const stats = monthStats || { totalWorkouts: 15, totalMiles: "18.0", restDays: 5 };
   const totalWorkouts = CLIENTS.reduce(function(s, c) { return s + c.workedOut.length; }, 0);
   const avgStreak = Math.round(CLIENTS.reduce(function(s, c) { return s + c.streak; }, 0) / CLIENTS.length);
@@ -5283,7 +5286,7 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {(isCoach ? [
-            { val: CLIENTS.length,           label: "Active Clients",       html: ICON_BODY },
+            { val: clientCount,           label: "Active Clients",       html: ICON_BODY },
             { val: "$2,400",                  label: "Monthly Revenue",      html: ICON_CHART },
             { val: avgStreak+"d",             label: "Avg Client Streak",    html: ICON_FIRE },
             { val: "94%",                     label: "Retention Rate",       html: ICON_WORKOUT },
@@ -8350,8 +8353,8 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
         )}
         {tab === "library"       && <LibraryScreen isCoach={isCoach} favorites={favorites} toggleFavorite={toggleFavorite} />}
         {tab === "watch"         && <AppleWatchScreen connected={watchConnected} onConnect={function() { setWatchConnected(true); }} onDisconnect={function() { setWatchConnected(false); setImportedIds({}); setWatchDays({}); }} importedIds={importedIds} onImport={handleImport} />}
-        {tab === "activity"      && <ActivityScreen isCoach={isCoach} watchDays={watchDays} activityLogs={activityLogs} onLogsChange={handleLogsChange} />}
-        {tab === "analytics"     && <AnalyticsScreen isCoach={isCoach} monthStats={monthStats} todaySteps={monthStats.todaySteps} last7Steps={monthStats.last7Steps} activityLogs={activityLogs} />}
+        {tab === "activity"      && <ActivityScreen isCoach={isCoach} watchDays={watchDays} activityLogs={activityLogs} onLogsChange={handleLogsChange} realClients={realClients} />}
+        {tab === "analytics"     && <AnalyticsScreen isCoach={isCoach} monthStats={monthStats} todaySteps={monthStats.todaySteps} last7Steps={monthStats.last7Steps} activityLogs={activityLogs} realClients={realClients} />}
         {tab === "race"          && <RaceScreen activityLogs={activityLogs} raceCollapsed={raceCollapsed} setRaceCollapsed={setRaceCollapsed} plans={myPlans} setPlans={setMyPlans} />}
         {tab === "notifications" && <NotificationsScreen notifications={notifications} onRead={function(id) { setNotifications(function(p) { return p.map(function(n) { return n.id === id ? Object.assign({}, n, { read: true }) : n; }); }); }} onClearAll={function() { setNotifications(function(p) { return p.map(function(n) { return Object.assign({}, n, { read: true }); }); }); }} isCoach={isCoach} goTo={goTo} onNavigateToClient={function(clientId, defaultTab) {
     var client = CLIENTS.find(function(c) { return c.id === clientId; });

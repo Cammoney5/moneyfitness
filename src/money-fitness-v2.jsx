@@ -2710,22 +2710,7 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
 
 
 // -- MESSAGING SYSTEM ---------------------------------------------
-const SEED_MESSAGES = {
-  1: [
-    { id: 1, from: "coach", text: "Hey Marcus! Great work this week. How are you feeling about the new program?", time: "Mon 9:12 AM", type: "text" },
-    { id: 2, from: "client", text: "Feeling really good! Hit a PR on bench -- 225lbs. Sleep has been rough though.", time: "Mon 11:34 AM", type: "text" },
-    { id: 3, from: "coach", text: "That PR is huge! Focus on sleep this week -- aim for 7-8 hours. Cut screens an hour before bed.", time: "Mon 12:01 PM", type: "text" },
-    { id: 4, from: "client", text: "Will do! Should I be eating more protein on leg days?", time: "Tue 8:45 AM", type: "text" },
-    { id: 5, from: "coach", text: "Yes -- aim for 1g per pound of bodyweight on training days. Front-load protein at breakfast and lunch.", time: "Tue 9:02 AM", type: "text" },
-    { id: 6, from: "coach", text: "Weekly Check-In Request", time: "Fri 8:00 AM", type: "checkin_request" },
-  ],
-  2: [
-    { id: 1, from: "coach", text: "Sarah! Amazing milestone -- 2.8 miles without stopping is HUGE progress!", time: "Mon 10:00 AM", type: "text" },
-    { id: 2, from: "client", text: "Thank you! My shin splints are acting up again though. Should I rest?", time: "Mon 10:30 AM", type: "text" },
-    { id: 3, from: "coach", text: "Take 2 full rest days, ice 15 min after any activity, and add calf stretches morning and night.", time: "Mon 10:45 AM", type: "text" },
-    { id: 4, from: "coach", text: "Weekly Check-In Request", time: "Fri 8:00 AM", type: "checkin_request" },
-  ],
-};
+const SEED_MESSAGES = {};
 
 function MessagingInbox({ clientId, clientName, clientColor, isCoach, messages, onSend, onOpen }) {
   const c = clientColor || ORANGE;
@@ -3988,7 +3973,7 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
 }
 
 function ClientsScreen({ isCoach, selected, setSelected, clientDefaultTab, setClientDefaultTab, favorites, watchDays, messages, onSend, coachProgram, setCoachProgram, activityLogs, onLogsChange, programDayIndex, setProgramDayIndex, myPlans, realClients, authUserId, authToken, goTo }) {
-  var displayClients = (realClients && realClients.length > 0) ? realClients : CLIENTS;
+  var displayClients = (realClients && realClients.length > 0) ? realClients : [];
   if (selected) {
     return <ClientDetail client={selected} onBack={function() { setSelected(null); setClientDefaultTab("Progress"); }} isCoach={isCoach} defaultTab={clientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages[selected.id] || []} onSend={onSend} coachProgram={coachProgram} setCoachProgram={setCoachProgram} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} activityLogs={activityLogs} authUserId={authUserId} authToken={authToken} onGoToMainTab={goTo} />;
   }
@@ -7458,7 +7443,7 @@ function OnboardingTutorial({ isCoach, onComplete }) {
 }
 
 function CoachInbox({ messages, handleSendMessage, realClients, viewedCounts, setViewedCounts }) {
-  var displayClients = (realClients && realClients.length > 0) ? realClients : CLIENTS;
+  var displayClients = (realClients && realClients.length > 0) ? realClients : [];
   var [inboxOpen, setInboxOpen] = useState(null);
 
   function markViewed(threadId) {
@@ -7643,12 +7628,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
   }, [authUserId, authToken]);
 
   // Notifications
-  const [notifications, setNotifications] = useState([
-    { id: 1, type: "streak",     title: "Keep it up!", body: "You're on a 12-day streak. Don't break the chain today!", time: "2h ago",  read: false },
-    { id: 2, type: "message",    title: "New message from " + COACH_FIRST, body: "Hey Marcus! Great work this week. How are you feeling about the new program?", time: "3h ago",  read: false },
-    { id: 3, type: "program",    title: "Program updated", body: COACH_NAME + " updated your training program. Check out the new Push session.", time: "1d ago",  read: true  },
-    { id: 4, type: "checkin",    title: "Time to log!", body: "You haven't logged an activity in 2 days. Stay on track with your goals.", time: "1d ago",  read: true  },
-  ]);
+  const [notifications, setNotifications] = useState([]);
 
   function addNotification(notif) {
     setNotifications(function(prev) { return [notif].concat(prev); });

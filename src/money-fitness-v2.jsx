@@ -7581,6 +7581,9 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
           text: row.text,
           time: new Date(row.created_at).toLocaleTimeString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" }),
           type: row.type || "text",
+          mood: row.mood || null,
+          energy: row.energy || null,
+          notes: row.notes || null,
           read: row.read,
         });
       });
@@ -8025,8 +8028,11 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
         body: JSON.stringify({
           sender_id: authUserId,
           recipient_id: recipientId,
-          text: msg.text,
+          text: msg.text || "",
           type: msg.type || "text",
+          mood: msg.mood || null,
+          energy: msg.energy || null,
+          notes: msg.notes || null,
           read: false,
         })
       }).then(function(r) {

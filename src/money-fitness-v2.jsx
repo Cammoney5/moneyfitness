@@ -3151,8 +3151,8 @@ function GoalProgressTab({ client, isCoach, color, onTabChange, authUserId, auth
   }
 
   // Bar colors per index
-  var GOAL_COLORS = ["#1B8C4E","#3B7DD8","#9B6FD4","#1B8C4E","#E0A020"];
-  function goalColor(i) { return GOAL_COLORS[i % GOAL_COLORS.length]; }
+  var GOAL_COLORS_DISPLAY = ["#1B8C4E","#3B7DD8","#9B6FD4","#E0A020","#E05252","#0E7490","#B45309"];
+  function goalColor(i, goal) { return (goal && goal.color) ? goal.color : GOAL_COLORS_DISPLAY[i % GOAL_COLORS_DISPLAY.length]; }
 
   function calcPct(g) {
     var cur = parseFloat(g.current); var target = parseFloat(g.target);
@@ -3197,7 +3197,7 @@ function GoalProgressTab({ client, isCoach, color, onTabChange, authUserId, auth
       {/* Goal cards */}
       {goals.map(function(g, i) {
         var pct = calcPct(g);
-        var gc = goalColor(i);
+        var gc = goalColor(i, g);
         return (
           <div key={g.id} style={{ background: "#fff", borderRadius: 18, padding: "16px", marginBottom: 12, border: "1.5px solid #E8E4DE", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
 

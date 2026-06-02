@@ -7391,18 +7391,17 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
   });
   const [messages, setMessages] = useState({});
 
-  // Load messages from Supabase
-  useEffect(function() {
+  // Load messages from Supabase + poll every 5 seconds
+  function fetchMessages() {
     if (!authUserId || !authToken) return;
     fetch(SUPABASE_URL + "/rest/v1/messages?or=(sender_id.eq." + authUserId + ",recipient_id.eq." + authUserId + ")&order=created_at.asc&limit=500", {
       headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
     })
     .then(function(r) { return r.json(); })
     .then(function(rows) {
-      if (!Array.isArray(rows) || rows.length === 0) return;
+      if (!Array.isArray(rows)) return;
       var built = {};
       rows.forEach(function(row) {
-        // Group by the other person's ID
         var otherId = row.sender_id === authUserId ? row.recipient_id : row.sender_id;
         if (!built[otherId]) built[otherId] = [];
         built[otherId].push({
@@ -7417,6 +7416,12 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
       setMessages(built);
     })
     .catch(function(e) { console.log("messages load error", e); });
+  }
+
+  useEffect(function() {
+    fetchMessages();
+    var interval = setInterval(fetchMessages, 5000);
+    return function() { clearInterval(interval); };
   }, [authUserId, authToken]);
 
   // Notifications

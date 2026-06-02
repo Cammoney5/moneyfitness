@@ -7390,7 +7390,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
     activityComplete: true, goalMilestone: true, coachCheckinAlert: true, all: true,
   });
   const [messages, setMessages] = useState({});
-  const [viewedThreads, setViewedThreads] = useState(new Set());
+  const [viewedCounts, setViewedCounts] = useState({});
 
   // Load messages from Supabase + poll every 5 seconds
   function fetchMessages() {
@@ -7418,29 +7418,34 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
         var isFirstLoad = Object.keys(prev).length === 0;
         // On first load, mark all threads as viewed so old messages don't show as unread
         if (isFirstLoad && Object.keys(built).length > 0) {
-          setViewedThreads(function() {
-            return new Set(Object.keys(built));
-          });
+          // On first load, mark all threads as viewed at current count
+          var initCounts = {};
+          Object.keys(built).forEach(function(id) { initCounts[id] = (built[id] || []).length; });
+          setViewedCounts(initCounts);
           return built;
         }
-        // Check for new incoming messages - unmark thread as viewed
-        var threadsWithNew = new Set();
-        Object.keys(built).forEach(function(otherId) {
-          var prevCount = (prev[otherId] || []).length;
-          var newCount = (built[otherId] || []).length;
-          if (newCount > prevCount) {
-            var newMsgs = built[otherId].slice(prevCount);
-            var hasIncoming = newMsgs.some(function(m) { return m.from !== (isCoach ? "coach" : "client"); });
-            if (hasIncoming) threadsWithNew.add(otherId);
-          }
-        });
-        if (threadsWithNew.size > 0) {
-          setViewedThreads(function(prev) {
-            var s = new Set(prev);
-            threadsWithNew.forEach(function(id) { s.delete(id); });
-            return s;
+        // Check for new incoming messages since last view
+        setViewedCounts(function(prevCounts) {
+          var updated = Object.assign({}, prevCounts);
+          var changed = false;
+          Object.keys(built).forEach(function(otherId) {
+            // Only update viewedCount if user has this thread marked as viewed at current count
+            // Don't auto-advance count for new incoming messages
+            var lastViewed = prevCounts[otherId] !== undefined ? prevCounts[otherId] : 0;
+            var newTotal = (built[otherId] || []).length;
+            if (newTotal > lastViewed) {
+              var newMsgs = built[otherId].slice(lastViewed);
+              var hasIncoming = newMsgs.some(function(m) { return m.from !== (isCoach ? "coach" : "client"); });
+              // Don't update - keep lastViewed so badge shows
+              if (!hasIncoming) {
+                // Only own sent messages - advance count
+                updated[otherId] = newTotal;
+                changed = true;
+              }
+            }
           });
-        }
+          return changed ? updated : prevCounts;
+        });
         return built;
       });
     })
@@ -8019,7 +8024,11 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
     setTab(t);
     if (t !== "clients") setSelected(null);
     if (t === "directmessage" && !isCoach && authCoachId) {
-      setViewedThreads(function(prev) { var s = new Set(prev); s.add(authCoachId); return s; });
+      var threadId = authCoachId;
+      setViewedCounts(function(prev) {
+        var count = (messages[threadId] || []).length;
+        return Object.assign({}, prev, { [threadId]: count });
+      });
     }
   }
 
@@ -8061,8 +8070,10 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
             {(function() {
               var unreadMsgs = 0;
               Object.keys(messages).forEach(function(threadId) {
-                if (viewedThreads.has(threadId)) return;
-                (messages[threadId] || []).forEach(function(m) {
+                var thread = messages[threadId] || [];
+                var lastViewed = viewedCounts[threadId] !== undefined ? viewedCounts[threadId] : thread.length;
+                var newMsgs = thread.slice(lastViewed);
+                newMsgs.forEach(function(m) {
                   if (m.from !== (isCoach ? "coach" : "client")) unreadMsgs++;
                 });
               });
@@ -8104,7 +8115,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
             {isCoach ? (
               <CoachInbox messages={messages} handleSendMessage={handleSendMessage} realClients={realClients} />
             ) : (
-              <MessagingInbox clientId={authCoachId || CLIENTS[0].id} clientName={COACH_NAME} clientColor={CLIENTS[0].color} isCoach={false} messages={messages[authCoachId || CLIENTS[0].id] || []} onSend={function(cid, msg) { handleSendMessage(authCoachId || CLIENTS[0].id, msg); }} onOpen={function() { setViewedThreads(function(prev) { var s = new Set(prev); s.add(authCoachId || CLIENTS[0].id); return s; }); }} />
+              <MessagingInbox clientId={authCoachId || CLIENTS[0].id} clientName={COACH_NAME} clientColor={CLIENTS[0].color} isCoach={false} messages={messages[authCoachId || CLIENTS[0].id] || []} onSend={function(cid, msg) { handleSendMessage(authCoachId || CLIENTS[0].id, msg); }} onOpen={function() { var threadId = authCoachId || CLIENTS[0].id; setViewedCounts(function(prev) { return Object.assign({}, prev, { [threadId]: (messages[threadId] || []).length }); }); }} />
             )}
           </div>
         )}

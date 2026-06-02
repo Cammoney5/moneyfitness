@@ -7415,13 +7415,20 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
         });
       });
       setMessages(function(prev) {
+        var isFirstLoad = Object.keys(prev).length === 0;
+        // On first load, mark all threads as viewed so old messages don't show as unread
+        if (isFirstLoad && Object.keys(built).length > 0) {
+          setViewedThreads(function() {
+            return new Set(Object.keys(built));
+          });
+          return built;
+        }
         // Check for new incoming messages - unmark thread as viewed
         var threadsWithNew = new Set();
         Object.keys(built).forEach(function(otherId) {
           var prevCount = (prev[otherId] || []).length;
           var newCount = (built[otherId] || []).length;
           if (newCount > prevCount) {
-            // Check if the new messages are incoming
             var newMsgs = built[otherId].slice(prevCount);
             var hasIncoming = newMsgs.some(function(m) { return m.from !== (isCoach ? "coach" : "client"); });
             if (hasIncoming) threadsWithNew.add(otherId);

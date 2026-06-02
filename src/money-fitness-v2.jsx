@@ -7390,7 +7390,6 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
     activityComplete: true, goalMilestone: true, coachCheckinAlert: true, all: true,
   });
   const [messages, setMessages] = useState({});
-  const seenMessageIds = React.useRef(new Set());
 
   // Load messages from Supabase + poll every 5 seconds
   function fetchMessages() {
@@ -7414,29 +7413,6 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
           read: row.read,
         });
       });
-      // Detect new incoming messages using seenMessageIds ref
-      var newNotifs = [];
-      var isFirstLoad = seenMessageIds.current.size === 0;
-      Object.keys(built).forEach(function(otherId) {
-        (built[otherId] || []).forEach(function(msg) {
-          if (!seenMessageIds.current.has(msg.id)) {
-            seenMessageIds.current.add(msg.id);
-            if (!isFirstLoad && msg.from !== (isCoach ? "coach" : "client")) {
-              newNotifs.push({
-                id: "msg-" + msg.id,
-                type: "message",
-                title: "New message",
-                body: msg.text ? msg.text.slice(0, 60) : "New message received",
-                time: "Just now",
-                read: false,
-              });
-            }
-          }
-        });
-      });
-      if (newNotifs.length > 0) {
-        setNotifications(function(prevN) { return newNotifs.concat(prevN); });
-      }
       setMessages(built);
     })
     .catch(function(e) { console.log("messages load error", e); });
@@ -8050,6 +8026,15 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
           <SettingsMenu isCoach={isCoach} goTo={goTo} tab={tab} onLogout={onLogout} onReplayTutorial={function() { setShowTutorial(true); }} notifSettings={notifSettings} setNotifSettings={setNotifSettings} />
           <button onClick={function() { goTo("directmessage"); }} style={{ width: 36, height: 36, borderRadius: 99, background: tab === "directmessage" ? ORANGE_BG : SURFACE, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={tab === "directmessage" ? ORANGE : TEXT2} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            {(function() {
+              var unreadMsgs = 0;
+              Object.values(messages).forEach(function(thread) {
+                (thread || []).forEach(function(m) {
+                  if (!m.read && m.from !== (isCoach ? "coach" : "client")) unreadMsgs++;
+                });
+              });
+              return unreadMsgs > 0 ? <span style={{ position: "absolute", top: -4, right: -4, width: 16, height: 16, borderRadius: 99, background: "#E05252", color: "#fff", fontSize: 9, fontWeight: 800, lineHeight: "16px", textAlign: "center" }}>{unreadMsgs}</span> : null;
+            })()}
           </button>
           <NotificationBell notifications={notifications} onOpen={function(dest, notif) {
             if ((dest === "clients" || dest === "message") && notif && notif.clientId) {

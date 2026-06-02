@@ -3244,7 +3244,10 @@ function GoalProgressTab({ client, isCoach, color, onTabChange, authUserId, auth
 
       {/* Message coach button */}
       {!isCoach && (
-        <button onClick={function() { if (onGoToMainTab) onGoToMainTab("directmessage"); else if (onTabChange) onTabChange("directmessage"); }}
+        <button onClick={function() { 
+          console.log("Message Cameron clicked - onGoToMainTab:", !!onGoToMainTab, "onTabChange:", !!onTabChange);
+          if (onGoToMainTab) onGoToMainTab("directmessage"); else if (onTabChange) onTabChange("directmessage"); 
+        }}
           style={{ width: "100%", padding: "14px", borderRadius: 14, background: c, border: "none", color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer", marginTop: 4 }}>
           Message Cameron
         </button>

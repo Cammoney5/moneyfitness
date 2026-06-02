@@ -2501,6 +2501,12 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
               });
             })()}
           </div>
+          {fday.notes ? (
+            <div style={{ margin: "0 14px 24px", background: "#fff", borderRadius: 14, padding: "14px 16px", border: "1.5px solid #E8E4DE" }}>
+              <div style={{ color: "#7AAB8A", fontSize: 10, fontWeight: 700, letterSpacing: 1.5, marginBottom: 6 }}>COACH NOTES</div>
+              <p style={{ color: "#0A1A0F", fontSize: 14, lineHeight: 1.6, margin: 0 }}>{fday.notes}</p>
+            </div>
+          ) : null}
         </div>
       );
     }

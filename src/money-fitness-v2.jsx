@@ -8077,6 +8077,21 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
         })
       }).then(function(r) {
         if (!r.ok) r.text().then(function(t) { console.log("message save error:", r.status, t); });
+        // Send push notification to recipient
+        fetch(SUPABASE_URL + "/functions/v1/send-push", {
+          method: "POST",
+          headers: {
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": "Bearer " + authToken,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            user_id: recipientId,
+            title: isCoach ? "MoneyFitness" : "Coach Cameron",
+            body: msg.type === "checkin_response" ? "New check-in submitted" : (msg.text || "New message"),
+            url: "/"
+          })
+        }).catch(function() {});
       }).catch(function(e) { console.log("message save error", e); });
     }
     // Notify coach when a client sends a message, check-in, or media

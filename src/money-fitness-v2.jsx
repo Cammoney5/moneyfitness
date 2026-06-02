@@ -5630,7 +5630,7 @@ function AuthFlow({ screen, setScreen, onAuth }) {
       var profile = await sb.getProfile(token, userId);
       if (!profile) { setAuthError("Account not found — please sign up first"); setLoading(false); return; }
 
-      onAuth(profile.role === "coach", profile.name, token, userId);
+      onAuth(profile.role === "coach", profile.name, token, userId, profile.coach_id);
     } catch(err) {
       setAuthError("Something went wrong — please try again");
     }
@@ -7331,7 +7331,7 @@ function CoachInbox({ messages, handleSendMessage }) {
   );
 }
 
-function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId }) {
+function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, authCoachId }) {
   const [tab, setTab]           = useState("home");
   const [isCoach, setIsCoach]   = useState(initCoach !== undefined ? initCoach : true);
   const [showTutorial, setShowTutorial] = useState(true); // show on first launch
@@ -7761,10 +7761,9 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId }) 
 
     // Save to Supabase
     if (authUserId && authToken && msg.text) {
-      var recipientId = isCoach ? clientId : authUserId;
-      var senderId = isCoach ? authUserId : authUserId;
-      // For coach: sender=coach(authUserId), recipient=client(clientId)
-      // For client: sender=client(authUserId), recipient=coach(coachId - use clientId which holds coach's supabase id)
+      // For coach sending: recipient = clientId (their real supabase UUID)
+      // For client sending: recipient = their coach's UUID (authCoachId)
+      var recipientId = isCoach ? clientId : (authCoachId || clientId);
       fetch(SUPABASE_URL + "/rest/v1/messages", {
         method: "POST",
         headers: {
@@ -7775,7 +7774,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId }) 
         },
         body: JSON.stringify({
           sender_id: authUserId,
-          recipient_id: clientId,
+          recipient_id: recipientId,
           text: msg.text,
           type: msg.type || "text",
           read: false,
@@ -8056,6 +8055,7 @@ export default function App() {
   const [authScreen, setAuthScreen] = useState("welcome");
   const [authToken, setAuthToken] = useState(null);
   const [authUserId, setAuthUserId] = useState(null);
+  const [authCoachId, setAuthCoachId] = useState(null);
   const wrapStyle = { width: "100%", maxWidth: 430, margin: "0 auto", height: "100vh", display: "flex", flexDirection: "column", background: BG, overflow: "hidden", fontFamily: "system-ui,sans-serif" };
 
   async function handleLogout() {
@@ -8065,23 +8065,25 @@ export default function App() {
     setNewClientName(null);
     setAuthToken(null);
     setAuthUserId(null);
+    setAuthCoachId(null);
   }
 
   if (!authed) {
     return (
       <div style={wrapStyle}>
         <style>{GLOBAL_STYLES}</style>
-        <AuthFlow screen={authScreen} setScreen={setAuthScreen} onAuth={function(coach, clientName, token, userId) {
+        <AuthFlow screen={authScreen} setScreen={setAuthScreen} onAuth={function(coach, clientName, token, userId, coachId) {
           setIsCoach(coach);
           setAuthed(true);
           setAuthToken(token || null);
           setAuthUserId(userId || null);
+          setAuthCoachId(coachId || null);
           if (!coach && clientName) setNewClientName(clientName);
         }} />
       </div>
     );
   }
-  return <MainApp initCoach={isCoach} newClientName={newClientName} onLogout={handleLogout} authToken={authToken} authUserId={authUserId} />;
+  return <MainApp initCoach={isCoach} newClientName={newClientName} onLogout={handleLogout} authToken={authToken} authUserId={authUserId} authCoachId={authCoachId} />;
 }
 
 

@@ -7098,7 +7098,7 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
     }
   }
 
-  var raceDate  = (function(){ var p = raceDateStr.split("-"); return new Date(+p[0], +p[1]-1, +p[2]); })();
+  var raceDate = raceDateStr ? (function(){ var p = raceDateStr.split("-"); return new Date(+p[0], +p[1]-1, +p[2]); })() : null;
   var countdown = useCountdown(raceDate);
   var RACE_MILES = { "5k": 3.1069, "10k": 6.2137, "half": 13.1094, "full": 26.2188, "ultra": 31.0686 };
 
@@ -7167,7 +7167,7 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
                     <div style={{ color: WHITE, fontSize: raceCollapsed ? 15 : 22, fontWeight: 900, lineHeight: 1.1, letterSpacing: -0.5 }}>{raceName || "Schedule your next race"}</div>
                     {raceCollapsed && <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }}>· {raceDateStr ? countdown.days : "00"}d {raceDateStr ? countdown.hours : "00"}h {countdown.mins}m</div>}
                   </div>
-                  {!raceCollapsed && <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, marginTop: 3 }}>{(function(){ var p = raceDateStr.split("-"); var d = new Date(+p[0], +p[1]-1, +p[2]); return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }); })()}</div>}
+                  {!raceCollapsed && raceDateStr && <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, marginTop: 3 }}>{(function(){ var p = raceDateStr.split("-"); var d = new Date(+p[0], +p[1]-1, +p[2]); return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }); })()}</div>}
                 </div>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0, marginLeft: 12 }}>
                   {!raceCollapsed && (
@@ -7242,7 +7242,7 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
                   ? <div style={{ textAlign: "center", padding: "6px 0" }}><div style={{ color: WHITE, fontSize: 16, fontWeight: 900 }}>Race Day!</div></div>
                   : (
                     <div style={{ display: "flex", justifyContent: "center" }}>
-                      {[{ val: countdown.days, label: "DAYS" }, { val: countdown.hours, label: "HRS" }, { val: countdown.mins, label: "MIN" }].map(function(item, i) {
+                      {[{ val: raceDateStr ? countdown.days : "00", label: "DAYS" }, { val: raceDateStr ? countdown.hours : "00", label: "HRS" }, { val: raceDateStr ? countdown.mins : "00", label: "MIN" }].map(function(item, i) {
                         return (
                           <div key={item.label} style={{ flex: 1, textAlign: "center", position: "relative" }}>
                             {i > 0 && <div style={{ position: "absolute", left: 0, top: "40%", color: "rgba(255,255,255,0.3)", fontSize: 24, fontWeight: 200 }}>:</div>}

@@ -1,19 +1,40 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const ONESIGNAL_APP_ID = "18d1d0a8-484d-48eb-a8f2-c577a7a5fd16";
+const ONESIGNAL_API_KEY = "os_v2_app_ddi5bkcijveoxkhsyv32pjp5c3344v5azswupl5vk52wg4bcc4rjlfrc7coa6klwt3tl7izyiutcp3cyw6fwaxbd7qo24rrnjndmnby";
 
 serve(async (req) => {
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  };
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
   const { user_id, title, body, url } = await req.json();
-  const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-  const { data: subs } = await supabase.from("push_subscriptions").select("subscription").eq("user_id", user_id);
-  if (!subs || subs.length === 0) return new Response(JSON.stringify({ sent: 0 }), { status: 200 });
-  const payload = JSON.stringify({ title, body, url: url || "/" });
-  let sent = 0;
-  for (const row of subs) {
-    try {
-      const sub = typeof row.subscription === "string" ? JSON.parse(row.subscription) : row.subscription;
-      const res = await fetch(sub.endpoint, { method: "POST", headers: { "Content-Type": "application/octet-stream", "TTL": "86400" }, body: payload });
-      if (res.ok) sent++;
-    } catch (e) { console.error("Push failed:", e); }
-  }
-  return new Response(JSON.stringify({ sent }), { status: 200 });
+
+  const payload = {
+    app_id: ONESIGNAL_APP_ID,
+    filters: [{ field: "tag", key: "user_id", relation: "=", value: user_id }],
+    headings: { en: title },
+    contents: { en: body },
+    url: url || "/",
+    web_push_topic: "moneyfitness",
+  };
+
+  const res = await fetch("https://onesignal.com/api/v1/notifications", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Key ${ONESIGNAL_API_KEY}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const result = await res.json();
+  console.log("OneSignal response:", result);
+
+  return new Response(JSON.stringify(result), {
+    status: res.ok ? 200 : 500,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 });

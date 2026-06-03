@@ -232,7 +232,7 @@ const COACH_FIRST = "Cameron";
 const COACH_CODE  = "CMONEY5"; // Clients enter this on signup to link to this coach
 const SUPABASE_URL = "https://ebphyejgauwgguwcbmgj.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVicGh5ZWpnYXV3Z2d1d2NibWdqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNjM3NDcsImV4cCI6MjA5NTczOTc0N30.oWMeatIKpuSLfHuxWLReqU9mgaZRQgTQyBtqISuPltY";
-const ONESIGNAL_APP_ID = "18d1d0a8-484d-48eb-a8f2-c577a7a5fd16";
+const VAPID_PUBLIC_KEY = "BKoleS-Q0aLsVfOqY5y0A922Lk74NiQQvUrpXW_MCQS_5ygxc8gOk2vrDPbT4yl0nEHg41LD-ErV8FJJFJB8mcA";
 
 // Lightweight Supabase client (no SDK needed)
 const sb = {
@@ -6230,22 +6230,15 @@ function SettingsMenu({ isCoach, goTo, tab, onLogout, onReplayTutorial, notifSet
               <div style={{ background: CARD, borderRadius: 14, padding: "14px 16px", marginBottom: 16, border: "1.5px solid "+BORDER }}>
                 <div style={{ color: TEXT, fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Push Notifications</div>
                 <div style={{ color: TEXT3, fontSize: 12, marginBottom: 12 }}>Get notified even when the app is closed</div>
-                <button onClick={async function() {
-                  if (!window.OneSignal) { alert('Push service loading, please try again in a moment.'); return; }
-                  const permission = await window.OneSignal.Notifications.permission;
-                  if (permission) { alert('Push notifications already enabled!'); return; }
-                  await window.OneSignal.Notifications.requestPermission();
-                  const granted = await window.OneSignal.Notifications.permission;
-                  if (granted) {
-                    const userId = window.__mf_user_id;
-                    if (userId) await window.OneSignal.login(userId);
-                    await window.OneSignal.User.addTag('user_id', userId || 'unknown');
-                    alert('Push notifications enabled!');
-                  } else {
-                    alert('Please enable notifications in your device settings');
-                  }
+                <button onClick={function() {
+                  if (!('Notification' in window)) { alert('Notifications not supported on this device'); return; }
+                  if (Notification.permission === 'granted') { alert('Notifications already enabled!'); return; }
+                  Notification.requestPermission().then(function(perm) {
+                    if (perm === 'granted') alert('Notifications enabled!');
+                    else alert('Please enable notifications in your device settings');
+                  });
                 }} style={{ background: GREEN, border: "none", color: "#fff", padding: "10px 20px", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                  {typeof window !== 'undefined' && window.OneSignal && window.OneSignal.Notifications && window.OneSignal.Notifications.permission ? '✓ Enabled' : 'Enable Push Notifications'}
+                  {typeof Notification !== 'undefined' && Notification.permission === 'granted' ? '✓ Enabled' : 'Enable Push Notifications'}
                 </button>
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid "+SURFACE2, marginBottom: 8 }}>

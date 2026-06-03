@@ -7057,10 +7057,10 @@ function WorkoutsSection({ weekDates, onAddToDay }) {
 
 function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setPlans }) {
   var [activeTab,    setActiveTab]    = useState("plan");
-  var [raceDateStr,  setRaceDateStr]  = useState("2026-10-11");
-  var [raceName,     setRaceName]     = useState("Chicago Marathon");
-  var [goalTime,     setGoalTime]     = useState("3:45:00");  var [raceDistKey,  setRaceDistKey]  = useState("full");
-  var [paceInput,    setPaceInput]    = useState("3:45:00");
+  var [raceDateStr,  setRaceDateStr]  = useState("");
+  var [raceName,     setRaceName]     = useState("");
+  var [goalTime,     setGoalTime]     = useState("");  var [raceDistKey,  setRaceDistKey]  = useState("full");
+  var [paceInput,    setPaceInput]    = useState("");
   var [showSetup,    setShowSetup]    = useState(false);
   var [weekOffset,   setWeekOffset]   = useState(0);
   // plans state is lifted to MainApp so HomeScreen can read it

@@ -3720,6 +3720,25 @@ function ClientDetail({ client, onBack, isCoach, defaultTab, favorites, watchDay
 // ---
 
 function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthStats, coachProgram, activityLogs, myPlans, thisWeekPlanned, realClients, viewedCounts, myProfile }) {
+  // Calculate real streak from activityLogs
+  var currentStreak = 0;
+  if (activityLogs) {
+    var checkDate = new Date(TODAY);
+    for (var i = 0; i < 365; i++) {
+      var mk = checkDate.getFullYear() + "-" + checkDate.getMonth();
+      var day = checkDate.getDate();
+      var hasActivity = activityLogs[mk] && activityLogs[mk][day] && activityLogs[mk][day].length > 0;
+      if (hasActivity) {
+        currentStreak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else if (i === 0) {
+        // today has no activity, check yesterday
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+  }
   const dayHour = TODAY.getHours();
   const greeting = dayHour < 12 ? "Good morning" : dayHour < 17 ? "Good afternoon" : "Good evening";
   const stats = monthStats || { totalWorkouts: 0, totalMiles: "0.0", restDays: 0 };
@@ -3761,7 +3780,7 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
         </div>
         {!isCoach && (
           <div style={{ textAlign: "right" }}>
-            <div style={{ color: TEXT, fontSize: 20, fontWeight: 900 }}>12 </div>
+            <div style={{ color: TEXT, fontSize: 20, fontWeight: 900 }}>{currentStreak} </div>
             <div style={{ color: TEXT3, fontSize: 10, fontWeight: 600 }}>DAY STREAK</div>
           </div>
         )}
@@ -4450,6 +4469,18 @@ function RecentActivityTimeline({ activityLogs }) {
 
 function ActivityScreen({ isCoach, watchDays, activityLogs, onLogsChange, realClients, myProfile }) {
   var clientList = realClients && realClients.length > 0 ? realClients : [];
+  var currentStreak = 0;
+  if (activityLogs) {
+    var checkDate = new Date(TODAY);
+    for (var i = 0; i < 365; i++) {
+      var mk = checkDate.getFullYear() + "-" + checkDate.getMonth();
+      var day = checkDate.getDate();
+      var hasActivity = activityLogs[mk] && activityLogs[mk][day] && activityLogs[mk][day].length > 0;
+      if (hasActivity) { currentStreak++; checkDate.setDate(checkDate.getDate() - 1); }
+      else if (i === 0) { checkDate.setDate(checkDate.getDate() - 1); }
+      else { break; }
+    }
+  }
   var profileInitials = myProfile ? (myProfile.name || "?").split(" ").map(function(w){return w[0];}).join("").toUpperCase().slice(0,2) : "MJ";
   const myClient = myProfile ? Object.assign({}, CLIENTS[0], { name: myProfile.name || CLIENTS[0].name, avatar: profileInitials, color: myProfile.color || CLIENTS[0].color }) : CLIENTS[0];
 
@@ -4467,7 +4498,7 @@ function ActivityScreen({ isCoach, watchDays, activityLogs, onLogsChange, realCl
                 {Object.keys((activityLogs && activityLogs[TODAY.getFullYear()+"-"+TODAY.getMonth()]) || {}).length} workouts this month
               </div>
             </div>
-            <Pill label={myClient.streak+" day streak"} color={myClient.color} bg={myClient.color+"18"} />
+            <Pill label={currentStreak+" day streak"} color={myClient.color} bg={myClient.color+"18"} />
           </div>
           <CalHeatmap workedOut={myClient.workedOut} color={myClient.color} isEditable={true} watchDays={watchDays} sharedLogs={activityLogs} onLogsChange={onLogsChange} />
         </div>

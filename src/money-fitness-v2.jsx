@@ -8187,6 +8187,8 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
 
   useEffect(function() {
     if (isCoach) return;
+    // Only fire goal milestones from real goals, not mock data
+    return;
     var myClient = CLIENTS[0];
     if (!myClient || !myClient.goals) return;
     myClient.goals.forEach(function(g) {
@@ -8218,8 +8220,16 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
 
   useEffect(function() {
     if (isCoach) return;
-    var myClient = CLIENTS[0];
-    var streak = myClient ? myClient.streak : 0;
+    var streak = 0;
+    if (activityLogs) {
+      var _sc2 = new Date(TODAY);
+      for (var _si2=0;_si2<365;_si2++) {
+        var _smk2=_sc2.getFullYear()+"-"+_sc2.getMonth(); var _sd2=_sc2.getDate();
+        if(activityLogs[_smk2]&&activityLogs[_smk2][_sd2]&&activityLogs[_smk2][_sd2].length>0){streak++;_sc2.setDate(_sc2.getDate()-1);}
+        else if(_si2===0){_sc2.setDate(_sc2.getDate()-1);}
+        else{break;}
+      }
+    }
     var milestones = [7, 14, 30];
     milestones.forEach(function(m) {
       if (streak >= m && !firedStreakMilestones[m]) {

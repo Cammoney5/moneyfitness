@@ -7201,9 +7201,9 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
                     <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 5 }}>GOAL TIME</div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       {[
-                        { label: "HRS", max: 23, val: parseInt(goalTime.split(":")[0]) || 0, set: function(v) { var p = goalTime.split(":"); p[0] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); } },
-                        { label: "MIN", max: 59, val: parseInt(goalTime.split(":")[1]) || 0, set: function(v) { var p = goalTime.split(":"); p[1] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); } },
-                        { label: "SEC", max: 59, val: parseInt(goalTime.split(":")[2]) || 0, set: function(v) { var p = goalTime.split(":"); p[2] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); } },
+                        { label: "HRS", max: 23, val: parseInt((goalTime||"00:00:00").split(":")[0]) || 0, set: function(v) { var p = (goalTime||"00:00:00").split(":"); while(p.length<3) p.push("00"); p[0] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); } },
+                        { label: "MIN", max: 59, val: parseInt((goalTime||"00:00:00").split(":")[1]) || 0, set: function(v) { var p = (goalTime||"00:00:00").split(":"); while(p.length<3) p.push("00"); p[1] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); } },
+                        { label: "SEC", max: 59, val: parseInt((goalTime||"00:00:00").split(":")[2]) || 0, set: function(v) { var p = (goalTime||"00:00:00").split(":"); while(p.length<3) p.push("00"); p[2] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); } },
                       ].map(function(seg, si) {
                         return (
                           <div key={seg.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>

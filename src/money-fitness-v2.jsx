@@ -4843,7 +4843,7 @@ function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onI
 }
 
 
-function WorkoutTrendChart({ workoutType, color, data, unit, livePace }) {
+function WorkoutTrendChart({ workoutType, color, data, unit, livePace, weekDates }) {
   const [selectedWeek, setSelectedWeek] = useState(data.length - 1); // default = most recent
 
   const maxVal = Math.max.apply(null, data.concat([0.1]));
@@ -4869,8 +4869,15 @@ function WorkoutTrendChart({ workoutType, color, data, unit, livePace }) {
   const yLabels = [0, Math.round(maxVal / 2 * 10) / 10, Math.round(maxVal * 10) / 10];
   const months = ["FEB","MAR","APR","MAY"];
 
-  const weekData    = (WEEK_DETAILS[workoutType] || WEEK_DETAILS.total)[selectedWeek];
   const isLastWeek  = selectedWeek === n - 1;
+  // Build real week date label
+  var realWeekDate = "This week";
+  if (weekDates && weekDates[selectedWeek]) {
+    var wd = weekDates[selectedWeek];
+    var mn = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    realWeekDate = mn[wd.start.getMonth()] + " " + wd.start.getDate() + " - " + mn[wd.end.getMonth()] + " " + wd.end.getDate();
+  }
+  var weekData = { date: realWeekDate, metrics: (WEEK_DETAILS[workoutType] || WEEK_DETAILS.total)[selectedWeek] ? (WEEK_DETAILS[workoutType] || WEEK_DETAILS.total)[selectedWeek].metrics : [] };
 
   return (
     <div style={{ background: CARD, border: "1.5px solid "+BORDER, borderRadius: 16, padding: "16px", marginBottom: 16 }}>
@@ -5348,6 +5355,15 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
 
   const trend = realTrendData[validActiveType] || realTrendData["total"];
 
+  // Generate real week date objects for chart labels
+  var realWeekDates = [];
+  var _twStart = new Date(TODAY); _twStart.setDate(TODAY.getDate() - TODAY.getDay()); _twStart.setHours(0,0,0,0);
+  for (var _wi = 11; _wi >= 0; _wi--) {
+    var _ws = new Date(_twStart); _ws.setDate(_twStart.getDate() - _wi*7);
+    var _we = new Date(_ws); _we.setDate(_ws.getDate() + 6);
+    realWeekDates.push({ start: _ws, end: _we });
+  }
+
   // Derive which activity types have been logged
   var loggedTypes = { total: true };
   if (activityLogs) {
@@ -5519,7 +5535,7 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
             color={trend.color}
             data={trend.data}
             unit={trend.unit}
-            livePace={validActiveType === "run" && stats.avgPace ? stats.avgPace : null}
+            livePace={validActiveType === "run" && stats.avgPace ? stats.avgPace : null} weekDates={realWeekDates}
           />
         </div>
       )}
@@ -5667,7 +5683,7 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
                   {/* Bar chart */}
                   <div style={{ position: "relative" }}>
                     {/* Y-axis grid lines */}
-                    <div style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 24, pointerEvents: "none" }}>
+                    <div style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 32, pointerEvents: "none" }}>
                       {[0, 0.33, 0.67, 1].map(function(pct) {
                         var val = Math.round(maxMiles * pct);
                         return (
@@ -5682,7 +5698,7 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
                     </div>
 
                     {/* Bars */}
-                    <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 140, paddingBottom: 24, paddingRight: 32, position: "relative", zIndex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 160, paddingBottom: 32, paddingRight: 32, position: "relative", zIndex: 1 }}>
                       {hd.bars.map(function(b, i) {
                         var pct = maxMiles > 0 ? (b.miles / maxMiles) * 100 : 0;
                         var isCurrent = b.year === currentYear || (histPeriod === "year" && b.year === "May") || (histPeriod === "month" && b.year === "W4") || (histPeriod === "week" && b.year === "Wed");

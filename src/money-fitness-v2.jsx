@@ -4870,14 +4870,18 @@ function WorkoutTrendChart({ workoutType, color, data, unit, livePace, weekDates
   const months = ["FEB","MAR","APR","MAY"];
 
   const isLastWeek  = selectedWeek === n - 1;
-  // Build real week date label
+  // Build real week date label and metrics from actual data
   var realWeekDate = "This week";
+  var mn2 = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   if (weekDates && weekDates[selectedWeek]) {
     var wd = weekDates[selectedWeek];
-    var mn = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    realWeekDate = mn[wd.start.getMonth()] + " " + wd.start.getDate() + " - " + mn[wd.end.getMonth()] + " " + wd.end.getDate();
+    realWeekDate = mn2[wd.start.getMonth()] + " " + wd.start.getDate() + " - " + mn2[wd.end.getMonth()] + " " + wd.end.getDate();
   }
-  var weekData = { date: realWeekDate, metrics: (WEEK_DETAILS[workoutType] || WEEK_DETAILS.total)[selectedWeek] ? (WEEK_DETAILS[workoutType] || WEEK_DETAILS.total)[selectedWeek].metrics : [] };
+  var selectedVal = data[selectedWeek] || 0;
+  var realMetrics = workoutType === "run"
+    ? [{ label: "Runs", value: String(selectedVal) }, { label: "This Week", value: selectedVal > 0 ? selectedVal + unit : "0" }]
+    : [{ label: "Activities", value: String(selectedVal) }, { label: "This Week", value: String(selectedVal) }];
+  var weekData = { date: realWeekDate, metrics: realMetrics };
 
   return (
     <div style={{ background: CARD, border: "1.5px solid "+BORDER, borderRadius: 16, padding: "16px", marginBottom: 16 }}>

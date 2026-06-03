@@ -5257,8 +5257,21 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
     return { initials: c.avatar, name: c.name, val: (c.streak || 0) + "d", color: c.color };
   });
 
+  // Calculate streak from activityLogs
+  var analyticsStreak = 0;
+  if (activityLogs) {
+    var _cd = new Date(TODAY);
+    for (var _i = 0; _i < 365; _i++) {
+      var _mk = _cd.getFullYear() + "-" + _cd.getMonth();
+      var _day = _cd.getDate();
+      var _has = activityLogs[_mk] && activityLogs[_mk][_day] && activityLogs[_mk][_day].length > 0;
+      if (_has) { analyticsStreak++; _cd.setDate(_cd.getDate()-1); }
+      else if (_i === 0) { _cd.setDate(_cd.getDate()-1); }
+      else { break; }
+    }
+  }
   const clientStats = [
-    { val: "12d",                       label: "Day Streak",          html: ICON_FIRE },
+    { val: analyticsStreak+"d",          label: "Day Streak",          html: ICON_FIRE },
     { val: String(stats.totalWorkouts), label: "Activities This Month", html: ICON_WORKOUT },
     { val: avgStepsStr,                 label: "Avg Steps/Day",       html: ICON_SNEAKER },
     { val: stats.totalMiles+"mi",       label: "Miles This Week",     html: ICON_RUN },
@@ -5471,72 +5484,91 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
       {!isCoach && (
         <div style={{ marginBottom: 20 }}>
           {(function() {
+            // Build HISTORY_DATA from real activityLogs
+            var MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+            var DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+            var now = new Date(TODAY);
+            var curYear = now.getFullYear();
+            var curMonth = now.getMonth();
+            var curDay = now.getDate();
+
+            // Helper to get run entries
+            function getRunEntries(filterFn) {
+              var entries = [];
+              if (!activityLogs) return entries;
+              Object.keys(activityLogs).forEach(function(mk) {
+                var parts = mk.split("-"); var yr = parseInt(parts[0]); var mo = parseInt(parts[1]);
+                Object.keys(activityLogs[mk]).forEach(function(day) {
+                  var d = parseInt(day);
+                  (activityLogs[mk][day] || []).forEach(function(e) {
+                    if ((e.type||"").toLowerCase().indexOf("run") !== -1) {
+                      if (filterFn(yr, mo, d)) entries.push({ yr, mo, d, miles: parseFloat(e.miles||0)||0, pace: e.pace||"" });
+                    }
+                  });
+                });
+              });
+              return entries;
+            }
+
+            function calcStats(entries) {
+              var miles = entries.reduce(function(s,e){return s+e.miles;},0);
+              var runs = entries.length;
+              var paces = entries.filter(function(e){return e.pace;}).map(function(e){
+                var p=e.pace.split(":"); return p.length===2?parseInt(p[0])*60+parseInt(p[1]):0;
+              }).filter(function(x){return x>0;});
+              var avgPaceStr = paces.length>0 ? (function(){var a=Math.round(paces.reduce(function(s,v){return s+v;},0)/paces.length); return Math.floor(a/60)+":"+(a%60<10?"0":"")+(a%60);}()) : "--";
+              return { miles: Math.round(miles*10)/10, runs, avgPace: avgPaceStr };
+            }
+
+            // All time by year
+            var yearMap = {};
+            for (var y = curYear-5; y <= curYear; y++) yearMap[y] = 0;
+            getRunEntries(function(){return true;}).forEach(function(e){ if(yearMap[e.yr]!==undefined) yearMap[e.yr]+=e.miles; else yearMap[e.yr]=e.miles; });
+            var allEntries = getRunEntries(function(){return true;});
+            var allStats = calcStats(allEntries);
+
+            // This year by month
+            var monthMap = {};
+            for (var m=0;m<12;m++) monthMap[m]=0;
+            getRunEntries(function(yr){return yr===curYear;}).forEach(function(e){monthMap[e.mo]+=e.miles;});
+            var yearEntries = getRunEntries(function(yr){return yr===curYear;});
+            var yearStats = calcStats(yearEntries);
+
+            // This month by week
+            var weekMap = {0:0,1:0,2:0,3:0};
+            getRunEntries(function(yr,mo){return yr===curYear&&mo===curMonth;}).forEach(function(e){weekMap[Math.min(3,Math.floor((e.d-1)/7))]+=e.miles;});
+            var monthEntries = getRunEntries(function(yr,mo){return yr===curYear&&mo===curMonth;});
+            var monthStats2 = calcStats(monthEntries);
+
+            // This week by day
+            var weekStart = new Date(now); weekStart.setDate(curDay - now.getDay());
+            var dayMap = {0:0,1:0,2:0,3:0,4:0,5:0,6:0};
+            getRunEntries(function(yr,mo,d){
+              var dt = new Date(yr,mo,d); return dt >= weekStart && dt <= now;
+            }).forEach(function(e){ var dt=new Date(e.yr,e.mo,e.d); dayMap[dt.getDay()]+=e.miles; });
+            var weekEntries = getRunEntries(function(yr,mo,d){var dt=new Date(yr,mo,d);return dt>=weekStart&&dt<=now;});
+            var weekStats = calcStats(weekEntries);
+
             var HISTORY_DATA = {
               all: {
-                label: "2020 - 2026",
-                miles: 847,
-                runs: 554,
-                avgPace: "9:14",
-                totalTime: "782:39",
-                bars: [
-                  { year: "2020", miles: 210 },
-                  { year: "2021", miles: 285 },
-                  { year: "2022", miles: 320 },
-                  { year: "2023", miles: 410 },
-                  { year: "2024", miles: 780 },
-                  { year: "2025", miles: 260 },
-                  { year: "2026", miles: 420 },
-                ],
+                label: (curYear-5) + " - " + curYear,
+                miles: allStats.miles, runs: allStats.runs, avgPace: allStats.avgPace, totalTime: "--",
+                bars: Object.keys(yearMap).sort().map(function(y){return {year:String(y),miles:Math.round(yearMap[y]*10)/10};}),
               },
               year: {
                 label: "This Year",
-                miles: 420,
-                runs: 87,
-                avgPace: "8:52",
-                totalTime: "62:14",
-                bars: [
-                  { year: "Jan", miles: 48 },
-                  { year: "Feb", miles: 62 },
-                  { year: "Mar", miles: 71 },
-                  { year: "Apr", miles: 55 },
-                  { year: "May", miles: 84 },
-                  { year: "Jun", miles: 0 },
-                  { year: "Jul", miles: 0 },
-                  { year: "Aug", miles: 0 },
-                  { year: "Sep", miles: 0 },
-                  { year: "Oct", miles: 0 },
-                  { year: "Nov", miles: 0 },
-                  { year: "Dec", miles: 0 },
-                ],
+                miles: yearStats.miles, runs: yearStats.runs, avgPace: yearStats.avgPace, totalTime: "--",
+                bars: MONTH_NAMES.map(function(mn,i){return {year:mn,miles:Math.round((monthMap[i]||0)*10)/10};}),
               },
               month: {
                 label: "This Month",
-                miles: 84,
-                runs: 18,
-                avgPace: "8:44",
-                totalTime: "12:22",
-                bars: [
-                  { year: "W1", miles: 18 },
-                  { year: "W2", miles: 24 },
-                  { year: "W3", miles: 22 },
-                  { year: "W4", miles: 20 },
-                ],
+                miles: monthStats2.miles, runs: monthStats2.runs, avgPace: monthStats2.avgPace, totalTime: "--",
+                bars: [{year:"W1",miles:Math.round((weekMap[0]||0)*10)/10},{year:"W2",miles:Math.round((weekMap[1]||0)*10)/10},{year:"W3",miles:Math.round((weekMap[2]||0)*10)/10},{year:"W4",miles:Math.round((weekMap[3]||0)*10)/10}],
               },
               week: {
                 label: "This Week",
-                miles: 22,
-                runs: 4,
-                avgPace: "8:38",
-                totalTime: "3:08",
-                bars: [
-                  { year: "Mon", miles: 0 },
-                  { year: "Tue", miles: 6 },
-                  { year: "Wed", miles: 8 },
-                  { year: "Thu", miles: 5 },
-                  { year: "Fri", miles: 0 },
-                  { year: "Sat", miles: 0 },
-                  { year: "Sun", miles: 3 },
-                ],
+                miles: weekStats.miles, runs: weekStats.runs, avgPace: weekStats.avgPace, totalTime: "--",
+                bars: DAY_NAMES.map(function(dn,i){return {year:dn,miles:Math.round((dayMap[i]||0)*10)/10};}),
               },
             };
 

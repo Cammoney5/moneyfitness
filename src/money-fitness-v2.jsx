@@ -6080,6 +6080,13 @@ function SettingsMenu({ isCoach, goTo, tab, onLogout, onReplayTutorial, notifSet
   const [name, setName]           = useState(isCoach ? COACH_NAME : (myProfile ? myProfile.name : CLIENTS[0].name));
   const [birthday, setBirthday]   = useState(isCoach ? "1988-04-14" : (myProfile && myProfile.birthday ? myProfile.birthday : ""));
   const [email, setEmail]         = useState(isCoach ? "cameron@moneyfitness.com" : (myProfile ? myProfile.email : ""));
+  useEffect(function() {
+    if (!isCoach && myProfile) {
+      setName(myProfile.name || "");
+      setEmail(myProfile.email || "");
+      if (myProfile.birthday) setBirthday(myProfile.birthday);
+    }
+  }, [myProfile]);
   const [resetSent, setResetSent] = useState(false);
   const [saved, setSaved]         = useState(false);
   // notifSettings + setNotifSettings lifted to MainApp

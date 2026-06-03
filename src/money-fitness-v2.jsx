@@ -4610,377 +4610,96 @@ const MOCK_WATCH_WORKOUTS = [
   },
 ];
 
-function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onImport }) {
-  // Track which platform is connected
-  const [connectedPlatform, setConnectedPlatform] = useState(connected ? "apple" : null);
-  const [expandedId, setExpandedId]   = useState(null);
-  const [importing, setImporting]     = useState(null);
-
-  const PLATFORM_LOGOS = {
-    apple:  '<svg width="22" height="26" viewBox="0 0 256 315" fill="currentColor"><path d="M213.803 167.03c.442 47.58 41.74 63.413 42.197 63.615-.35 1.116-6.599 22.563-21.757 44.716-13.104 19.153-26.705 38.235-48.13 38.63-21.05.388-27.82-12.498-51.888-12.498-24.061 0-31.582 12.105-51.51 12.886-20.723.782-36.577-20.44-49.8-39.526C5.977 247.185-14.816 181.661 11.366 136.51c13.053-22.407 36.395-36.593 61.735-36.98 19.288-.36 37.476 12.981 49.28 12.981 11.804 0 33.948-16.06 57.188-13.7 9.726.4 37.05 3.93 54.595 29.622zm-62.76-96.18c10.95-13.281 18.368-31.79 16.353-50.24-15.826.636-34.996 10.546-46.35 23.827-10.18 11.798-19.09 30.729-16.698 48.783 17.644 1.368 35.658-8.998 46.695-22.37z"/></svg>',
-    garmin: '<svg width="20" height="20" viewBox="0 0 100 100" fill="currentColor"><circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" stroke-width="8"/><path d="M72 50H50v15h14c-3 8-11 14-21 14-13 0-23-10-23-23s10-23 23-23c6 0 11 2 15 6l10-10c-6-6-15-10-25-10-21 0-38 17-38 37s17 37 38 37 37-16 37-37v-6z"/></svg>',
-    google: '<svg width="28" height="28" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>',
-    fitbit: '<svg width="28" height="28" viewBox="0 0 100 100"><circle cx="50" cy="18" r="9" fill="currentColor"/><circle cx="50" cy="50" r="12" fill="currentColor"/><circle cx="50" cy="82" r="9" fill="currentColor"/><circle cx="20" cy="34" r="7" fill="currentColor"/><circle cx="20" cy="66" r="7" fill="currentColor"/><circle cx="80" cy="34" r="7" fill="currentColor"/><circle cx="80" cy="66" r="7" fill="currentColor"/></svg>',
-    coros:  '<svg width="28" height="28" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" stroke="currentColor" stroke-width="8" fill="none"/><circle cx="50" cy="50" r="28" stroke="currentColor" stroke-width="5" fill="none"/><circle cx="50" cy="50" r="8" fill="currentColor"/></svg>',
-  };
-
-  const PLATFORMS = [
-    {
-      id: "apple",
-      name: "Apple Health",
-      subtitle: "Apple Watch + iPhone",
-      bg: "#1C1C1E",
-      accent: "#30D158",
-      note: "Uses HealthKit -- iOS only",
-    },
-    {
-      id: "garmin",
-      name: "Garmin Connect",
-      subtitle: "All Garmin devices",
-      bg: "#003087",
-      accent: "#00A3E0",
-      note: "Garmin Health API -- OAuth required",
-    },
-    {
-      id: "google",
-      name: "Google Fit",
-      subtitle: "Android + Wear OS",
-      bg: "#4285F4",
-      accent: "#ffffff",
-      note: "Health Connect API -- Android only",
-    },
-    {
-      id: "fitbit",
-      name: "Fitbit",
-      subtitle: "All Fitbit devices",
-      bg: "#00B0B9",
-      accent: "#ffffff",
-      note: "Fitbit Web API -- cross-platform",
-    },
-    {
-      id: "coros",
-      name: "Coros",
-      subtitle: "PACE, APEX, VERTIX",
-      bg: "#1A1A2E",
-      accent: "#E94560",
-      note: "Coros Open API -- cross-platform",
-    },
-  ];
-
-  const activePlatform = PLATFORMS.find(function(p) { return p.id === connectedPlatform; });
-
-  function handleConnect(platformId) {
-    setConnectedPlatform(platformId);
-    if (platformId === "apple") onConnect();
-  }
-
-  function handleDisconnect() {
-    setConnectedPlatform(null);
-    onDisconnect();
-  }
-
-  const [syncStatus, setSyncStatus] = useState(null); // null | "syncing" | "done"
-
-  function handleSync() {
-    setSyncStatus("syncing");
-    setTimeout(function() {
-      setSyncStatus("done");
-      setTimeout(function() { setSyncStatus(null); }, 2500);
-    }, 1400);
-  }
-
-  function handleImport(workout) {
-    setImporting(workout.id);
-    setTimeout(function() {
-      onImport(workout, connectedPlatform);
-      setImporting(null);
-    }, 800);
-  }
-
-  // Not connected -- show all platform options
-  if (!connectedPlatform) {
-    return (
-      <div>
-        <div style={{ color: TEXT, fontSize: 24, fontWeight: 800, marginBottom: 4 }}>Connection</div>
-        <div style={{ color: TEXT2, fontSize: 14, marginBottom: 24 }}>Sync workouts from your device</div>
-
-        {PLATFORMS.map(function(p) {
-          return (
-            <div key={p.id} style={{ background: p.bg, borderRadius: 18, padding: "20px", marginBottom: 14, position: "relative", overflow: "hidden" }}>
-              <div style={{ position: "absolute", top: -20, right: -20, width: 100, height: 100, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
-              <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
-                <div style={{ width: 52, height: 52, borderRadius: 14, background: "rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><span dangerouslySetInnerHTML={{ __html: PLATFORM_LOGOS[p.id] }} /></div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ color: "#fff", fontSize: 17, fontWeight: 800 }}>{p.name}</div>
-                  <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, marginTop: 2 }}>{p.subtitle}</div>
-                </div>
-              </div>
-              <div style={{ background: "rgba(255,255,255,0.08)", borderRadius: 10, padding: "8px 12px", marginBottom: 14 }}>
-                <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 10 }}>{p.note}</div>
-              </div>
-              <button onClick={function() { handleConnect(p.id); }} style={{ width: "100%", padding: "12px", borderRadius: 12, background: p.accent, border: "none", color: (p.id === "fitbit") ? "#003087" : "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
-                Connect {p.name}
-              </button>
-            </div>
-          );
-        })}
-
-        <div style={{ background: SURFACE, borderRadius: 14, padding: "12px 16px", display: "flex", alignItems: "center", gap: 10, marginTop: 4 }}>
-          <span style={{ fontSize: 16 }}><span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span></span>
-          <span style={{ color: TEXT3, fontSize: 12, lineHeight: 1.4 }}>Your health data is private. Only workout summaries are shared with your coach.</span>
-        </div>
-      </div>
-    );
-  }
-
-  // Connected state -- show workouts
-  return (
-    <div>
-      <div style={{ color: TEXT, fontSize: 24, fontWeight: 800, marginBottom: 4 }}>Connection</div>
-      <div style={{ color: TEXT2, fontSize: 14, marginBottom: 16 }}>Recent workouts from {activePlatform.name}</div>
-      <div style={{ background: "#1C1C1E", borderRadius: 16, padding: "14px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 12 }}>
-        <div style={{ width: 44, height: 44, borderRadius: 12, background: "#1C1C1E", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#fff" }}><span dangerouslySetInnerHTML={{ __html: PLATFORM_LOGOS[activePlatform.id] }} /></div>
-        <div style={{ flex: 1 }}>
-          <div style={{ color: "#fff", fontSize: 14, fontWeight: 700 }}>{activePlatform.name} Connected</div>
-          <div style={{ color: syncStatus === "done" ? "#7DFF9B" : activePlatform.accent, fontSize: 12, marginTop: 2, transition: "color 0.3s" }}>
-            {syncStatus === "syncing" ? "⟳ Syncing..." : syncStatus === "done" ? "✓ Sync complete" : "● Synced just now"}
-          </div>
-        </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button onClick={handleSync} disabled={syncStatus === "syncing"} style={{ background: syncStatus === "syncing" ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.15)", border: "none", color: syncStatus === "syncing" ? "rgba(255,255,255,0.4)" : "#fff", padding: "7px 12px", borderRadius: 8, fontSize: 12, cursor: syncStatus === "syncing" ? "default" : "pointer", fontWeight: 600, transition: "all 0.2s" }}>
-            {syncStatus === "syncing" ? "Syncing..." : "Sync"}
-          </button>
-          <button onClick={handleDisconnect} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.5)", fontSize: 11, cursor: "pointer" }}>Disconnect</button>
-        </div>
-      </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 20, overflowX: "auto", paddingBottom: 2 }}>
-        {PLATFORMS.map(function(p) {
-          const isActive = p.id === connectedPlatform;
-          return (
-            <button key={p.id} onClick={function() { if (!isActive) handleConnect(p.id); }} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 99, background: isActive ? p.bg : SURFACE, border: "1.5px solid "+(isActive ? p.bg : BORDER), cursor: "pointer", flexShrink: 0 }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: isActive ? "rgba(255,255,255,0.7)" : p.bg, flexShrink: 0 }} />
-              <span style={{ color: isActive ? "#fff" : TEXT2, fontSize: 12, fontWeight: isActive ? 700 : 500 }}>{p.name.split(" ")[0]}</span>
-            </button>
-          );
-        })}
-      </div>
-      <div style={{ color: TEXT2, fontSize: 12, fontWeight: 700, letterSpacing: 1, marginBottom: 10 }}>RECENT WORKOUTS</div>
-      {MOCK_WATCH_WORKOUTS.map(function(w) {
-        const isImported    = importedIds[w.id];
-        const isExpanded    = expandedId === w.id;
-        const isImportingThis = importing === w.id;
-
-        return (
-          <div key={w.id} style={{ background: CARD, border: "1.5px solid "+(isImported ? GREEN+"66" : BORDER), borderRadius: 16, marginBottom: 10, overflow: "hidden" }}>
-            <div onClick={function() { setExpandedId(isExpanded ? null : w.id); }} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", cursor: "pointer" }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: activePlatform.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#fff" }}><span style={{ filter: "brightness(100)" }} dangerouslySetInnerHTML={{ __html: PLATFORM_LOGOS[activePlatform.id] }} /></div>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ color: TEXT, fontSize: 14, fontWeight: 700 }}>{w.type}</span>
-                  {isImported && <span style={{ background: GREEN_BG, color: GREEN, fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 6 }}>IMPORTED</span>}
-                </div>
-                <div style={{ color: activePlatform.accent, fontSize: 12, marginTop: 2 }}>{w.date}</div>
-                <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-                  <span style={{ color: TEXT2, fontSize: 12 }}>{w.duration}</span>
-                  {w.distance && <span style={{ color: TEXT2, fontSize: 12 }}> {w.distance}</span>}
-                  <span style={{ color: TEXT2, fontSize: 12 }}> {w.calories} cal</span>
-                </div>
-              </div>
-              <span style={{ color: TEXT3, fontSize: 14 }}>{isExpanded ? "^" : "v"}</span>
-            </div>
-
-            {isExpanded && (
-              <div style={{ borderTop: "1px solid "+SURFACE2, padding: "14px 16px" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
-                  {[
-                    { label: "Duration",  val: w.duration,       icon: "⏱" },
-                    { label: "Avg HR",    val: w.avgHR+" bpm",   icon: "❤️" },
-                    { label: "Max HR",    val: w.maxHR+" bpm",   icon: "" },
-                    { label: "Calories",  val: w.calories+" cal",icon: "" },
-                    { label: "Steps",     val: w.steps ? w.steps.toLocaleString() : "--", icon: "" },
-                    { label: "Distance",  val: w.distance || "--",icon: "" },
-                  ].map(function(m, i) {
-                    return (
-                      <div key={"plat-stat-"+i} style={{ background: SURFACE, borderRadius: 10, padding: "10px 8px", textAlign: "center" }}>
-                        <div style={{ marginBottom: 3, display:"flex", justifyContent:"center", color: TEXT3 }} dangerouslySetInnerHTML={{ __html: m.icon }} />
-                        <div style={{ color: TEXT, fontSize: 12, fontWeight: 700 }}>{m.val}</div>
-                        <div style={{ color: TEXT3, fontSize: 10, marginTop: 1 }}>{m.label}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-      <div style={{ background: SURFACE, borderRadius: 10, padding: "10px 12px", marginBottom: 14 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                    <span style={{ color: TEXT2, fontSize: 11, fontWeight: 600 }}>Heart Rate Range</span>
-                    <span style={{ color: TEXT3, fontSize: 11 }}>{w.avgHR}-{w.maxHR} bpm</span>
-                  </div>
-                  <div style={{ background: SURFACE2, borderRadius: 99, height: 6, overflow: "hidden" }}>
-                    <div style={{ marginLeft: ((w.avgHR-80)/(220-80)*100)+"%", width: ((w.maxHR-w.avgHR)/(220-80)*100)+"%", height: "100%", background: "linear-gradient(90deg,#2AAD66,#E05252)", borderRadius: 99 }} />
-                  </div>
-                </div>
-
-                {!isImported ? (
-                  <button onClick={function() { handleImport(w); }} style={{ width: "100%", padding: "12px", borderRadius: 12, background: isImportingThis ? SURFACE : ORANGE, border: "none", color: isImportingThis ? TEXT2 : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                    {isImportingThis ? "Importing..." : "Import to Money Fitness"}
-                  </button>
-                ) : (
-                  <div style={{ background: GREEN_BG, borderRadius: 12, padding: "11px", textAlign: "center" }}>
-                    <span style={{ color: GREEN, fontSize: 13, fontWeight: 700 }}>Added to your activity log</span>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      })}
-
-      <div style={{ background: SURFACE, borderRadius: 12, padding: "10px 14px", display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
-        <span style={{ fontSize: 16 }}><span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg></span></span>
-        <span style={{ color: TEXT3, fontSize: 12 }}>In the full app, workouts sync automatically after each session.</span>
-      </div>
-    </div>
-  );
-}
-
-
-function WorkoutTrendChart({ workoutType, color, data, unit, livePace, weekDates }) {
-  const [selectedWeek, setSelectedWeek] = useState(data.length - 1); // default = most recent
-
-  const maxVal = Math.max.apply(null, data.concat([0.1]));
-  const W = 340;
-  const H = 120;
-  const padL = 40;
-  const padB = 20;
-  const padT = 10;
-  const padR = 10;
-  const chartW = W - padL - padR;
-  const chartH = H - padB - padT;
-  const n = data.length;
-
-  function xPos(i) { return padL + (i / (n - 1)) * chartW; }
-  function yPos(v) { return padT + chartH - (v / maxVal) * chartH; }
-
-  var linePath = "";
-  data.forEach(function(v, i) {
-    linePath += (i === 0 ? "M" : "L") + xPos(i).toFixed(1) + "," + yPos(v).toFixed(1) + " ";
+function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onImport, authUserId, authToken }) {
+  const [stravaConnected, setStravaConnected] = React.useState(function() {
+    try { return !!localStorage.getItem("mf_strava_connected"); } catch(e) { return false; }
   });
-  var areaPath = linePath + " L" + xPos(n-1).toFixed(1) + "," + (padT+chartH).toFixed(1) + " L" + padL.toFixed(1) + "," + (padT+chartH).toFixed(1) + " Z";
 
-  const yLabels = [0, Math.round(maxVal / 2 * 10) / 10, Math.round(maxVal * 10) / 10];
-  const months = ["FEB","MAR","APR","MAY"];
+  const STRAVA_CLIENT_ID = "255151";
+  const REDIRECT_URI = "https://ebphyejgauwgguwcbmgj.supabase.co/functions/v1/strava-auth";
 
-  const isLastWeek  = selectedWeek === n - 1;
-  // Build real week date label and metrics from actual data
-  var realWeekDate = "This week";
-  var mn2 = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  if (weekDates && weekDates[selectedWeek]) {
-    var wd = weekDates[selectedWeek];
-    realWeekDate = mn2[wd.start.getMonth()] + " " + wd.start.getDate() + " - " + mn2[wd.end.getMonth()] + " " + wd.end.getDate();
+  function connectStrava() {
+    if (!authUserId) { alert("Please log in first"); return; }
+    var scope = "activity:read_all";
+    var url = "https://www.strava.com/oauth/authorize" +
+      "?client_id=" + STRAVA_CLIENT_ID +
+      "&redirect_uri=" + encodeURIComponent(REDIRECT_URI + "?state=" + authUserId) +
+      "&response_type=code" +
+      "&scope=" + scope;
+    window.location.href = url;
   }
-  var selectedVal = data[selectedWeek] || 0;
-  var realMetrics = (workoutType === "run" || workoutType === "bike")
-    ? [{ label: "Miles", value: selectedVal > 0 ? selectedVal + " mi" : "0 mi" }]
-    : [{ label: "Activities", value: String(selectedVal) }];
-  var weekData = { date: realWeekDate, metrics: realMetrics };
+
+  function disconnectStrava() {
+    try { localStorage.removeItem("mf_strava_connected"); } catch(e) {}
+    setStravaConnected(false);
+  }
+
+  useEffect(function() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get("strava") === "connected") {
+      setStravaConnected(true);
+      try { localStorage.setItem("mf_strava_connected", "1"); } catch(e) {}
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
 
   return (
-    <div style={{ background: CARD, border: "1.5px solid "+BORDER, borderRadius: 16, padding: "16px", marginBottom: 16 }}>
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-          <div style={{ color: TEXT, fontSize: 16, fontWeight: 800 }}>{weekData.date}</div>
-          {isLastWeek && (
-            <span style={{ background: color+"20", color: color, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20 }}>This week</span>
+    <div style={{ padding: "0 0 24px" }}>
+      <div style={{ color: TEXT, fontSize: 24, fontWeight: 800, marginBottom: 4 }}>Connections</div>
+      <div style={{ color: TEXT2, fontSize: 14, marginBottom: 24 }}>Sync workouts automatically from your device</div>
+
+      <div style={{ background: "#FC4C02", borderRadius: 18, padding: 20, marginBottom: 14, position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", top: -20, right: -20, width: 100, height: 100, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+          <div style={{ width: 52, height: 52, borderRadius: 14, background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172H17.44l-2.053 4.116z"/><path d="M9.998 10.816l-2.35-4.641L5.3 10.816H2l5.648 10.984 2.35-4.641-2.35-4.613H9.22l.778 1.533.778-1.533h1.222l-2.35 4.641 2.35 4.641L15.116 10.816H9.998z"/></svg>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ color: "#fff", fontSize: 17, fontWeight: 800 }}>Strava</div>
+            <div style={{ color: "rgba(255,255,255,0.7)", fontSize: 12, marginTop: 2 }}>Coros, Garmin, Apple Watch, Fitbit + more</div>
+          </div>
+          {stravaConnected && (
+            <div style={{ background: "rgba(255,255,255,0.2)", borderRadius: 20, padding: "4px 10px", fontSize: 11, color: "#fff", fontWeight: 700 }}>✓ Connected</div>
           )}
         </div>
-        <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
-          {weekData.metrics.map(function(m) {
-            return (
-              <div key={m.label}>
-                <div style={{ color: TEXT3, fontSize: 11 }}>{m.label}</div>
-                <div style={{ color: TEXT, fontSize: 20, fontWeight: 800 }}>{m.value}</div>
-              </div>
-            );
-          })}
-          {livePace && isLastWeek && (
-            <div>
-              <div style={{ color: TEXT3, fontSize: 11 }}>Your Avg Pace</div>
-              <div style={{ color: color, fontSize: 20, fontWeight: 800 }}>{livePace}</div>
-            </div>
-          )}
+        <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 10, padding: "8px 12px", marginBottom: 14 }}>
+          <div style={{ color: "rgba(255,255,255,0.8)", fontSize: 11, lineHeight: 1.5 }}>
+            {stravaConnected
+              ? "Your Strava workouts will automatically sync to MoneyFitness whenever you complete an activity."
+              : "Connect Strava to automatically import workouts from any device that syncs to Strava — including Coros, Garmin, Apple Watch, and more."}
+          </div>
+        </div>
+        {stravaConnected ? (
+          <button onClick={disconnectStrava} style={{ width: "100%", padding: 12, borderRadius: 12, background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.3)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            Disconnect Strava
+          </button>
+        ) : (
+          <button onClick={connectStrava} style={{ width: "100%", padding: 12, borderRadius: 12, background: "#fff", border: "none", color: "#FC4C02", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
+            Connect Strava
+          </button>
+        )}
+      </div>
+
+      <div style={{ background: SURFACE, borderRadius: 18, padding: 20, marginBottom: 14, opacity: 0.6 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ width: 52, height: 52, borderRadius: 14, background: SURFACE2, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={TEXT3} strokeWidth="2"><path d="M12 2v20M2 12h20"/></svg>
+          </div>
+          <div>
+            <div style={{ color: TEXT, fontSize: 15, fontWeight: 700 }}>More integrations coming soon</div>
+            <div style={{ color: TEXT3, fontSize: 12, marginTop: 2 }}>Apple Health, Garmin direct, Whoop, Oura</div>
+          </div>
         </div>
       </div>
 
-      <div style={{ color: TEXT3, fontSize: 11, marginBottom: 6 }}>Past 12 weeks -- tap a dot to see details</div>
-      <div style={{ position: "relative" }}>
-        <svg width="100%" viewBox={"0 0 "+W+" "+H} style={{ display: "block" }}>
-{yLabels.map(function(v, i) {
-            const y = yPos(v);
-            return (
-              <g key={"ylabel-"+v+"-"+i}>
-                <line x1={padL} y1={y} x2={W-padR} y2={y} stroke="#E8E8E8" strokeWidth="1" />
-                <text x={padL-4} y={y+4} textAnchor="end" fontSize="9" fill={TEXT3}>{v > 0 ? v+unit : "0"}</text>
-              </g>
-            );
-          })}
-{months.map(function(m, i) {
-            const x = padL + ((i + 1) / (months.length + 1)) * chartW;
-            return <text key={m} x={x} y={H-4} textAnchor="middle" fontSize="9" fill={TEXT3}>{m}</text>;
-          })}
-      <path d={areaPath} fill={color+"22"} />
-      <path d={linePath} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" />
-      <line
-            x1={xPos(selectedWeek)} y1={padT}
-            x2={xPos(selectedWeek)} y2={padT + chartH}
-            stroke={TEXT} strokeWidth="1" strokeDasharray="3,3" opacity="0.3"
-          />
-{data.map(function(v, i) {
-            const isSelected = i === selectedWeek;
-            const isLast     = i === n - 1;
-            const cx = xPos(i);
-            const cy = yPos(v);
-            return (
-              <g key={"pt-"+i} onClick={function() { setSelectedWeek(i); }} style={{ cursor: "pointer" }}>
-      <circle cx={cx} cy={cy} r={12} fill="transparent" />
-      <circle
-                  cx={cx} cy={cy}
-                  r={isSelected ? 7 : isLast ? 5 : 3.5}
-                  fill={isSelected ? color : isLast ? color : CARD}
-                  stroke={color}
-                  strokeWidth={isSelected ? 0 : 1.8}
-                  opacity={isSelected ? 1 : 0.85}
-                />
-{isSelected && (
-                  <circle cx={cx} cy={cy} r={12} fill={color+"22"} />
-                )}
-              </g>
-            );
-          })}
-        </svg>
+      <div style={{ background: SURFACE, borderRadius: 14, padding: "12px 16px", display: "flex", alignItems: "center", gap: 10 }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={TEXT3} strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <span style={{ color: TEXT3, fontSize: 12, lineHeight: 1.4 }}>Your health data is private. Only workout summaries are shared with your coach.</span>
       </div>
     </div>
   );
 }
 
-// Seed trend data per workout type (12 weeks)
-const WEEK_DETAILS = {
-  total: [
-    { date: "Feb 17 - Feb 23", metrics: [{ label: "Activities", value: "5" }, { label: "Calories", value: "1,820" }, { label: "Active Days", value: "5" }] },
-    { date: "Feb 24 - Mar 2",  metrics: [{ label: "Activities", value: "5" }, { label: "Calories", value: "1,950" }, { label: "Active Days", value: "5" }] },
-    { date: "Mar 3 - Mar 9",   metrics: [{ label: "Activities", value: "4" }, { label: "Calories", value: "1,540" }, { label: "Active Days", value: "4" }] },
-    { date: "Mar 10 - Mar 16", metrics: [{ label: "Activities", value: "6" }, { label: "Calories", value: "2,210" }, { label: "Active Days", value: "6" }] },
-    { date: "Mar 17 - Mar 23", metrics: [{ label: "Activities", value: "5" }, { label: "Calories", value: "1,870" }, { label: "Active Days", value: "5" }] },
-    { date: "Mar 24 - Mar 30", metrics: [{ label: "Activities", value: "7" }, { label: "Calories", value: "2,540" }, { label: "Active Days", value: "6" }] },
-    { date: "Mar 31 - Apr 6",  metrics: [{ label: "Activities", value: "6" }, { label: "Calories", value: "2,180" }, { label: "Active Days", value: "6" }] },
-    { date: "Apr 7 - Apr 13",  metrics: [{ label: "Activities", value: "7" }, { label: "Calories", value: "2,490" }, { label: "Active Days", value: "6" }] },
-    { date: "Apr 14 - Apr 20", metrics: [{ label: "Activities", value: "7" }, { label: "Calories", value: "2,520" }, { label: "Active Days", value: "7" }] },
-    { date: "Apr 21 - Apr 27", metrics: [{ label: "Activities", value: "7" }, { label: "Calories", value: "2,610" }, { label: "Active Days", value: "6" }] },
-    { date: "Apr 28 - May 4",  metrics: [{ label: "Activities", value: "8" }, { label: "Calories", value: "2,840" }, { label: "Active Days", value: "7" }] },
-    { date: "May 5 - May 11",  metrics: [{ label: "Activities", value: "6" }, { label: "Calories", value: "2,190" }, { label: "Active Days", value: "5" }] },
-  ],
-  run: [
-    { date: "Feb 17 - Feb 23", metrics: [{ label: "Distance", value: "12.1 mi" }, { label: "Time", value: "1h 55m" }, { label: "Avg Pace", value: "9:32/mi" }] },
-    { date: "Feb 24 - Mar 2",  metrics: [{ label: "Distance", value: "11.8 mi" }, { label: "Time", value: "1h 52m" }, { label: "Avg Pace", value: "9:31/mi" }] },
-    { date: "Mar 3 - Mar 9",   metrics: [{ label: "Distance", value: "10.2 mi" }, { label: "Time", value: "1h 42m" }, { label: "Avg Pace", value: "10:00/mi" }] },
     { date: "Mar 10 - Mar 16", metrics: [{ label: "Distance", value: "13.4 mi" }, { label: "Time", value: "2h 06m" }, { label: "Avg Pace", value: "9:25/mi" }] },
     { date: "Mar 17 - Mar 23", metrics: [{ label: "Distance", value: "14.1 mi" }, { label: "Time", value: "2h 11m" }, { label: "Avg Pace", value: "9:18/mi" }] },
     { date: "Mar 24 - Mar 30", metrics: [{ label: "Distance", value: "13.9 mi" }, { label: "Time", value: "2h 09m" }, { label: "Avg Pace", value: "9:18/mi" }] },
@@ -8650,7 +8369,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
           </div>
         )}
         {tab === "library"       && <LibraryScreen isCoach={isCoach} favorites={favorites} toggleFavorite={toggleFavorite} />}
-        {tab === "watch"         && <AppleWatchScreen connected={watchConnected} onConnect={function() { setWatchConnected(true); }} onDisconnect={function() { setWatchConnected(false); setImportedIds({}); setWatchDays({}); }} importedIds={importedIds} onImport={handleImport} />}
+        {tab === "watch"         && <AppleWatchScreen connected={watchConnected} onConnect={function() { setWatchConnected(true); }} onDisconnect={function() { setWatchConnected(false); setImportedIds({}); setWatchDays({}); }} importedIds={importedIds} onImport={handleImport} authUserId={authUserId} authToken={authToken} />}
         {tab === "activity"      && <ActivityScreen isCoach={isCoach} watchDays={watchDays} activityLogs={activityLogs} onLogsChange={handleLogsChange} realClients={realClients} myProfile={myProfile} />}
         {tab === "analytics"     && <AnalyticsScreen isCoach={isCoach} monthStats={monthStats} todaySteps={monthStats.todaySteps} last7Steps={monthStats.last7Steps} activityLogs={activityLogs} realClients={realClients} />}
         {tab === "race"          && <RaceScreen activityLogs={activityLogs} raceCollapsed={raceCollapsed} setRaceCollapsed={setRaceCollapsed} plans={myPlans} setPlans={function(v) { var next = typeof v === "function" ? v(myPlans) : v; setMyPlans(next); try { localStorage.setItem("mf_plans", JSON.stringify(next)); } catch(e) {} }} />}

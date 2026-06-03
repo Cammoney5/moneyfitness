@@ -7702,6 +7702,15 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
     setNotifications(function(prev) { return [notif].concat(prev); });
   }
 
+  function sendPush(userId, title, body) {
+    if (!userId || !authToken) return;
+    fetch(SUPABASE_URL + "/functions/v1/send-push", {
+      method: "POST",
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: userId, title: title, body: body, url: "/" })
+    }).catch(function() {});
+  }
+
   // -- SHARED ACTIVITY LOGS -------------------------------------
   // activityLogs: { "YYYY-M": { day: [ {type, notes, miles, ...} ] } }
   // Start empty - real data loads from Supabase
@@ -7887,6 +7896,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
             read: false,
             clientId: client.id,
           });
+          sendPush(authUserId, "⚠️ " + client.name + " hasn't logged in " + daysSince + " days", "Consider sending them a check-in.");
         }
       }
     });
@@ -7931,6 +7941,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
       time: "Today",
       read: false,
     });
+    sendPush(authUserId, "Weekly Summary 📊", activeClients + " of " + CLIENTS.length + " clients active last week · " + totalWorkoutsWeek + " workouts logged");
   }, [isCoach]);
 
   // ── CLIENT: STREAK AT RISK (fires if no activity logged today after 6pm) ──
@@ -7996,6 +8007,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
           time: "Just now",
           read: false,
         });
+        sendPush(authUserId, "Activity logged! 💪", msg);
       }
     }
     setLastActivityCount(totalCount);
@@ -8016,16 +8028,17 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
         if (pct >= m && !firedGoalMilestones[key]) {
           setFiredGoalMilestones(function(prev) { return Object.assign({}, prev, { [key]: true }); });
           if (!notifSettings.goalMilestone) return;
+          var gtitle = m === 100 ? "Goal achieved! 🏆" : m + "% of your goal reached!";
+          var gbody = m === 100 ? "You hit your " + (g.label || g.unit) + " goal. Incredible work!" : "You're " + m + "% of the way to your " + (g.label || g.unit) + " goal. Keep pushing!";
           addNotification({
             id: Date.now() + m,
             type: "streak",
-            title: m === 100 ? "Goal achieved!" : m + "% of your goal reached!",
-            body: m === 100
-              ? "You hit your " + (g.label || g.unit) + " goal. Incredible work — time to set the next one!"
-              : "You're " + m + "% of the way to your " + (g.label || g.unit) + " goal. Keep pushing!",
+            title: gtitle,
+            body: gbody,
             time: "Just now",
             read: false,
           });
+          sendPush(authUserId, gtitle, gbody);
         }
       });
     });
@@ -8051,6 +8064,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
           time: "Just now",
           read: false,
         });
+        sendPush(authUserId, "🔥 " + m + "-day streak!", "You've logged activity " + m + " days in a row. That kind of consistency is what gets results!");
       }
     });
   }, [activityLogs]);
@@ -8065,6 +8079,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
       time: "Just now",
       read: false,
     });
+    sendPush(authUserId, "New client joined! 🎉", newClientName + " just signed up using your coach code.");
   }, [newClientName]);
 
   function handleSendMessage(clientId, msg) {
@@ -8136,6 +8151,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
             read: false,
             clientId: clientId,
           });
+          sendPush(authUserId, notifTitle, notifBody);
         }
       } else if (msg.type === "media") {
         notifTitle = "New message from " + clientName;

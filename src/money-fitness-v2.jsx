@@ -6231,15 +6231,20 @@ function SettingsMenu({ isCoach, goTo, tab, onLogout, onReplayTutorial, notifSet
                 <div style={{ color: TEXT, fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Push Notifications</div>
                 <div style={{ color: TEXT3, fontSize: 12, marginBottom: 12 }}>Get notified even when the app is closed</div>
                 <button onClick={async function() {
-                  if (!window.OneSignal) { alert('Push service loading, please try again in a moment.'); return; }
-                  const permission = await window.OneSignal.Notifications.permission;
-                  if (permission) { alert('Push notifications already enabled!'); return; }
-                  await window.OneSignal.Notifications.requestPermission();
-                  const granted = await window.OneSignal.Notifications.permission;
-                  if (granted) {
-                    const userId = window.__mf_user_id;
-                    if (userId) await window.OneSignal.login(userId);
-                    await window.OneSignal.User.addTag('user_id', userId || 'unknown');
+                  if (!('Notification' in window)) { alert('Notifications not supported on this device'); return; }
+                  if (Notification.permission === 'granted') {
+                    if (window.OneSignal && window.OneSignal.User) {
+                      const userId = window.__mf_user_id;
+                      if (userId) { try { await window.OneSignal.login(userId); await window.OneSignal.User.addTag('user_id', userId); } catch(e) {} }
+                    }
+                    alert('Push notifications already enabled!'); return;
+                  }
+                  const perm = await Notification.requestPermission();
+                  if (perm === 'granted') {
+                    if (window.OneSignal && window.OneSignal.User) {
+                      const userId = window.__mf_user_id;
+                      if (userId) { try { await window.OneSignal.login(userId); await window.OneSignal.User.addTag('user_id', userId); } catch(e) {} }
+                    }
                     alert('Push notifications enabled!');
                   } else {
                     alert('Please enable notifications in your device settings');

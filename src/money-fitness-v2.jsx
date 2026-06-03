@@ -4448,9 +4448,10 @@ function RecentActivityTimeline({ activityLogs }) {
   );
 }
 
-function ActivityScreen({ isCoach, watchDays, activityLogs, onLogsChange, realClients }) {
+function ActivityScreen({ isCoach, watchDays, activityLogs, onLogsChange, realClients, myProfile }) {
   var clientList = realClients && realClients.length > 0 ? realClients : [];
-  const myClient = CLIENTS[0]; // Used for client calendar view (non-coach)
+  var profileInitials = myProfile ? (myProfile.name || "?").split(" ").map(function(w){return w[0];}).join("").toUpperCase().slice(0,2) : "MJ";
+  const myClient = myProfile ? Object.assign({}, CLIENTS[0], { name: myProfile.name || CLIENTS[0].name, avatar: profileInitials, color: myProfile.color || CLIENTS[0].color }) : CLIENTS[0];
 
   if (!isCoach) {
     return (
@@ -7583,6 +7584,17 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
     }).catch(function(e) { console.log("push registration error", e); });
   }, [authUserId, authToken]);
   const [realClients, setRealClients] = useState([]);
+  const [myProfile, setMyProfile] = useState(null);
+
+  // Load own profile (client only)
+  useEffect(function() {
+    if (!authToken || !authUserId || initCoach) return;
+    fetch(SUPABASE_URL + "/rest/v1/profiles?id=eq." + authUserId + "&select=*", {
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+    }).then(function(r) { return r.json(); }).then(function(rows) {
+      if (Array.isArray(rows) && rows.length > 0) setMyProfile(rows[0]);
+    }).catch(function() {});
+  }, [authUserId, authToken]);
 
   // Load real clients from Supabase (coach only)
   useEffect(function() {
@@ -8468,7 +8480,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
         )}
         {tab === "library"       && <LibraryScreen isCoach={isCoach} favorites={favorites} toggleFavorite={toggleFavorite} />}
         {tab === "watch"         && <AppleWatchScreen connected={watchConnected} onConnect={function() { setWatchConnected(true); }} onDisconnect={function() { setWatchConnected(false); setImportedIds({}); setWatchDays({}); }} importedIds={importedIds} onImport={handleImport} />}
-        {tab === "activity"      && <ActivityScreen isCoach={isCoach} watchDays={watchDays} activityLogs={activityLogs} onLogsChange={handleLogsChange} realClients={realClients} />}
+        {tab === "activity"      && <ActivityScreen isCoach={isCoach} watchDays={watchDays} activityLogs={activityLogs} onLogsChange={handleLogsChange} realClients={realClients} myProfile={myProfile} />}
         {tab === "analytics"     && <AnalyticsScreen isCoach={isCoach} monthStats={monthStats} todaySteps={monthStats.todaySteps} last7Steps={monthStats.last7Steps} activityLogs={activityLogs} realClients={realClients} />}
         {tab === "race"          && <RaceScreen activityLogs={activityLogs} raceCollapsed={raceCollapsed} setRaceCollapsed={setRaceCollapsed} plans={myPlans} setPlans={setMyPlans} />}
         {tab === "notifications" && <NotificationsScreen notifications={notifications} onRead={function(id) { setNotifications(function(p) { return p.map(function(n) { return n.id === id ? Object.assign({}, n, { read: true }) : n; }); }); }} onClearAll={function() { setNotifications(function(p) { return p.map(function(n) { return Object.assign({}, n, { read: true }); }); }); }} isCoach={isCoach} goTo={goTo} onNavigateToClient={function(clientId, defaultTab) {

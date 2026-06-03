@@ -7763,7 +7763,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
     })
     .catch(function(e) { console.log("clients load error", e); });
   }, [authToken, authUserId, initCoach]);
-  const [showTutorial, setShowTutorial] = useState(true); // show on first launch
+  const [showTutorial, setShowTutorial] = useState(function() { try { return !localStorage.getItem("mf_tutorial_done"); } catch(e) { return false; } });
   const [selected, setSelected] = useState(null);
   const [clientDefaultTab, setClientDefaultTab] = useState("Progress");
   const [favorites, setFavorites] = useState({});
@@ -8036,14 +8036,10 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
     var todayNum = TODAY.getDate();
     var monthKey2 = TODAY.getFullYear() + "-" + TODAY.getMonth();
 
-    CLIENTS.forEach(function(client) {
-      // Find the most recent logged day for this client in activityLogs
-      // (for the coach view, activityLogs tracks the shared client log)
+    (realClients && realClients.length > 0 ? realClients : []).forEach(function(client) {
       var logs = activityLogs[monthKey2] || {};
       var loggedDays = Object.keys(logs).map(Number).filter(function(d) { return d <= todayNum; });
-
-      // Also consider workedOut seed data
-      var allDays = loggedDays.concat(client.workedOut.filter(function(d) { return d <= todayNum; }));
+      var allDays = loggedDays;
       var lastDay = allDays.length > 0 ? Math.max.apply(null, allDays) : 0;
       var daysSince = lastDay > 0 ? todayNum - lastDay : todayNum;
 
@@ -8083,7 +8079,8 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
     var totalWorkoutsWeek = 0;
     var inactiveNames = [];
 
-    CLIENTS.forEach(function(client) {
+    var clientsToCheck = realClients && realClients.length > 0 ? realClients : [];
+    clientsToCheck.forEach(function(client) {
       var loggedDays = Object.keys(logs3).map(Number);
       var lastWeekDays = loggedDays.filter(function(d) {
         return d <= TODAY.getDate() && d >= TODAY.getDate() - 7;
@@ -8098,11 +8095,12 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
 
     setWeeklySummaryFired(true);
     if (!notifSettings.weeklySummary) return;
+    if (clientsToCheck.length === 0) return;
     addNotification({
       id: Date.now() + 999,
       type: "streak",
       title: "Weekly Summary 📊",
-      body: activeClients + " of " + CLIENTS.length + " clients active last week · " + totalWorkoutsWeek + " workouts logged" + (inactiveNames.length > 0 ? " · " + inactiveNames.join(", ") + " need check-ins" : " · Great week all round!"),
+      body: activeClients + " of " + clientsToCheck.length + " clients active last week · " + totalWorkoutsWeek + " workouts logged" + (inactiveNames.length > 0 ? " · " + inactiveNames.join(", ") + " need check-ins" : " · Great week all round!"),
       time: "Today",
       read: false,
     });
@@ -8122,8 +8120,14 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
 
     if (todayLogs4.length === 0) {
       // Check if they have a streak worth protecting
-      var myClient = CLIENTS[0];
-      var streak = myClient ? myClient.streak : 0;
+      var streak = 0;
+      if (activityLogs) {
+        var _sc = new Date(TODAY); _sc.setDate(TODAY.getDate()-1);
+        for (var _si=0;_si<365;_si++) {
+          var _smk=_sc.getFullYear()+"-"+_sc.getMonth(); var _sd=_sc.getDate();
+          if(activityLogs[_smk]&&activityLogs[_smk][_sd]&&activityLogs[_smk][_sd].length>0){streak++;_sc.setDate(_sc.getDate()-1);}else{break;}
+        }
+      }
       if (streak > 0) {
         setStreakAlertFired(true);
         if (!notifSettings.streakRisk) return;
@@ -8545,7 +8549,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
       {showTutorial && (
         <OnboardingTutorial
           isCoach={isCoach}
-          onComplete={function() { setShowTutorial(false); }}
+          onComplete={function() { setShowTutorial(false); try { localStorage.setItem("mf_tutorial_done", "1"); } catch(e) {} }}
         />
       )}
       <div style={{ padding: "14px 18px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", background: CARD, borderBottom: "1px solid "+BORDER, flexShrink: 0 }}>

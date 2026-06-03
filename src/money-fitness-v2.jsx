@@ -4652,7 +4652,7 @@ function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onI
         <div style={{ position: "absolute", top: -20, right: -20, width: 100, height: 100, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
           <div style={{ width: 52, height: 52, borderRadius: 14, background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172H17.44l-2.053 4.116z"/><path d="M9.998 10.816l-2.35-4.641L5.3 10.816H2l5.648 10.984 2.35-4.641-2.35-4.613H9.22l.778 1.533.778-1.533h1.222l-2.35 4.641 2.35 4.641L15.116 10.816H9.998z"/></svg>
+            <span style={{color:"#fff",fontSize:22,fontWeight:900,fontStyle:"italic",letterSpacing:-1}}>S</span>
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ color: "#fff", fontSize: 17, fontWeight: 800 }}>Strava</div>

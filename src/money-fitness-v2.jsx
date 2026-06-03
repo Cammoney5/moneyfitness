@@ -5628,7 +5628,7 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
                         return (
                           <div key={pct} style={{ position: "absolute", bottom: pct * 100 + "%", left: 0, right: 0, display: "flex", alignItems: "center" }}>
                             <div style={{ flex: 1, height: 1, background: pct === 0 ? BORDER : SURFACE2, opacity: 0.6 }} />
-                            <div style={{ color: TEXT3, fontSize: 9, paddingLeft: 4, width: 28, textAlign: "right" }}>{val > 0 ? val : "0mi"}</div>
+                            <div style={{ color: "#333", fontSize: 9, paddingLeft: 4, width: 28, textAlign: "right" }}>{val > 0 ? val : "0mi"}</div>
                           </div>
                         );
                       })}
@@ -5659,9 +5659,9 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
                               </div>
                             )}
                             {b.miles > 0 && (
-                              <div style={{ width: "100%", background: isHovered ? GREEN : isCurrent ? GREEN : TEXT, borderRadius: "3px 3px 0 0", height: Math.max(pct, 2)+"%", minHeight: 4, transition: "background 0.15s, height 0.3s ease", opacity: isHovered ? 1 : isCurrent ? 1 : 0.85 }} />
+                              <div style={{ width: "100%", background: isHovered ? GREEN : isCurrent ? GREEN : "#1B8C4E99", borderRadius: "3px 3px 0 0", height: Math.max(pct, 2)+"%", minHeight: 4, transition: "background 0.15s, height 0.3s ease", opacity: 1 }} />
                             )}
-                            <div style={{ position: "absolute", bottom: 0, color: isHovered ? GREEN : isCurrent ? GREEN : TEXT3, fontSize: hd.bars.length > 8 ? 8 : 10, fontWeight: isCurrent || isHovered ? 700 : 400, paddingTop: 4, textAlign: "center", width: "100%" }}>{b.year}</div>
+                            <div style={{ position: "absolute", bottom: 0, color: isHovered ? GREEN : isCurrent ? GREEN : "#333", fontSize: hd.bars.length > 8 ? 8 : 10, fontWeight: isCurrent || isHovered ? 700 : 400, paddingTop: 4, textAlign: "center", width: "100%" }}>{b.year}</div>
                           </div>
                         );
                       })}

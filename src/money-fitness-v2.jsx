@@ -8500,6 +8500,12 @@ export default function App() {
           setAuthUserId(userId || null);
           setAuthCoachId(coachId || null);
           if (!coach && clientName) setNewClientName(clientName);
+          if (userId) {
+            window.__mf_user_id = userId;
+            if (window.OneSignal && window.OneSignal.User) {
+              try { window.OneSignal.login(userId); window.OneSignal.User.addTag('user_id', userId); } catch(e) {}
+            }
+          }
         }} />
       </div>
     );

@@ -3719,7 +3719,7 @@ function ClientDetail({ client, onBack, isCoach, defaultTab, favorites, watchDay
 
 // ---
 
-function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthStats, coachProgram, activityLogs, myPlans, thisWeekPlanned, realClients, viewedCounts }) {
+function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthStats, coachProgram, activityLogs, myPlans, thisWeekPlanned, realClients, viewedCounts, myProfile }) {
   const dayHour = TODAY.getHours();
   const greeting = dayHour < 12 ? "Good morning" : dayHour < 17 ? "Good afternoon" : "Good evening";
   const stats = monthStats || { totalWorkouts: 0, totalMiles: "0.0", restDays: 0 };
@@ -3756,7 +3756,7 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
         <div>
           <div style={{ color: TEXT3, fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>{greeting.toUpperCase()}</div>
           <div style={{ color: TEXT, fontSize: 22, fontWeight: 900, lineHeight: 1.2 }}>
-            {isCoach ? COACH_NAME : CLIENTS[0].name}
+            {isCoach ? COACH_NAME : (myProfile ? myProfile.name : CLIENTS[0].name)}
           </div>
         </div>
         {!isCoach && (
@@ -6074,12 +6074,12 @@ function CoachCodeCard() {
   );
 }
 
-function SettingsMenu({ isCoach, goTo, tab, onLogout, onReplayTutorial, notifSettings, setNotifSettings }) {
+function SettingsMenu({ isCoach, goTo, tab, onLogout, onReplayTutorial, notifSettings, setNotifSettings, myProfile }) {
   const [open, setOpen]           = useState(false);
   const [view, setView]           = useState("menu");
-  const [name, setName]           = useState(isCoach ? COACH_NAME : CLIENTS[0].name);
-  const [birthday, setBirthday]   = useState(isCoach ? "1988-04-14" : "1995-09-22");
-  const [email, setEmail]         = useState(isCoach ? "cameron@moneyfitness.com" : "marcus@email.com");
+  const [name, setName]           = useState(isCoach ? COACH_NAME : (myProfile ? myProfile.name : CLIENTS[0].name));
+  const [birthday, setBirthday]   = useState(isCoach ? "1988-04-14" : (myProfile && myProfile.birthday ? myProfile.birthday : ""));
+  const [email, setEmail]         = useState(isCoach ? "cameron@moneyfitness.com" : (myProfile ? myProfile.email : ""));
   const [resetSent, setResetSent] = useState(false);
   const [saved, setSaved]         = useState(false);
   // notifSettings + setNotifSettings lifted to MainApp
@@ -6133,7 +6133,7 @@ function SettingsMenu({ isCoach, goTo, tab, onLogout, onReplayTutorial, notifSet
           {view === "menu" && (
             <div>
               <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid "+SURFACE2 }}>
-                <div style={{ color: TEXT, fontSize: 13, fontWeight: 700 }}>{isCoach ? COACH_NAME : CLIENTS[0].name}</div>
+                <div style={{ color: TEXT, fontSize: 13, fontWeight: 700 }}>{isCoach ? COACH_NAME : (myProfile ? myProfile.name : CLIENTS[0].name)}</div>
                 <div style={{ color: TEXT3, fontSize: 11, marginTop: 2 }}>{isCoach ? "Coach" : "Client"}</div>
               </div>
               {menuItems.map(function(item) {
@@ -8423,7 +8423,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
             <button onClick={function() { setIsCoach(true); setSelected(null); goTo("home"); }} style={{ padding: "6px 12px", background: isCoach ? CARD : "transparent", borderRadius: 8, border: "none", color: isCoach ? TEXT : TEXT3, fontSize: 12, fontWeight: isCoach ? 700 : 500, cursor: "pointer", boxShadow: isCoach ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}>Coach</button>
             <button onClick={function() { setIsCoach(false); setSelected(null); goTo("home"); }} style={{ padding: "6px 12px", background: !isCoach ? CARD : "transparent", borderRadius: 8, border: "none", color: !isCoach ? TEXT : TEXT3, fontSize: 12, fontWeight: !isCoach ? 700 : 500, cursor: "pointer", boxShadow: !isCoach ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}>Client</button>
           </div>}
-          <SettingsMenu isCoach={isCoach} goTo={goTo} tab={tab} onLogout={onLogout} onReplayTutorial={function() { setShowTutorial(true); }} notifSettings={notifSettings} setNotifSettings={setNotifSettings} />
+          <SettingsMenu isCoach={isCoach} goTo={goTo} tab={tab} onLogout={onLogout} onReplayTutorial={function() { setShowTutorial(true); }} notifSettings={notifSettings} setNotifSettings={setNotifSettings} myProfile={myProfile} />
           <button onClick={function() { goTo("directmessage"); }} style={{ width: 36, height: 36, borderRadius: 99, background: (function() { var u = 0; Object.keys(messages).forEach(function(tid) { var lastViewed = viewedCounts[tid] !== undefined ? viewedCounts[tid] : (messages[tid]||[]).length; (messages[tid]||[]).slice(lastViewed).forEach(function(m){ if(m.from!==(isCoach?"coach":"client")) u++; }); }); return u > 0 ? GREEN_BG : (tab === "directmessage" ? ORANGE_BG : SURFACE); })(), border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={(function() { var u = 0; Object.keys(messages).forEach(function(tid) { var lastViewed = viewedCounts[tid] !== undefined ? viewedCounts[tid] : (messages[tid]||[]).length; (messages[tid]||[]).slice(lastViewed).forEach(function(m){ if(m.from!==(isCoach?"coach":"client")) u++; }); }); return u > 0 ? GREEN : (tab === "directmessage" ? ORANGE : TEXT2); })()} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             {(function() {
@@ -8457,7 +8457,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
             var _k = weekKey(_mon) + "-" + i;
             return { day: dn, date: _d, acts: myPlans[_k] || [], isToday: _d.toDateString() === TODAY.toDateString() };
           });
-          return <HomeScreen isCoach={isCoach} goTo={goTo} setClient={setSelected} goToClientTab={goToClientTab} messages={messages} monthStats={monthStats} coachProgram={coachProgram} activityLogs={activityLogs} myPlans={myPlans} thisWeekPlanned={_planned} realClients={realClients} viewedCounts={viewedCounts} />;
+          return <HomeScreen isCoach={isCoach} goTo={goTo} setClient={setSelected} goToClientTab={goToClientTab} messages={messages} monthStats={monthStats} coachProgram={coachProgram} activityLogs={activityLogs} myPlans={myPlans} thisWeekPlanned={_planned} realClients={realClients} viewedCounts={viewedCounts} myProfile={myProfile} />;
         })()}
         {tab === "clients"       && <ClientsScreen isCoach={isCoach} selected={selected} setSelected={setSelected} clientDefaultTab={clientDefaultTab} setClientDefaultTab={setClientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages} onSend={handleSendMessage} coachProgram={coachProgram} setCoachProgram={handleProgramUpdate} activityLogs={activityLogs} onLogsChange={handleLogsChange} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} realClients={realClients} authUserId={authUserId} authToken={authToken} goTo={goTo} />}
         {tab === "directmessage" && (

@@ -5301,7 +5301,48 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
   }
 
   const validActiveType = loggedTypes[activeType] ? activeType : "total";
-  const trend = TREND_DATA[validActiveType];
+
+  // Build real trend data from activityLogs (last 12 weeks)
+  var now2 = new Date(TODAY);
+  var realTrendData = {};
+  var typeColors2 = { total: "#1B8C4E", run: "#2563B0", workout: "#1B8C4E", bike: "#D97706", swim: "#0E7490", maintenance: "#9B6FD4", other: "#E0A020" };
+  var typeLabels2 = { total: "Total", run: "Run", workout: "Workout", bike: "Bike", swim: "Swim", maintenance: "Body Care", other: "Other" };
+
+  ["total","run","workout","bike","swim","maintenance","other"].forEach(function(type) {
+    var weekCounts = [];
+    for (var w = 11; w >= 0; w--) {
+      var weekStart2 = new Date(now2); weekStart2.setDate(now2.getDate() - now2.getDay() - w*7);
+      var weekEnd2 = new Date(weekStart2); weekEnd2.setDate(weekStart2.getDate() + 6);
+      var count = 0;
+      if (activityLogs) {
+        Object.keys(activityLogs).forEach(function(mk) {
+          Object.keys(activityLogs[mk]).forEach(function(day) {
+            (activityLogs[mk][day]||[]).forEach(function(e) {
+              var dt = new Date(parseInt(mk.split("-")[0]), parseInt(mk.split("-")[1]), parseInt(day));
+              if (dt < weekStart2 || dt > weekEnd2) return;
+              var t = (e.type||"").toLowerCase();
+              if (type === "total") count++;
+              else if (type === "run" && t.indexOf("run") !== -1) count++;
+              else if (type === "workout" && (t.indexOf("workout")!==-1||t.indexOf("strength")!==-1||t.indexOf("circuit")!==-1)) count++;
+              else if (type === "bike" && (t.indexOf("bike")!==-1||t.indexOf("cycling")!==-1)) count++;
+              else if (type === "swim" && t.indexOf("swim")!==-1) count++;
+              else if (type === "maintenance" && (t.indexOf("maintenance")!==-1||t.indexOf("mobility")!==-1||t.indexOf("body")!==-1)) count++;
+              else if (type === "other" && ["run","workout","strength","circuit","bike","cycling","swim","maintenance","mobility","body"].every(function(k){return t.indexOf(k)===-1;}) && t) count++;
+            });
+          });
+        });
+      }
+      weekCounts.push(count);
+    }
+    var lastVal = weekCounts[weekCounts.length-1];
+    realTrendData[type] = {
+      label: typeLabels2[type], color: typeColors2[type],
+      data: weekCounts, unit: "",
+      metric: [{ label: "This Week", value: String(lastVal) }, { label: "This Month", value: String(weekCounts.slice(-4).reduce(function(s,v){return s+v;},0)) }],
+    };
+  });
+
+  const trend = realTrendData[validActiveType] || realTrendData["total"];
 
   // Derive which activity types have been logged
   var loggedTypes = { total: true };

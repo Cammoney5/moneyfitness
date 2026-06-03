@@ -8484,17 +8484,19 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
 }
 
 export default function App() {
-  const [authed, setAuthed]       = useState(false);
+  const stored = (function() { try { var s = localStorage.getItem("mf_session"); return s ? JSON.parse(s) : null; } catch(e) { return null; } })();
+  const [authed, setAuthed]       = useState(!!stored);
   const [newClientName, setNewClientName] = useState(null);
-  const [isCoach, setIsCoach]     = useState(true);
+  const [isCoach, setIsCoach]     = useState(stored ? stored.isCoach : true);
   const [authScreen, setAuthScreen] = useState("welcome");
-  const [authToken, setAuthToken] = useState(null);
-  const [authUserId, setAuthUserId] = useState(null);
-  const [authCoachId, setAuthCoachId] = useState(null);
+  const [authToken, setAuthToken] = useState(stored ? stored.token : null);
+  const [authUserId, setAuthUserId] = useState(stored ? stored.userId : null);
+  const [authCoachId, setAuthCoachId] = useState(stored ? stored.coachId : null);
   const wrapStyle = { width: "100%", maxWidth: 430, margin: "0 auto", height: "100vh", display: "flex", flexDirection: "column", background: BG, overflow: "hidden", fontFamily: "system-ui,sans-serif" };
 
   async function handleLogout() {
     if (authToken) await sb.signOut(authToken);
+    try { localStorage.removeItem("mf_session"); } catch(e) {}
     setAuthed(false);
     setAuthScreen("welcome");
     setNewClientName(null);
@@ -8514,11 +8516,12 @@ export default function App() {
           setAuthUserId(userId || null);
           setAuthCoachId(coachId || null);
           if (!coach && clientName) setNewClientName(clientName);
+          try { localStorage.setItem("mf_session", JSON.stringify({ isCoach: coach, token: token, userId: userId, coachId: coachId })); } catch(e) {}
           if (userId) {
             window.__mf_user_id = userId;
             if (window.OneSignalDeferred) {
               window.OneSignalDeferred.push(async function(OneSignal) {
-                try { await OneSignal.login(userId); } catch(e) { console.log("OneSignal login err", e); }
+                try { await OneSignal.login(userId); } catch(e) {}
               });
             }
           }

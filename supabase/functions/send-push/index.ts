@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const ONESIGNAL_APP_ID = "18d1d0a8-484d-48eb-a8f2-c577a7a5fd16";
-const ONESIGNAL_API_KEY = "os_v2_app_ddi5bkcijveoxkhsyv32pjp5c3344v5azswupl5vk52wg4bcc4rjlfrc7coa6klwt3tl7izyiutcp3cyw6fwaxbd7qo24rrnjndmnby";
+const ONESIGNAL_API_KEY = "os_v2_app_ddi5bkcijveoxkhsyv32pjp5czvjlyg6r3repb4zavwyjezktwsffbt2pxm7vyzy423paco5kqysb4lclkeztr6sufnzjtipbxejlaq";
 
 serve(async (req) => {
   const corsHeaders = {
@@ -22,17 +22,17 @@ serve(async (req) => {
     url: url || "/",
   };
 
-  const res = await fetch("https://onesignal.com/api/v1/notifications", {
+  const res = await fetch("https://api.onesignal.com/notifications", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Key ${ONESIGNAL_API_KEY}`,
+      "Authorization": `Bearer ${ONESIGNAL_API_KEY}`,
     },
     body: JSON.stringify(payload),
   });
 
   const result = await res.json();
-  console.log("OneSignal response:", result);
+  console.log("OneSignal response:", JSON.stringify(result));
 
   return new Response(JSON.stringify(result), {
     status: res.ok ? 200 : 500,

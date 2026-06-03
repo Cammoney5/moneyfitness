@@ -7763,7 +7763,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
     })
     .catch(function(e) { console.log("clients load error", e); });
   }, [authToken, authUserId, initCoach]);
-  const [showTutorial, setShowTutorial] = useState(function() { try { return !localStorage.getItem("mf_tutorial_done"); } catch(e) { return false; } });
+  const [showTutorial, setShowTutorial] = useState(false);
   const [selected, setSelected] = useState(null);
   const [clientDefaultTab, setClientDefaultTab] = useState("Progress");
   const [favorites, setFavorites] = useState({});
@@ -8029,7 +8029,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
   // Check once on mount (and whenever activityLogs changes) if any client
   // hasn't logged anything in 3+ days. Fire a single notification per client,
   // deduped so we don't spam the same alert repeatedly.
-  const [inactivityFired, setInactivityFired] = useState({});
+  const [inactivityFired, setInactivityFired] = useState(function() { try { var s = localStorage.getItem("mf_inactivity_fired"); return s ? JSON.parse(s) : {}; } catch(e) { return {}; } });
 
   useEffect(function() {
     if (!isCoach) return;
@@ -8046,7 +8046,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
       if (daysSince >= 3) {
         var key = "inactive-" + client.id + "-" + lastDay;
         if (!inactivityFired[key]) {
-          setInactivityFired(function(prev) { return Object.assign({}, prev, { [key]: true }); });
+          setInactivityFired(function(prev) { var next = Object.assign({}, prev, { [key]: true }); try { localStorage.setItem("mf_inactivity_fired", JSON.stringify(next)); } catch(e) {} return next; });
           if (!notifSettings.streak) return;
           addNotification({
             id: Date.now() + client.id,
@@ -8183,7 +8183,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
   }, [activityLogs]);
 
   // ── CLIENT: GOAL MILESTONE ─────────────────────────────────────
-  const [firedGoalMilestones, setFiredGoalMilestones] = useState({});
+  const [firedGoalMilestones, setFiredGoalMilestones] = useState(function() { try { var s = localStorage.getItem("mf_fired_goals"); return s ? JSON.parse(s) : {}; } catch(e) { return {}; } });
 
   useEffect(function() {
     if (isCoach) return;
@@ -8214,7 +8214,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
   }, [activityLogs]);
 
   // ── COACH: STREAK MILESTONE ────────────────────────────────────
-  const [firedStreakMilestones, setFiredStreakMilestones] = useState({});
+  const [firedStreakMilestones, setFiredStreakMilestones] = useState(function() { try { var s = localStorage.getItem("mf_fired_streaks"); return s ? JSON.parse(s) : {}; } catch(e) { return {}; } });
 
   useEffect(function() {
     if (isCoach) return;
@@ -8223,7 +8223,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
     var milestones = [7, 14, 30];
     milestones.forEach(function(m) {
       if (streak >= m && !firedStreakMilestones[m]) {
-        setFiredStreakMilestones(function(prev) { return Object.assign({}, prev, { [m]: true }); });
+        setFiredStreakMilestones(function(prev) { var next = Object.assign({}, prev, { [m]: true }); try { localStorage.setItem("mf_fired_streaks", JSON.stringify(next)); } catch(e) {} return next; });
         if (!notifSettings.streak) return;
         addNotification({
           id: Date.now() + m + 100,

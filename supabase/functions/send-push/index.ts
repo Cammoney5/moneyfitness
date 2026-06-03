@@ -10,15 +10,16 @@ serve(async (req) => {
   };
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  const { user_id, title, body, url } = await req.json();
+  const { user_id, external_id, title, body, url } = await req.json();
+  const targetId = external_id || user_id;
 
   const payload = {
     app_id: ONESIGNAL_APP_ID,
-    filters: [{ field: "tag", key: "user_id", relation: "=", value: user_id }],
+    include_aliases: { external_id: [targetId] },
+    target_channel: "push",
     headings: { en: title },
     contents: { en: body },
     url: url || "/",
-    web_push_topic: "moneyfitness",
   };
 
   const res = await fetch("https://onesignal.com/api/v1/notifications", {

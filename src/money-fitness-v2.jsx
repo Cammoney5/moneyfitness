@@ -7707,7 +7707,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
     fetch(SUPABASE_URL + "/functions/v1/send-push", {
       method: "POST",
       headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: userId, title: title, body: body, url: "/" })
+      body: JSON.stringify({ external_id: userId, title: title, body: body, url: "/" })
     }).catch(function() {});
   }
 
@@ -8516,8 +8516,10 @@ export default function App() {
           if (!coach && clientName) setNewClientName(clientName);
           if (userId) {
             window.__mf_user_id = userId;
-            if (window.OneSignal && window.OneSignal.User) {
-              try { window.OneSignal.login(userId); window.OneSignal.User.addTag('user_id', userId); } catch(e) {}
+            if (window.OneSignalDeferred) {
+              window.OneSignalDeferred.push(async function(OneSignal) {
+                try { await OneSignal.login(userId); } catch(e) { console.log("OneSignal login err", e); }
+              });
             }
           }
         }} />

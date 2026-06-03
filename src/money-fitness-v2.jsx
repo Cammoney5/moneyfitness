@@ -4878,9 +4878,9 @@ function WorkoutTrendChart({ workoutType, color, data, unit, livePace, weekDates
     realWeekDate = mn2[wd.start.getMonth()] + " " + wd.start.getDate() + " - " + mn2[wd.end.getMonth()] + " " + wd.end.getDate();
   }
   var selectedVal = data[selectedWeek] || 0;
-  var realMetrics = workoutType === "run"
-    ? [{ label: "Runs", value: String(selectedVal) }, { label: "This Week", value: selectedVal > 0 ? selectedVal + unit : "0" }]
-    : [{ label: "Activities", value: String(selectedVal) }, { label: "This Week", value: String(selectedVal) }];
+  var realMetrics = (workoutType === "run" || workoutType === "bike")
+    ? [{ label: "Miles", value: selectedVal > 0 ? selectedVal + " mi" : "0 mi" }]
+    : [{ label: "Activities", value: String(selectedVal) }];
   var weekData = { date: realWeekDate, metrics: realMetrics };
 
   return (
@@ -5337,9 +5337,9 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
               if (dt < ws || dt > we) return;
               var t = (e.type||"").toLowerCase();
               if (type === "total") count++;
-              else if (type === "run" && t.indexOf("run") !== -1) count++;
+              else if (type === "run" && t.indexOf("run") !== -1) count += parseFloat(e.miles||0)||1;
               else if (type === "workout" && (t.indexOf("workout")!==-1||t.indexOf("strength")!==-1||t.indexOf("circuit")!==-1)) count++;
-              else if (type === "bike" && (t.indexOf("bike")!==-1||t.indexOf("cycling")!==-1)) count++;
+              else if (type === "bike" && (t.indexOf("bike")!==-1||t.indexOf("cycling")!==-1)) count += parseFloat(e.miles||0)||1;
               else if (type === "swim" && t.indexOf("swim")!==-1) count++;
               else if (type === "maintenance" && (t.indexOf("maintenance")!==-1||t.indexOf("mobility")!==-1||t.indexOf("body")!==-1)) count++;
               else if (type === "other" && ["run","workout","strength","circuit","bike","cycling","swim","maintenance","mobility","body"].every(function(k){return t.indexOf(k)===-1;}) && t) count++;
@@ -5350,9 +5350,11 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
       weekCounts.push(count);
     }
     var lastVal = weekCounts[weekCounts.length-1];
+    var typeUnit = (type === "run" || type === "bike") ? " mi" : "";
     realTrendData[type] = {
       label: typeLabels2[type], color: typeColors2[type],
-      data: weekCounts, unit: "",
+      data: weekCounts.map(function(v){ return type==="run"||type==="bike" ? Math.round(v*10)/10 : v; }),
+      unit: typeUnit,
       metric: [{ label: "This Week", value: String(lastVal) }, { label: "This Month", value: String(weekCounts.slice(-4).reduce(function(s,v){return s+v;},0)) }],
     };
   });

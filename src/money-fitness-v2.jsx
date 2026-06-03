@@ -7800,7 +7800,23 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
       },
       body: JSON.stringify(allEntries)
     }).then(function(r) {
-      if (!r.ok) r.text().then(function(t) { console.log("log save error:", r.status, t); });
+      if (!r.ok) { r.text().then(function(t) { console.log("log save error:", r.status, t); }); return; }
+      // Reload logs from Supabase so new entries get their real UUIDs
+      fetch(SUPABASE_URL + "/rest/v1/activity_logs?client_id=eq." + authUserId + "&order=logged_date.desc&limit=200", {
+        headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+      }).then(function(r2) { return r2.json(); }).then(function(rows) {
+        if (!Array.isArray(rows)) return;
+        var built = {};
+        rows.forEach(function(row) {
+          var parts = row.logged_date.split("-");
+          var mk = parseInt(parts[0]) + "-" + (parseInt(parts[1]) - 1);
+          var day = parseInt(parts[2]);
+          if (!built[mk]) built[mk] = {};
+          if (!built[mk][day]) built[mk][day] = [];
+          built[mk][day].push({ id: row.id, type: row.type, notes: row.notes || "", miles: row.miles ? String(row.miles) : "", duration: row.duration || "", calories: row.calories ? String(row.calories) : "", steps: row.steps ? String(row.steps) : "", pace: row.pace || "", source: row.source || "", fromDevice: row.source && row.source !== "manual" });
+        });
+        setActivityLogs(built);
+      }).catch(function() {});
     }).catch(function(e) { console.log("log save network error", e); });
   }
 

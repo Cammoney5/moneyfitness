@@ -5310,16 +5310,20 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
 
   ["total","run","workout","bike","swim","maintenance","other"].forEach(function(type) {
     var weekCounts = [];
+    var thisWeekStart = new Date(now2); thisWeekStart.setDate(now2.getDate() - now2.getDay()); thisWeekStart.setHours(0,0,0,0);
     for (var w = 11; w >= 0; w--) {
-      var weekStart2 = new Date(now2); weekStart2.setDate(now2.getDate() - now2.getDay() - w*7);
-      var weekEnd2 = new Date(weekStart2); weekEnd2.setDate(weekStart2.getDate() + 6);
+      var weekStart2 = new Date(thisWeekStart); weekStart2.setDate(thisWeekStart.getDate() - w*7);
+      var weekEnd2 = new Date(weekStart2); weekEnd2.setDate(weekStart2.getDate() + 6); weekEnd2.setHours(23,59,59,999);
       var count = 0;
       if (activityLogs) {
         Object.keys(activityLogs).forEach(function(mk) {
           Object.keys(activityLogs[mk]).forEach(function(day) {
             (activityLogs[mk][day]||[]).forEach(function(e) {
-              var dt = new Date(parseInt(mk.split("-")[0]), parseInt(mk.split("-")[1]), parseInt(day));
-              if (dt < weekStart2 || dt > weekEnd2) return;
+              var mkParts = mk.split("-");
+              var dt = new Date(parseInt(mkParts[0]), parseInt(mkParts[1]), parseInt(day));
+              var ws = new Date(weekStart2); ws.setHours(0,0,0,0);
+              var we = new Date(weekEnd2); we.setHours(23,59,59,999);
+              if (dt < ws || dt > we) return;
               var t = (e.type||"").toLowerCase();
               if (type === "total") count++;
               else if (type === "run" && t.indexOf("run") !== -1) count++;

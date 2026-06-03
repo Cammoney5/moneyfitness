@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const ONESIGNAL_APP_ID = "18d1d0a8-484d-48eb-a8f2-c577a7a5fd16";
-const ONESIGNAL_API_KEY = "os_v2_app_ddi5bkcijveoxkhsyv32pjp5czvjlyg6r3repb4zavwyjezktwsffbt2pxm7vyzy423paco5kqysb4lclkeztr6sufnzjtipbxejlaq";
+const ONESIGNAL_API_KEY = "os_v2_app_ddi5bkcijveoxkhsyv32pjp5czyf3n7n35jum5vckany2i7zqm5r5qxmeez2cwvvor2dq6eomeolpgbkoymztal3fghaqoc5x7tzpba";
 
 serve(async (req) => {
   const corsHeaders = {
@@ -26,7 +26,7 @@ serve(async (req) => {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${ONESIGNAL_API_KEY}`,
+      "Authorization": `key ${ONESIGNAL_API_KEY}`,
     },
     body: JSON.stringify(payload),
   });

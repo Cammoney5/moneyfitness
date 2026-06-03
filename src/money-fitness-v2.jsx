@@ -7796,7 +7796,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
         "apikey": SUPABASE_ANON_KEY,
         "Authorization": "Bearer " + authToken,
         "Content-Type": "application/json",
-        "Prefer": "resolution=merge-duplicates,return=minimal"
+        "Prefer": "return=minimal"
       },
       body: JSON.stringify(allEntries)
     }).then(function(r) {

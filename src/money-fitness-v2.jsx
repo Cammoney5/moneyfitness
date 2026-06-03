@@ -5689,7 +5689,7 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
                   {/* Bar chart */}
                   <div style={{ position: "relative" }}>
                     {/* Y-axis grid lines */}
-                    <div style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 40, pointerEvents: "none" }}>
+                    <div style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 50, pointerEvents: "none" }}>
                       {[0, 0.33, 0.67, 1].map(function(pct) {
                         var val = Math.round(maxMiles * pct);
                         return (
@@ -5704,7 +5704,7 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
                     </div>
 
                     {/* Bars */}
-                    <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 170, paddingBottom: 40, paddingRight: 32, position: "relative", zIndex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 180, paddingBottom: 50, paddingRight: 32, position: "relative", zIndex: 1 }}>
                       {hd.bars.map(function(b, i) {
                         var pct = maxMiles > 0 ? (b.miles / maxMiles) * 100 : 0;
                         var isCurrent = b.year === currentYear || (histPeriod === "year" && b.year === "May") || (histPeriod === "month" && b.year === "W4") || (histPeriod === "week" && b.year === "Wed");
@@ -5728,7 +5728,7 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
                             {b.miles > 0 && (
                               <div style={{ width: "100%", background: isHovered ? "#17a85e" : GREEN, borderRadius: "3px 3px 0 0", height: Math.max(pct, 2)+"%", minHeight: 4, transition: "background 0.15s, height 0.3s ease", opacity: 1 }} />
                             )}
-                            <div style={{ position: "absolute", bottom: 0, color: isHovered ? GREEN : isCurrent ? GREEN : "#333", fontSize: hd.bars.length > 8 ? 8 : 10, fontWeight: isCurrent || isHovered ? 700 : 400, paddingTop: 4, textAlign: "center", width: "100%" }}>{b.year}</div>
+                            <div style={{ position: "absolute", bottom: 0, color: "#222", fontSize: hd.bars.length > 8 ? 7 : 9, fontWeight: 500, paddingTop: 4, textAlign: "center", width: "100%", lineHeight: 1 }}>{b.year}</div>
                           </div>
                         );
                       })}

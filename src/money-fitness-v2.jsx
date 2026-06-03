@@ -7202,8 +7202,8 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       {[
                         { label: "HRS", max: 23, val: parseInt((goalTime||"00:00:00").split(":")[0]) || 0, set: function(v) { var p = (goalTime||"00:00:00").split(":"); while(p.length<3) p.push("00"); p[0] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.goalTime=s; localStorage.setItem("mf_race",JSON.stringify(r)); } catch(ex){} } },
-                        { label: "MIN", max: 59, val: parseInt((goalTime||"00:00:00").split(":")[1]) || 0, set: function(v) { var p = (goalTime||"00:00:00").split(":"); while(p.length<3) p.push("00"); p[1] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); } },
-                        { label: "SEC", max: 59, val: parseInt((goalTime||"00:00:00").split(":")[2]) || 0, set: function(v) { var p = (goalTime||"00:00:00").split(":"); while(p.length<3) p.push("00"); p[2] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); } },
+                        { label: "MIN", max: 59, val: parseInt((goalTime||"00:00:00").split(":")[1]) || 0, set: function(v) { var p = (goalTime||"00:00:00").split(":"); while(p.length<3) p.push("00"); p[1] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.goalTime=s; localStorage.setItem("mf_race",JSON.stringify(r)); } catch(ex){} } },
+                        { label: "SEC", max: 59, val: parseInt((goalTime||"00:00:00").split(":")[2]) || 0, set: function(v) { var p = (goalTime||"00:00:00").split(":"); while(p.length<3) p.push("00"); p[2] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.goalTime=s; localStorage.setItem("mf_race",JSON.stringify(r)); } catch(ex){} } },
                       ].map(function(seg, si) {
                         return (
                           <div key={seg.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
@@ -7939,15 +7939,47 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
       });
     });
     if (allEntries.length === 0) return;
+    var newEntries = allEntries.filter(function(e) { return !e.id; });
+    var existingEntries = allEntries.filter(function(e) { return !!e.id; });
+
+    function doReload() {
+      fetch(SUPABASE_URL + "/rest/v1/activity_logs?client_id=eq." + authUserId + "&order=logged_date.desc&limit=200", {
+        headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+      }).then(function(r2) { return r2.json(); }).then(function(rows) {
+        if (!Array.isArray(rows)) return;
+        var built = {};
+        rows.forEach(function(row) {
+          var parts = row.logged_date.split("-");
+          var mk = parseInt(parts[0]) + "-" + (parseInt(parts[1]) - 1);
+          var day = parseInt(parts[2]);
+          if (!built[mk]) built[mk] = {};
+          if (!built[mk][day]) built[mk][day] = [];
+          built[mk][day].push({ id: row.id, type: row.type, notes: row.notes || "", miles: row.miles ? String(row.miles) : "", duration: row.duration || "", calories: row.calories ? String(row.calories) : "", steps: row.steps ? String(row.steps) : "", pace: row.pace || "", source: row.source || "", fromDevice: row.source && row.source !== "manual" });
+        });
+        setActivityLogs(built);
+      }).catch(function() {});
+    }
+
+    var saves = [];
+    if (newEntries.length > 0) {
+      saves.push(fetch(SUPABASE_URL + "/rest/v1/activity_logs", {
+        method: "POST",
+        headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json", "Prefer": "return=minimal" },
+        body: JSON.stringify(newEntries)
+      }).then(function(r) { if (!r.ok) r.text().then(function(t) { console.log("new entry save error:", r.status, t); }); }));
+    }
+    if (existingEntries.length > 0) {
+      saves.push(fetch(SUPABASE_URL + "/rest/v1/activity_logs", {
+        method: "POST",
+        headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates,return=minimal" },
+        body: JSON.stringify(existingEntries)
+      }).then(function(r) { if (!r.ok) r.text().then(function(t) { console.log("existing entry save error:", r.status, t); }); }));
+    }
+    Promise.all(saves).then(doReload);
     fetch(SUPABASE_URL + "/rest/v1/activity_logs", {
       method: "POST",
-      headers: {
-        "apikey": SUPABASE_ANON_KEY,
-        "Authorization": "Bearer " + authToken,
-        "Content-Type": "application/json",
-        "Prefer": "return=minimal"
-      },
-      body: JSON.stringify(allEntries)
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json", "Prefer": "return=minimal" },
+      body: JSON.stringify([])
     }).then(function(r) {
       if (!r.ok) { r.text().then(function(t) { console.log("log save error:", r.status, t); }); return; }
       // Reload logs from Supabase so new entries get their real UUIDs

@@ -7164,8 +7164,8 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 10, fontWeight: 700, letterSpacing: 2, marginBottom: raceCollapsed ? 2 : 4 }}>RACE DAY</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ color: WHITE, fontSize: raceCollapsed ? 15 : 22, fontWeight: 900, lineHeight: 1.1, letterSpacing: -0.5 }}>{raceName}</div>
-                    {raceCollapsed && <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }}>· {countdown.days}d {countdown.hours}h {countdown.mins}m</div>}
+                    <div style={{ color: WHITE, fontSize: raceCollapsed ? 15 : 22, fontWeight: 900, lineHeight: 1.1, letterSpacing: -0.5 }}>{raceName || "Schedule your next race"}</div>
+                    {raceCollapsed && <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }}>· {raceDateStr ? countdown.days : "00"}d {raceDateStr ? countdown.hours : "00"}h {countdown.mins}m</div>}
                   </div>
                   {!raceCollapsed && <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, marginTop: 3 }}>{(function(){ var p = raceDateStr.split("-"); var d = new Date(+p[0], +p[1]-1, +p[2]); return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }); })()}</div>}
                 </div>
@@ -8448,19 +8448,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
 
   const [watchDays, setWatchDays] = useState(defaultWatchDays);
   const [raceCollapsed, setRaceCollapsed] = useState(false);
-  const [myPlans, setMyPlans] = useState(function() {
-    // Always use fresh Date so key matches current week regardless of when module loaded
-    var _now = new Date();
-    var _m = getMondayOf(_now);
-    var _w = weekKey(_m);
-    var _s = {};
-    _s[_w+"-0"] = [{id:"seed-0",label:"Push Day", emoji: ICON_WORKOUT,color:"#1B8C4E",miles:"",   notes:"Upper body"}];
-    _s[_w+"-1"] = [{id:"seed-1",label:"Easy Run", emoji: ICON_RUN,color:"#3B7DD8",miles:"3.0",notes:"Easy pace"}];
-    _s[_w+"-3"] = [{id:"seed-3",label:"Pull Day", emoji: ICON_WORKOUT,color:"#1B8C4E",miles:"",   notes:"Back, biceps"}];
-    _s[_w+"-4"] = [{id:"seed-4",label:"Tempo Run",emoji: ICON_RUN,color:"#3B7DD8",miles:"4.0",notes:"Tempo effort"}];
-    _s[_w+"-5"] = [{id:"seed-5",label:"Leg Day",  emoji: ICON_WORKOUT,color:"#9B6FD4",miles:"",   notes:"Squat, deadlift"}];
-    return _s;
-  }); // lifted from RaceScreen so HomeScreen can read it
+  const [myPlans, setMyPlans] = useState({}); // lifted from RaceScreen so HomeScreen can read it
 
   // Map mock workout dates to actual day numbers in current month
   const WATCH_DAY_MAP = {

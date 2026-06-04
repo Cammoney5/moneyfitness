@@ -7516,7 +7516,6 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
         }
       });
     });
-    console.log("[handleLogsChange] monthKey:", monthKey, "incomingIds:", [...incomingIds], "deletedIds:", deletedIds, "prevMonthLogs keys:", Object.keys(prevMonthLogs));
 
     setActivityLogs(function(prev) {
       return Object.assign({}, prev, { [monthKey]: newLogs });
@@ -7575,16 +7574,12 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
 
     // DELETE removed entries from Supabase
     if (deletedIds.length > 0) {
-      console.log("[handleLogsChange] DELETing IDs:", deletedIds);
       ops.push(fetch(SUPABASE_URL + "/rest/v1/activity_logs?id=in.(" + deletedIds.join(",") + ")", {
         method: "DELETE",
         headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json" }
       }).then(function(r) { 
-        console.log("[handleLogsChange] DELETE response status:", r.status);
-        if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.status, t); }); 
+if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.status, t); }); 
       }));
-    } else {
-      console.log("[handleLogsChange] No deletedIds — skipping DELETE");
     }
 
     if (newEntries.length > 0) {

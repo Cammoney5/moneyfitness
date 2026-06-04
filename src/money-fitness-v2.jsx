@@ -606,7 +606,7 @@ function WorkoutLogModal({ day, activities, accentColor, onSave, onClose, readOn
   );
 }
 
-function CalHeatmap({ workedOut, color, isEditable, watchDays, sharedLogs, onLogsChange }) {
+function CalHeatmap({ workedOut, color, isEditable, watchDays, sharedLogs, onLogsChange, onMonthChange }) {
   const c = color || ORANGE;
 
   const [viewYear,  setViewYear]  = useState(TODAY.getFullYear());
@@ -620,13 +620,17 @@ function CalHeatmap({ workedOut, color, isEditable, watchDays, sharedLogs, onLog
   const monthKey        = viewYear + "-" + viewMonth;
 
   function prevMonth() {
-    if (viewMonth === 0) { setViewYear(viewYear - 1); setViewMonth(11); }
-    else { setViewMonth(viewMonth - 1); }
+    var newYear = viewMonth === 0 ? viewYear - 1 : viewYear;
+    var newMonth = viewMonth === 0 ? 11 : viewMonth - 1;
+    setViewYear(newYear); setViewMonth(newMonth);
+    if (onMonthChange) onMonthChange(newYear, newMonth);
   }
   function nextMonth() {
     if (isCurrentMonth) return;
-    if (viewMonth === 11) { setViewYear(viewYear + 1); setViewMonth(0); }
-    else { setViewMonth(viewMonth + 1); }
+    var newYear2 = viewMonth === 11 ? viewYear + 1 : viewYear;
+    var newMonth2 = viewMonth === 11 ? 0 : viewMonth + 1;
+    setViewYear(newYear2); setViewMonth(newMonth2);
+    if (onMonthChange) onMonthChange(newYear2, newMonth2);
   }
 
   const blanks = [];
@@ -4488,23 +4492,29 @@ function ActivityScreen({ isCoach, watchDays, activityLogs, onLogsChange, realCl
   var profileInitials = myProfile ? (myProfile.name || "?").split(" ").map(function(w){return w[0];}).join("").toUpperCase().slice(0,2) : "MJ";
   const myClient = myProfile ? Object.assign({}, CLIENTS[0], { name: myProfile.name || CLIENTS[0].name, avatar: profileInitials, color: myProfile.color || CLIENTS[0].color }) : CLIENTS[0];
 
+  const [calViewYear,  setCalViewYear]  = React.useState(TODAY.getFullYear());
+  const [calViewMonth, setCalViewMonth] = React.useState(TODAY.getMonth());
+  var calMonthKey = calViewYear + "-" + calViewMonth;
+  var calMonthName = new Date(calViewYear, calViewMonth, 1).toLocaleString("default", { month: "long" });
+  var workoutsInView = Object.keys((activityLogs && activityLogs[calMonthKey]) || {}).length;
+
   if (!isCoach) {
     return (
       <div>
         <div style={{ color: TEXT, fontSize: 24, fontWeight: 800, marginBottom: 4 }}>Calendar</div>
-        <div style={{ color: TEXT2, fontSize: 14, marginBottom: 20 }}>{MONTH_NAME} activity</div>
+        <div style={{ color: TEXT2, fontSize: 14, marginBottom: 20 }}>{calMonthName} activity</div>
         <div style={{ background: CARD, borderRadius: 18, border: "1.5px solid "+BORDER, padding: "18px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
             <Avatar initials={myClient.avatar} size={44} color={myClient.color} />
             <div style={{ flex: 1 }}>
               <div style={{ color: TEXT, fontSize: 16, fontWeight: 700 }}>{myClient.name}</div>
               <div style={{ color: TEXT2, fontSize: 12 }}>
-                {Object.keys((activityLogs && activityLogs[TODAY.getFullYear()+"-"+TODAY.getMonth()]) || {}).length} workouts this month
+                {workoutsInView} workout{workoutsInView !== 1 ? "s" : ""} in {calMonthName}
               </div>
             </div>
             <Pill label={currentStreak+" day streak"} color={myClient.color} bg={myClient.color+"18"} />
           </div>
-          <CalHeatmap workedOut={myClient.workedOut} color={myClient.color} isEditable={true} watchDays={watchDays} sharedLogs={activityLogs} onLogsChange={onLogsChange} />
+          <CalHeatmap workedOut={myClient.workedOut} color={myClient.color} isEditable={true} watchDays={watchDays} sharedLogs={activityLogs} onLogsChange={onLogsChange} onMonthChange={function(y,m){ setCalViewYear(y); setCalViewMonth(m); }} />
         </div>
         <RecentActivityTimeline activityLogs={activityLogs} />
       </div>

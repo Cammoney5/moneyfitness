@@ -7629,46 +7629,6 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
     }).catch(function() {});
   }, [authUserId, authToken]);
 
-  // Load activity stats for all clients whenever realClients changes
-  useEffect(function() {
-    if (!authToken || !realClients || realClients.length === 0) return;
-    var clientIds = realClients.map(function(c) { return c.id; });
-    fetch(SUPABASE_URL + "/rest/v1/activity_logs?client_id=in.(" + clientIds.join(",") + ")&select=client_id,logged_date&order=logged_date.desc&limit=2000", {
-      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
-    }).then(function(r) { return r.json(); }).then(function(logs) {
-      if (!Array.isArray(logs) || logs.length === 0) return;
-      var today = new Date();
-      var thisMonth = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2,"0");
-      var byClient = {};
-      logs.forEach(function(log) {
-        if (!byClient[log.client_id]) byClient[log.client_id] = [];
-        byClient[log.client_id].push(log.logged_date);
-      });
-      setRealClients(function(prev) {
-        return prev.map(function(c) {
-          var dates = byClient[c.id] || [];
-          if (dates.length === 0) return c;
-          dates.sort(function(a, b) { return b.localeCompare(a); });
-          var lastDate = new Date(dates[0] + "T12:00:00");
-          var diffDays = Math.floor((today - lastDate) / 86400000);
-          var lastActive = diffDays === 0 ? "Today" : diffDays === 1 ? "Yesterday" : diffDays + "d ago";
-          var monthlyWorkouts = dates.filter(function(d) { return d.startsWith(thisMonth); }).length;
-          var uniqueDates = Array.from(new Set(dates)).sort(function(a,b){ return b.localeCompare(a); });
-          var streak = 0;
-          var check = new Date(today);
-          check.setHours(0,0,0,0);
-          for (var si = 0; si < uniqueDates.length; si++) {
-            var sd = new Date(uniqueDates[si] + "T12:00:00");
-            sd.setHours(0,0,0,0);
-            var sdiff = Math.round((check - sd) / 86400000);
-            if (sdiff === 0 || sdiff === 1) { streak++; check = sd; } else break;
-          }
-          return Object.assign({}, c, { streak: streak, lastActive: lastActive, monthlyWorkouts: monthlyWorkouts });
-        });
-      });
-    }).catch(function(){});
-  }, [realClients.length, authToken]);
-
   // Load real clients from Supabase (coach only)
   useEffect(function() {
     if (!authToken || !authUserId || !initCoach) return;
@@ -7699,6 +7659,43 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
         };
       });
       setRealClients(baseClients);
+
+      // Fetch activity stats inline with the same token/ids we already have
+      var clientIds = baseClients.map(function(c) { return c.id; });
+      if (clientIds.length === 0) return;
+      var statsToken = authToken;
+      fetch(SUPABASE_URL + "/rest/v1/activity_logs?client_id=in.(" + clientIds.join(",") + ")&select=client_id,logged_date&order=logged_date.desc&limit=2000", {
+        headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + statsToken }
+      }).then(function(r2) { return r2.json(); }).then(function(logs) {
+        if (!Array.isArray(logs) || logs.length === 0) return;
+        var today = new Date();
+        var thisMonth = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2,"0");
+        var byClient = {};
+        logs.forEach(function(log) {
+          if (!byClient[log.client_id]) byClient[log.client_id] = [];
+          byClient[log.client_id].push(log.logged_date);
+        });
+        setRealClients(baseClients.map(function(c) {
+          var dates = byClient[c.id] || [];
+          if (dates.length === 0) return c;
+          dates.sort(function(a, b) { return b.localeCompare(a); });
+          var lastDate = new Date(dates[0] + "T12:00:00");
+          var diffDays = Math.floor((today - lastDate) / 86400000);
+          var lastActive = diffDays === 0 ? "Today" : diffDays === 1 ? "Yesterday" : diffDays + "d ago";
+          var monthlyWorkouts = dates.filter(function(d) { return d.startsWith(thisMonth); }).length;
+          var uniqueDates = Array.from(new Set(dates)).sort(function(a,b){ return b.localeCompare(a); });
+          var streak = 0;
+          var check = new Date(today);
+          check.setHours(0,0,0,0);
+          for (var si = 0; si < uniqueDates.length; si++) {
+            var sd = new Date(uniqueDates[si] + "T12:00:00");
+            sd.setHours(0,0,0,0);
+            var sdiff = Math.round((check - sd) / 86400000);
+            if (sdiff === 0 || sdiff === 1) { streak++; check = sd; } else break;
+          }
+          return Object.assign({}, c, { streak: streak, lastActive: lastActive, monthlyWorkouts: monthlyWorkouts });
+        }));
+      }).catch(function(){});
     })
     .catch(function(e) { console.log("clients load error", e); });
   }, [authToken, authUserId]);

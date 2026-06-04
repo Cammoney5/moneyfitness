@@ -6,7 +6,7 @@
 const STRAVA_CLIENT_ID = "255151";
 const STRAVA_CLIENT_SECRET = "2549ba504c10124e859196f90fd26e80e1c015d4";
 const SUPABASE_URL = "https://ebphyejgauwgguwcbmgj.supabase.co";
-const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVicGh5ZWpnYXV3Z2d1d2NibWdqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDE2Mzc0NywiZXhwIjoyMDk1NzM5NzQ3fQ.1KTmFrzz-OHJAcqco1OaDw0n5uVkARX1ubEISJnSnpI";
 
 async function refreshStravaToken(refreshToken: string) {
   const res = await fetch("https://www.strava.com/oauth/token", {

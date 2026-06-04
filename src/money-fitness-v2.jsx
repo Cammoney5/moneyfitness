@@ -4648,7 +4648,7 @@ function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onI
     try {
       var res = await fetch("https://ebphyejgauwgguwcbmgj.supabase.co/functions/v1/strava-import", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + authToken },
+        headers: { "Content-Type": "application/json", "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + SUPABASE_ANON_KEY },
         body: JSON.stringify({ userId: authUserId }),
       });
       var data = await res.json();

@@ -4492,8 +4492,31 @@ function RecentActivityTimeline({ activityLogs }) {
   );
 }
 
-function ActivityScreen({ isCoach, watchDays, activityLogs, onLogsChange, realClients, myProfile }) {
+function ActivityScreen({ isCoach, watchDays, activityLogs, onLogsChange, realClients, myProfile, authToken, authUserId }) {
   var clientList = realClients && realClients.length > 0 ? realClients : [];
+  const [clientLogs, setClientLogs] = React.useState({});
+
+  // Load activity logs for all clients (coach only)
+  useEffect(function() {
+    if (!isCoach || !authToken || clientList.length === 0) return;
+    var ids = clientList.map(function(c) { return c.id; });
+    fetch(SUPABASE_URL + "/rest/v1/activity_logs?client_id=in.(" + ids.join(",") + ")&select=client_id,logged_date,id,type,notes,miles,duration,calories,steps,pace,source&order=logged_date.desc&limit=3000", {
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+    }).then(function(r) { return r.json(); }).then(function(rows) {
+      if (!Array.isArray(rows)) return;
+      var byClient = {};
+      rows.forEach(function(row) {
+        if (!byClient[row.client_id]) byClient[row.client_id] = {};
+        var parts = row.logged_date.split("-");
+        var mk = parseInt(parts[0]) + "-" + (parseInt(parts[1])-1);
+        var day = parseInt(parts[2]);
+        if (!byClient[row.client_id][mk]) byClient[row.client_id][mk] = {};
+        if (!byClient[row.client_id][mk][day]) byClient[row.client_id][mk][day] = [];
+        byClient[row.client_id][mk][day].push({ id: row.id, type: row.type, notes: row.notes||"", miles: row.miles?String(row.miles):"", duration: row.duration||"", calories: row.calories?String(row.calories):"", steps: row.steps?String(row.steps):"", pace: row.pace||"", source: row.source||"", fromDevice: row.source && row.source !== "manual" });
+      });
+      setClientLogs(byClient);
+    }).catch(function(){});
+  }, [isCoach, authToken, clientList.length]);
   var currentStreak = 0;
   if (activityLogs) {
     var checkDate = new Date(TODAY);
@@ -4552,11 +4575,11 @@ function ActivityScreen({ isCoach, watchDays, activityLogs, onLogsChange, realCl
               <Avatar initials={client.avatar} size={44} color={client.color} />
               <div style={{ flex: 1 }}>
                 <div style={{ color: TEXT, fontSize: 16, fontWeight: 700 }}>{client.name}</div>
-                <div style={{ color: TEXT2, fontSize: 12 }}>{client.workedOut.length} workouts this month</div>
+                <div style={{ color: TEXT2, fontSize: 12 }}>{client.monthlyWorkouts || 0} workouts this month</div>
               </div>
               <Pill label={client.streak+" day streak"} color={client.color} bg={client.color+"18"} />
             </div>
-            <CalHeatmap workedOut={client.workedOut} color={client.color} isEditable={false} watchDays={null} sharedLogs={null} onLogsChange={null} />
+            <CalHeatmap workedOut={client.workedOut} color={client.color} isEditable={false} watchDays={null} sharedLogs={clientLogs[client.id] || null} onLogsChange={null} />
           </div>
         );
       })}
@@ -8635,7 +8658,7 @@ if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.stat
         )}
         {tab === "library"       && <LibraryScreen isCoach={isCoach} favorites={favorites} toggleFavorite={toggleFavorite} />}
         {tab === "watch"         && <AppleWatchScreen connected={watchConnected} onConnect={function() { setWatchConnected(true); }} onDisconnect={function() { setWatchConnected(false); setImportedIds({}); setWatchDays({}); }} importedIds={importedIds} onImport={handleImport} authUserId={authUserId} authToken={authToken} onLogsChange={function() { if (authUserId && authToken) { fetch(SUPABASE_URL + "/rest/v1/activity_logs?client_id=eq." + authUserId + "&order=logged_date.desc&limit=200", { headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken } }).then(function(r){return r.json();}).then(function(rows){ if (!Array.isArray(rows)) return; var built = {}; rows.forEach(function(row){ var parts = row.logged_date.split("-"); var mk = parseInt(parts[0]) + "-" + (parseInt(parts[1])-1); var day = parseInt(parts[2]); if (!built[mk]) built[mk]={}; if (!built[mk][day]) built[mk][day]=[]; built[mk][day].push({id:row.id,type:row.type,notes:row.notes||"",miles:row.miles?String(row.miles):"",duration:row.duration||"",calories:row.calories?String(row.calories):"",steps:row.steps?String(row.steps):"",pace:row.pace||"",source:row.source||"",fromDevice:row.source&&row.source!=="manual"}); }); setActivityLogs(built); }).catch(function(){}); } }} />}
-        {tab === "activity"      && <ActivityScreen isCoach={isCoach} watchDays={watchDays} activityLogs={activityLogs} onLogsChange={handleLogsChange} realClients={realClients} myProfile={myProfile} />}
+        {tab === "activity"      && <ActivityScreen isCoach={isCoach} watchDays={watchDays} activityLogs={activityLogs} onLogsChange={handleLogsChange} realClients={realClients} myProfile={myProfile} authToken={authToken} authUserId={authUserId} />}
         {tab === "analytics"     && <AnalyticsScreen isCoach={isCoach} monthStats={monthStats} todaySteps={monthStats.todaySteps} last7Steps={monthStats.last7Steps} activityLogs={activityLogs} realClients={realClients} />}
         {tab === "race"          && <RaceScreen activityLogs={activityLogs} raceCollapsed={raceCollapsed} setRaceCollapsed={setRaceCollapsed} plans={myPlans} setPlans={function(v) { var next = typeof v === "function" ? v(myPlans) : v; setMyPlans(next); try { localStorage.setItem("mf_plans", JSON.stringify(next)); } catch(e) {} }} completions={completions} onToggleCompletion={handleToggleCompletion} />}
         {tab === "notifications" && <NotificationsScreen notifications={notifications} onRead={function(id) { setNotifications(function(p) { return p.map(function(n) { return n.id === id ? Object.assign({}, n, { read: true }) : n; }); }); }} onClearAll={function() { setNotifications(function(p) { return p.map(function(n) { return Object.assign({}, n, { read: true }); }); }); }} isCoach={isCoach} goTo={goTo} onNavigateToClient={function(clientId, defaultTab) {

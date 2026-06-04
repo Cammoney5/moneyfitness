@@ -3909,7 +3909,7 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
                           {d.acts.map(function(act, ai) {
                             return (
                               <div key={ai} style={{ textAlign: "center" }}>
-                                <div style={{ fontSize: 14, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }} dangerouslySetInnerHTML={{ __html: act.emoji || ICON_WORKOUT }} />
+                                <div style={{ fontSize: 14, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }} dangerouslySetInnerHTML={{ __html: (act.emoji && act.emoji.startsWith("<svg")) ? act.emoji : emojiForActivity(act.label) }} />
                                 <div style={{ color: "rgba(255,255,255,0.7)", fontSize: 9, marginTop: 2, maxWidth: 52, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{act.label}</div>
                               </div>
                             );

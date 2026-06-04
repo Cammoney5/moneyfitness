@@ -232,7 +232,7 @@ const COACH_FIRST = "Cameron";
 const COACH_CODE  = "CMONEY5"; // Clients enter this on signup to link to this coach
 const SUPABASE_URL = "https://ebphyejgauwgguwcbmgj.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVicGh5ZWpnYXV3Z2d1d2NibWdqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNjM3NDcsImV4cCI6MjA5NTczOTc0N30.oWMeatIKpuSLfHuxWLReqU9mgaZRQgTQyBtqISuPltY";
-const VAPID_PUBLIC_KEY = "BKoleS-Q0aLsVfOqY5y0A922Lk74NiQQvUrpXW_MCQS_5ygxc8gOk2vrDPbT4yl0nEHg41LD-ErV8FJJFJB8mcA";
+const ONESIGNAL_APP_ID = "18d1d0a8-484d-48eb-a8f2-c577a7a5fd16";
 
 // Lightweight Supabase client (no SDK needed)
 const sb = {
@@ -3719,7 +3719,26 @@ function ClientDetail({ client, onBack, isCoach, defaultTab, favorites, watchDay
 
 // ---
 
-function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthStats, coachProgram, activityLogs, myPlans, thisWeekPlanned, realClients, viewedCounts }) {
+function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthStats, coachProgram, activityLogs, myPlans, thisWeekPlanned, realClients, viewedCounts, myProfile }) {
+  // Calculate real streak from activityLogs
+  var currentStreak = 0;
+  if (activityLogs) {
+    var checkDate = new Date(TODAY);
+    for (var i = 0; i < 365; i++) {
+      var mk = checkDate.getFullYear() + "-" + checkDate.getMonth();
+      var day = checkDate.getDate();
+      var hasActivity = activityLogs[mk] && activityLogs[mk][day] && activityLogs[mk][day].length > 0;
+      if (hasActivity) {
+        currentStreak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else if (i === 0) {
+        // today has no activity, check yesterday
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+  }
   const dayHour = TODAY.getHours();
   const greeting = dayHour < 12 ? "Good morning" : dayHour < 17 ? "Good afternoon" : "Good evening";
   const stats = monthStats || { totalWorkouts: 0, totalMiles: "0.0", restDays: 0 };
@@ -3756,12 +3775,12 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
         <div>
           <div style={{ color: TEXT3, fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>{greeting.toUpperCase()}</div>
           <div style={{ color: TEXT, fontSize: 22, fontWeight: 900, lineHeight: 1.2 }}>
-            {isCoach ? COACH_NAME : CLIENTS[0].name}
+            {isCoach ? COACH_NAME : (myProfile ? myProfile.name : CLIENTS[0].name)}
           </div>
         </div>
         {!isCoach && (
           <div style={{ textAlign: "right" }}>
-            <div style={{ color: TEXT, fontSize: 20, fontWeight: 900 }}>12 </div>
+            <div style={{ color: TEXT, fontSize: 20, fontWeight: 900 }}>{currentStreak} </div>
             <div style={{ color: TEXT3, fontSize: 10, fontWeight: 600 }}>DAY STREAK</div>
           </div>
         )}
@@ -3979,13 +3998,14 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
   );
 }
 
-function ClientsScreen({ isCoach, selected, setSelected, clientDefaultTab, setClientDefaultTab, favorites, watchDays, messages, onSend, coachProgram, setCoachProgram, activityLogs, onLogsChange, programDayIndex, setProgramDayIndex, myPlans, realClients, authUserId, authToken, goTo }) {
+function ClientsScreen({ isCoach, selected, setSelected, clientDefaultTab, setClientDefaultTab, favorites, watchDays, messages, onSend, coachProgram, setCoachProgram, activityLogs, onLogsChange, programDayIndex, setProgramDayIndex, myPlans, realClients, authUserId, authToken, goTo, myProfile }) {
   var displayClients = (realClients && realClients.length > 0) ? realClients : [];
   if (selected) {
     return <ClientDetail client={selected} onBack={function() { setSelected(null); setClientDefaultTab("Progress"); }} isCoach={isCoach} defaultTab={clientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages[selected.id] || []} onSend={onSend} coachProgram={coachProgram} setCoachProgram={setCoachProgram} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} activityLogs={activityLogs} authUserId={authUserId} authToken={authToken} onGoToMainTab={goTo} />;
   }
   if (!isCoach) {
-    return <ClientDetail client={CLIENTS[0]} onBack={null} isCoach={false} defaultTab={clientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages[CLIENTS[0].id] || []} onSend={onSend} coachProgram={coachProgram} setCoachProgram={setCoachProgram} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} activityLogs={activityLogs} authUserId={authUserId} authToken={authToken} onGoToMainTab={goTo} />;
+    var clientProfile = myProfile ? { id: authUserId, name: myProfile.name || "Client", email: myProfile.email || "", avatar: (myProfile.name||"?").split(" ").map(function(w){return w[0];}).join("").toUpperCase().slice(0,2), color: myProfile.color || "#1B8C4E", streak: 0, checkIns: [], goals: [], workedOut: [], isReal: true } : CLIENTS[0];
+    return <ClientDetail client={clientProfile} onBack={null} isCoach={false} defaultTab={clientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages[clientProfile.id] || []} onSend={onSend} coachProgram={coachProgram} setCoachProgram={setCoachProgram} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} activityLogs={activityLogs} authUserId={authUserId} authToken={authToken} onGoToMainTab={goTo} />;
   }
   return (
     <div>
@@ -4448,9 +4468,22 @@ function RecentActivityTimeline({ activityLogs }) {
   );
 }
 
-function ActivityScreen({ isCoach, watchDays, activityLogs, onLogsChange, realClients }) {
+function ActivityScreen({ isCoach, watchDays, activityLogs, onLogsChange, realClients, myProfile }) {
   var clientList = realClients && realClients.length > 0 ? realClients : [];
-  const myClient = CLIENTS[0]; // Used for client calendar view (non-coach)
+  var currentStreak = 0;
+  if (activityLogs) {
+    var checkDate = new Date(TODAY);
+    for (var i = 0; i < 365; i++) {
+      var mk = checkDate.getFullYear() + "-" + checkDate.getMonth();
+      var day = checkDate.getDate();
+      var hasActivity = activityLogs[mk] && activityLogs[mk][day] && activityLogs[mk][day].length > 0;
+      if (hasActivity) { currentStreak++; checkDate.setDate(checkDate.getDate() - 1); }
+      else if (i === 0) { checkDate.setDate(checkDate.getDate() - 1); }
+      else { break; }
+    }
+  }
+  var profileInitials = myProfile ? (myProfile.name || "?").split(" ").map(function(w){return w[0];}).join("").toUpperCase().slice(0,2) : "MJ";
+  const myClient = myProfile ? Object.assign({}, CLIENTS[0], { name: myProfile.name || CLIENTS[0].name, avatar: profileInitials, color: myProfile.color || CLIENTS[0].color }) : CLIENTS[0];
 
   if (!isCoach) {
     return (
@@ -4466,7 +4499,7 @@ function ActivityScreen({ isCoach, watchDays, activityLogs, onLogsChange, realCl
                 {Object.keys((activityLogs && activityLogs[TODAY.getFullYear()+"-"+TODAY.getMonth()]) || {}).length} workouts this month
               </div>
             </div>
-            <Pill label={myClient.streak+" day streak"} color={myClient.color} bg={myClient.color+"18"} />
+            <Pill label={currentStreak+" day streak"} color={myClient.color} bg={myClient.color+"18"} />
           </div>
           <CalHeatmap workedOut={myClient.workedOut} color={myClient.color} isEditable={true} watchDays={watchDays} sharedLogs={activityLogs} onLogsChange={onLogsChange} />
         </div>
@@ -4578,502 +4611,96 @@ const MOCK_WATCH_WORKOUTS = [
   },
 ];
 
-function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onImport }) {
-  // Track which platform is connected
-  const [connectedPlatform, setConnectedPlatform] = useState(connected ? "apple" : null);
-  const [expandedId, setExpandedId]   = useState(null);
-  const [importing, setImporting]     = useState(null);
-
-  const PLATFORM_LOGOS = {
-    apple:  '<svg width="22" height="26" viewBox="0 0 256 315" fill="currentColor"><path d="M213.803 167.03c.442 47.58 41.74 63.413 42.197 63.615-.35 1.116-6.599 22.563-21.757 44.716-13.104 19.153-26.705 38.235-48.13 38.63-21.05.388-27.82-12.498-51.888-12.498-24.061 0-31.582 12.105-51.51 12.886-20.723.782-36.577-20.44-49.8-39.526C5.977 247.185-14.816 181.661 11.366 136.51c13.053-22.407 36.395-36.593 61.735-36.98 19.288-.36 37.476 12.981 49.28 12.981 11.804 0 33.948-16.06 57.188-13.7 9.726.4 37.05 3.93 54.595 29.622zm-62.76-96.18c10.95-13.281 18.368-31.79 16.353-50.24-15.826.636-34.996 10.546-46.35 23.827-10.18 11.798-19.09 30.729-16.698 48.783 17.644 1.368 35.658-8.998 46.695-22.37z"/></svg>',
-    garmin: '<svg width="20" height="20" viewBox="0 0 100 100" fill="currentColor"><circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" stroke-width="8"/><path d="M72 50H50v15h14c-3 8-11 14-21 14-13 0-23-10-23-23s10-23 23-23c6 0 11 2 15 6l10-10c-6-6-15-10-25-10-21 0-38 17-38 37s17 37 38 37 37-16 37-37v-6z"/></svg>',
-    google: '<svg width="28" height="28" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>',
-    fitbit: '<svg width="28" height="28" viewBox="0 0 100 100"><circle cx="50" cy="18" r="9" fill="currentColor"/><circle cx="50" cy="50" r="12" fill="currentColor"/><circle cx="50" cy="82" r="9" fill="currentColor"/><circle cx="20" cy="34" r="7" fill="currentColor"/><circle cx="20" cy="66" r="7" fill="currentColor"/><circle cx="80" cy="34" r="7" fill="currentColor"/><circle cx="80" cy="66" r="7" fill="currentColor"/></svg>',
-    coros:  '<svg width="28" height="28" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" stroke="currentColor" stroke-width="8" fill="none"/><circle cx="50" cy="50" r="28" stroke="currentColor" stroke-width="5" fill="none"/><circle cx="50" cy="50" r="8" fill="currentColor"/></svg>',
-  };
-
-  const PLATFORMS = [
-    {
-      id: "apple",
-      name: "Apple Health",
-      subtitle: "Apple Watch + iPhone",
-      bg: "#1C1C1E",
-      accent: "#30D158",
-      note: "Uses HealthKit -- iOS only",
-    },
-    {
-      id: "garmin",
-      name: "Garmin Connect",
-      subtitle: "All Garmin devices",
-      bg: "#003087",
-      accent: "#00A3E0",
-      note: "Garmin Health API -- OAuth required",
-    },
-    {
-      id: "google",
-      name: "Google Fit",
-      subtitle: "Android + Wear OS",
-      bg: "#4285F4",
-      accent: "#ffffff",
-      note: "Health Connect API -- Android only",
-    },
-    {
-      id: "fitbit",
-      name: "Fitbit",
-      subtitle: "All Fitbit devices",
-      bg: "#00B0B9",
-      accent: "#ffffff",
-      note: "Fitbit Web API -- cross-platform",
-    },
-    {
-      id: "coros",
-      name: "Coros",
-      subtitle: "PACE, APEX, VERTIX",
-      bg: "#1A1A2E",
-      accent: "#E94560",
-      note: "Coros Open API -- cross-platform",
-    },
-  ];
-
-  const activePlatform = PLATFORMS.find(function(p) { return p.id === connectedPlatform; });
-
-  function handleConnect(platformId) {
-    setConnectedPlatform(platformId);
-    if (platformId === "apple") onConnect();
-  }
-
-  function handleDisconnect() {
-    setConnectedPlatform(null);
-    onDisconnect();
-  }
-
-  const [syncStatus, setSyncStatus] = useState(null); // null | "syncing" | "done"
-
-  function handleSync() {
-    setSyncStatus("syncing");
-    setTimeout(function() {
-      setSyncStatus("done");
-      setTimeout(function() { setSyncStatus(null); }, 2500);
-    }, 1400);
-  }
-
-  function handleImport(workout) {
-    setImporting(workout.id);
-    setTimeout(function() {
-      onImport(workout, connectedPlatform);
-      setImporting(null);
-    }, 800);
-  }
-
-  // Not connected -- show all platform options
-  if (!connectedPlatform) {
-    return (
-      <div>
-        <div style={{ color: TEXT, fontSize: 24, fontWeight: 800, marginBottom: 4 }}>Connection</div>
-        <div style={{ color: TEXT2, fontSize: 14, marginBottom: 24 }}>Sync workouts from your device</div>
-
-        {PLATFORMS.map(function(p) {
-          return (
-            <div key={p.id} style={{ background: p.bg, borderRadius: 18, padding: "20px", marginBottom: 14, position: "relative", overflow: "hidden" }}>
-              <div style={{ position: "absolute", top: -20, right: -20, width: 100, height: 100, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
-              <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
-                <div style={{ width: 52, height: 52, borderRadius: 14, background: "rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><span dangerouslySetInnerHTML={{ __html: PLATFORM_LOGOS[p.id] }} /></div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ color: "#fff", fontSize: 17, fontWeight: 800 }}>{p.name}</div>
-                  <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, marginTop: 2 }}>{p.subtitle}</div>
-                </div>
-              </div>
-              <div style={{ background: "rgba(255,255,255,0.08)", borderRadius: 10, padding: "8px 12px", marginBottom: 14 }}>
-                <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 10 }}>{p.note}</div>
-              </div>
-              <button onClick={function() { handleConnect(p.id); }} style={{ width: "100%", padding: "12px", borderRadius: 12, background: p.accent, border: "none", color: (p.id === "fitbit") ? "#003087" : "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
-                Connect {p.name}
-              </button>
-            </div>
-          );
-        })}
-
-        <div style={{ background: SURFACE, borderRadius: 14, padding: "12px 16px", display: "flex", alignItems: "center", gap: 10, marginTop: 4 }}>
-          <span style={{ fontSize: 16 }}><span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span></span>
-          <span style={{ color: TEXT3, fontSize: 12, lineHeight: 1.4 }}>Your health data is private. Only workout summaries are shared with your coach.</span>
-        </div>
-      </div>
-    );
-  }
-
-  // Connected state -- show workouts
-  return (
-    <div>
-      <div style={{ color: TEXT, fontSize: 24, fontWeight: 800, marginBottom: 4 }}>Connection</div>
-      <div style={{ color: TEXT2, fontSize: 14, marginBottom: 16 }}>Recent workouts from {activePlatform.name}</div>
-      <div style={{ background: "#1C1C1E", borderRadius: 16, padding: "14px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 12 }}>
-        <div style={{ width: 44, height: 44, borderRadius: 12, background: "#1C1C1E", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#fff" }}><span dangerouslySetInnerHTML={{ __html: PLATFORM_LOGOS[activePlatform.id] }} /></div>
-        <div style={{ flex: 1 }}>
-          <div style={{ color: "#fff", fontSize: 14, fontWeight: 700 }}>{activePlatform.name} Connected</div>
-          <div style={{ color: syncStatus === "done" ? "#7DFF9B" : activePlatform.accent, fontSize: 12, marginTop: 2, transition: "color 0.3s" }}>
-            {syncStatus === "syncing" ? "⟳ Syncing..." : syncStatus === "done" ? "✓ Sync complete" : "● Synced just now"}
-          </div>
-        </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button onClick={handleSync} disabled={syncStatus === "syncing"} style={{ background: syncStatus === "syncing" ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.15)", border: "none", color: syncStatus === "syncing" ? "rgba(255,255,255,0.4)" : "#fff", padding: "7px 12px", borderRadius: 8, fontSize: 12, cursor: syncStatus === "syncing" ? "default" : "pointer", fontWeight: 600, transition: "all 0.2s" }}>
-            {syncStatus === "syncing" ? "Syncing..." : "Sync"}
-          </button>
-          <button onClick={handleDisconnect} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.5)", fontSize: 11, cursor: "pointer" }}>Disconnect</button>
-        </div>
-      </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 20, overflowX: "auto", paddingBottom: 2 }}>
-        {PLATFORMS.map(function(p) {
-          const isActive = p.id === connectedPlatform;
-          return (
-            <button key={p.id} onClick={function() { if (!isActive) handleConnect(p.id); }} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 99, background: isActive ? p.bg : SURFACE, border: "1.5px solid "+(isActive ? p.bg : BORDER), cursor: "pointer", flexShrink: 0 }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: isActive ? "rgba(255,255,255,0.7)" : p.bg, flexShrink: 0 }} />
-              <span style={{ color: isActive ? "#fff" : TEXT2, fontSize: 12, fontWeight: isActive ? 700 : 500 }}>{p.name.split(" ")[0]}</span>
-            </button>
-          );
-        })}
-      </div>
-      <div style={{ color: TEXT2, fontSize: 12, fontWeight: 700, letterSpacing: 1, marginBottom: 10 }}>RECENT WORKOUTS</div>
-      {MOCK_WATCH_WORKOUTS.map(function(w) {
-        const isImported    = importedIds[w.id];
-        const isExpanded    = expandedId === w.id;
-        const isImportingThis = importing === w.id;
-
-        return (
-          <div key={w.id} style={{ background: CARD, border: "1.5px solid "+(isImported ? GREEN+"66" : BORDER), borderRadius: 16, marginBottom: 10, overflow: "hidden" }}>
-            <div onClick={function() { setExpandedId(isExpanded ? null : w.id); }} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", cursor: "pointer" }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: activePlatform.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#fff" }}><span style={{ filter: "brightness(100)" }} dangerouslySetInnerHTML={{ __html: PLATFORM_LOGOS[activePlatform.id] }} /></div>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ color: TEXT, fontSize: 14, fontWeight: 700 }}>{w.type}</span>
-                  {isImported && <span style={{ background: GREEN_BG, color: GREEN, fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 6 }}>IMPORTED</span>}
-                </div>
-                <div style={{ color: activePlatform.accent, fontSize: 12, marginTop: 2 }}>{w.date}</div>
-                <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-                  <span style={{ color: TEXT2, fontSize: 12 }}>{w.duration}</span>
-                  {w.distance && <span style={{ color: TEXT2, fontSize: 12 }}> {w.distance}</span>}
-                  <span style={{ color: TEXT2, fontSize: 12 }}> {w.calories} cal</span>
-                </div>
-              </div>
-              <span style={{ color: TEXT3, fontSize: 14 }}>{isExpanded ? "^" : "v"}</span>
-            </div>
-
-            {isExpanded && (
-              <div style={{ borderTop: "1px solid "+SURFACE2, padding: "14px 16px" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
-                  {[
-                    { label: "Duration",  val: w.duration,       icon: "⏱" },
-                    { label: "Avg HR",    val: w.avgHR+" bpm",   icon: "❤️" },
-                    { label: "Max HR",    val: w.maxHR+" bpm",   icon: "" },
-                    { label: "Calories",  val: w.calories+" cal",icon: "" },
-                    { label: "Steps",     val: w.steps ? w.steps.toLocaleString() : "--", icon: "" },
-                    { label: "Distance",  val: w.distance || "--",icon: "" },
-                  ].map(function(m, i) {
-                    return (
-                      <div key={"plat-stat-"+i} style={{ background: SURFACE, borderRadius: 10, padding: "10px 8px", textAlign: "center" }}>
-                        <div style={{ marginBottom: 3, display:"flex", justifyContent:"center", color: TEXT3 }} dangerouslySetInnerHTML={{ __html: m.icon }} />
-                        <div style={{ color: TEXT, fontSize: 12, fontWeight: 700 }}>{m.val}</div>
-                        <div style={{ color: TEXT3, fontSize: 10, marginTop: 1 }}>{m.label}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-      <div style={{ background: SURFACE, borderRadius: 10, padding: "10px 12px", marginBottom: 14 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                    <span style={{ color: TEXT2, fontSize: 11, fontWeight: 600 }}>Heart Rate Range</span>
-                    <span style={{ color: TEXT3, fontSize: 11 }}>{w.avgHR}-{w.maxHR} bpm</span>
-                  </div>
-                  <div style={{ background: SURFACE2, borderRadius: 99, height: 6, overflow: "hidden" }}>
-                    <div style={{ marginLeft: ((w.avgHR-80)/(220-80)*100)+"%", width: ((w.maxHR-w.avgHR)/(220-80)*100)+"%", height: "100%", background: "linear-gradient(90deg,#2AAD66,#E05252)", borderRadius: 99 }} />
-                  </div>
-                </div>
-
-                {!isImported ? (
-                  <button onClick={function() { handleImport(w); }} style={{ width: "100%", padding: "12px", borderRadius: 12, background: isImportingThis ? SURFACE : ORANGE, border: "none", color: isImportingThis ? TEXT2 : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                    {isImportingThis ? "Importing..." : "Import to Money Fitness"}
-                  </button>
-                ) : (
-                  <div style={{ background: GREEN_BG, borderRadius: 12, padding: "11px", textAlign: "center" }}>
-                    <span style={{ color: GREEN, fontSize: 13, fontWeight: 700 }}>Added to your activity log</span>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      })}
-
-      <div style={{ background: SURFACE, borderRadius: 12, padding: "10px 14px", display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
-        <span style={{ fontSize: 16 }}><span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg></span></span>
-        <span style={{ color: TEXT3, fontSize: 12 }}>In the full app, workouts sync automatically after each session.</span>
-      </div>
-    </div>
-  );
-}
-
-
-function WorkoutTrendChart({ workoutType, color, data, unit, livePace }) {
-  const [selectedWeek, setSelectedWeek] = useState(data.length - 1); // default = most recent
-
-  const maxVal = Math.max.apply(null, data.concat([0.1]));
-  const W = 340;
-  const H = 120;
-  const padL = 40;
-  const padB = 20;
-  const padT = 10;
-  const padR = 10;
-  const chartW = W - padL - padR;
-  const chartH = H - padB - padT;
-  const n = data.length;
-
-  function xPos(i) { return padL + (i / (n - 1)) * chartW; }
-  function yPos(v) { return padT + chartH - (v / maxVal) * chartH; }
-
-  var linePath = "";
-  data.forEach(function(v, i) {
-    linePath += (i === 0 ? "M" : "L") + xPos(i).toFixed(1) + "," + yPos(v).toFixed(1) + " ";
+function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onImport, authUserId, authToken }) {
+  const [stravaConnected, setStravaConnected] = React.useState(function() {
+    try { return !!localStorage.getItem("mf_strava_connected"); } catch(e) { return false; }
   });
-  var areaPath = linePath + " L" + xPos(n-1).toFixed(1) + "," + (padT+chartH).toFixed(1) + " L" + padL.toFixed(1) + "," + (padT+chartH).toFixed(1) + " Z";
 
-  const yLabels = [0, Math.round(maxVal / 2 * 10) / 10, Math.round(maxVal * 10) / 10];
-  const months = ["FEB","MAR","APR","MAY"];
+  const STRAVA_CLIENT_ID = "255151";
+  const REDIRECT_URI = "https://ebphyejgauwgguwcbmgj.supabase.co/functions/v1/strava-auth";
 
-  const weekData    = (WEEK_DETAILS[workoutType] || WEEK_DETAILS.total)[selectedWeek];
-  const isLastWeek  = selectedWeek === n - 1;
+  function connectStrava() {
+    if (!authUserId) { alert("Please log in first"); return; }
+    var scope = "activity:read_all";
+    var url = "https://www.strava.com/oauth/authorize" +
+      "?client_id=" + STRAVA_CLIENT_ID +
+      "&redirect_uri=" + encodeURIComponent(REDIRECT_URI + "?state=" + authUserId) +
+      "&response_type=code" +
+      "&scope=" + scope;
+    window.location.href = url;
+  }
+
+  function disconnectStrava() {
+    try { localStorage.removeItem("mf_strava_connected"); } catch(e) {}
+    setStravaConnected(false);
+  }
+
+  useEffect(function() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get("strava") === "connected") {
+      setStravaConnected(true);
+      try { localStorage.setItem("mf_strava_connected", "1"); } catch(e) {}
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
 
   return (
-    <div style={{ background: CARD, border: "1.5px solid "+BORDER, borderRadius: 16, padding: "16px", marginBottom: 16 }}>
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-          <div style={{ color: TEXT, fontSize: 16, fontWeight: 800 }}>{weekData.date}</div>
-          {isLastWeek && (
-            <span style={{ background: color+"20", color: color, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20 }}>This week</span>
+    <div style={{ padding: "0 0 24px" }}>
+      <div style={{ color: TEXT, fontSize: 24, fontWeight: 800, marginBottom: 4 }}>Connections</div>
+      <div style={{ color: TEXT2, fontSize: 14, marginBottom: 24 }}>Sync workouts automatically from your device</div>
+
+      <div style={{ background: "#FC4C02", borderRadius: 18, padding: 20, marginBottom: 14, position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", top: -20, right: -20, width: 100, height: 100, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+          <div style={{ width: 52, height: 52, borderRadius: 14, background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <img src="/strava-logo.png" width="36" height="36" style={{borderRadius:8}} alt="Strava" />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ color: "#fff", fontSize: 17, fontWeight: 800 }}>Strava</div>
+            <div style={{ color: "rgba(255,255,255,0.7)", fontSize: 12, marginTop: 2 }}>Coros, Garmin, Apple Watch, Fitbit + more</div>
+          </div>
+          {stravaConnected && (
+            <div style={{ background: "rgba(255,255,255,0.2)", borderRadius: 20, padding: "4px 10px", fontSize: 11, color: "#fff", fontWeight: 700 }}>✓ Connected</div>
           )}
         </div>
-        <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
-          {weekData.metrics.map(function(m) {
-            return (
-              <div key={m.label}>
-                <div style={{ color: TEXT3, fontSize: 11 }}>{m.label}</div>
-                <div style={{ color: TEXT, fontSize: 20, fontWeight: 800 }}>{m.value}</div>
-              </div>
-            );
-          })}
-          {livePace && isLastWeek && (
-            <div>
-              <div style={{ color: TEXT3, fontSize: 11 }}>Your Avg Pace</div>
-              <div style={{ color: color, fontSize: 20, fontWeight: 800 }}>{livePace}</div>
-            </div>
-          )}
+        <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 10, padding: "8px 12px", marginBottom: 14 }}>
+          <div style={{ color: "rgba(255,255,255,0.8)", fontSize: 11, lineHeight: 1.5 }}>
+            {stravaConnected
+              ? "Your Strava workouts will automatically sync to MoneyFitness whenever you complete an activity."
+              : "Connect Strava to automatically import workouts from any device that syncs to Strava — including Coros, Garmin, Apple Watch, and more."}
+          </div>
+        </div>
+        {stravaConnected ? (
+          <button onClick={disconnectStrava} style={{ width: "100%", padding: 12, borderRadius: 12, background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.3)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            Disconnect Strava
+          </button>
+        ) : (
+          <button onClick={connectStrava} style={{ width: "100%", padding: 12, borderRadius: 12, background: "#fff", border: "none", color: "#FC4C02", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
+            Connect Strava
+          </button>
+        )}
+      </div>
+
+      <div style={{ background: SURFACE, borderRadius: 18, padding: 20, marginBottom: 14, opacity: 0.6 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ width: 52, height: 52, borderRadius: 14, background: SURFACE2, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={TEXT3} strokeWidth="2"><path d="M12 2v20M2 12h20"/></svg>
+          </div>
+          <div>
+            <div style={{ color: TEXT, fontSize: 15, fontWeight: 700 }}>More integrations coming soon</div>
+            <div style={{ color: TEXT3, fontSize: 12, marginTop: 2 }}>Apple Health, Garmin direct, Whoop, Oura</div>
+          </div>
         </div>
       </div>
 
-      <div style={{ color: TEXT3, fontSize: 11, marginBottom: 6 }}>Past 12 weeks -- tap a dot to see details</div>
-      <div style={{ position: "relative" }}>
-        <svg width="100%" viewBox={"0 0 "+W+" "+H} style={{ display: "block" }}>
-{yLabels.map(function(v, i) {
-            const y = yPos(v);
-            return (
-              <g key={"ylabel-"+v+"-"+i}>
-                <line x1={padL} y1={y} x2={W-padR} y2={y} stroke="#E8E8E8" strokeWidth="1" />
-                <text x={padL-4} y={y+4} textAnchor="end" fontSize="9" fill={TEXT3}>{v > 0 ? v+unit : "0"}</text>
-              </g>
-            );
-          })}
-{months.map(function(m, i) {
-            const x = padL + ((i + 1) / (months.length + 1)) * chartW;
-            return <text key={m} x={x} y={H-4} textAnchor="middle" fontSize="9" fill={TEXT3}>{m}</text>;
-          })}
-      <path d={areaPath} fill={color+"22"} />
-      <path d={linePath} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" />
-      <line
-            x1={xPos(selectedWeek)} y1={padT}
-            x2={xPos(selectedWeek)} y2={padT + chartH}
-            stroke={TEXT} strokeWidth="1" strokeDasharray="3,3" opacity="0.3"
-          />
-{data.map(function(v, i) {
-            const isSelected = i === selectedWeek;
-            const isLast     = i === n - 1;
-            const cx = xPos(i);
-            const cy = yPos(v);
-            return (
-              <g key={"pt-"+i} onClick={function() { setSelectedWeek(i); }} style={{ cursor: "pointer" }}>
-      <circle cx={cx} cy={cy} r={12} fill="transparent" />
-      <circle
-                  cx={cx} cy={cy}
-                  r={isSelected ? 7 : isLast ? 5 : 3.5}
-                  fill={isSelected ? color : isLast ? color : CARD}
-                  stroke={color}
-                  strokeWidth={isSelected ? 0 : 1.8}
-                  opacity={isSelected ? 1 : 0.85}
-                />
-{isSelected && (
-                  <circle cx={cx} cy={cy} r={12} fill={color+"22"} />
-                )}
-              </g>
-            );
-          })}
-        </svg>
+      <div style={{ background: SURFACE, borderRadius: 14, padding: "12px 16px", display: "flex", alignItems: "center", gap: 10 }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={TEXT3} strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <span style={{ color: TEXT3, fontSize: 12, lineHeight: 1.4 }}>Your health data is private. Only workout summaries are shared with your coach.</span>
       </div>
     </div>
   );
 }
 
-// Seed trend data per workout type (12 weeks)
-const WEEK_DETAILS = {
-  total: [
-    { date: "Feb 17 - Feb 23", metrics: [{ label: "Activities", value: "5" }, { label: "Calories", value: "1,820" }, { label: "Active Days", value: "5" }] },
-    { date: "Feb 24 - Mar 2",  metrics: [{ label: "Activities", value: "5" }, { label: "Calories", value: "1,950" }, { label: "Active Days", value: "5" }] },
-    { date: "Mar 3 - Mar 9",   metrics: [{ label: "Activities", value: "4" }, { label: "Calories", value: "1,540" }, { label: "Active Days", value: "4" }] },
-    { date: "Mar 10 - Mar 16", metrics: [{ label: "Activities", value: "6" }, { label: "Calories", value: "2,210" }, { label: "Active Days", value: "6" }] },
-    { date: "Mar 17 - Mar 23", metrics: [{ label: "Activities", value: "5" }, { label: "Calories", value: "1,870" }, { label: "Active Days", value: "5" }] },
-    { date: "Mar 24 - Mar 30", metrics: [{ label: "Activities", value: "7" }, { label: "Calories", value: "2,540" }, { label: "Active Days", value: "6" }] },
-    { date: "Mar 31 - Apr 6",  metrics: [{ label: "Activities", value: "6" }, { label: "Calories", value: "2,180" }, { label: "Active Days", value: "6" }] },
-    { date: "Apr 7 - Apr 13",  metrics: [{ label: "Activities", value: "7" }, { label: "Calories", value: "2,490" }, { label: "Active Days", value: "6" }] },
-    { date: "Apr 14 - Apr 20", metrics: [{ label: "Activities", value: "7" }, { label: "Calories", value: "2,520" }, { label: "Active Days", value: "7" }] },
-    { date: "Apr 21 - Apr 27", metrics: [{ label: "Activities", value: "7" }, { label: "Calories", value: "2,610" }, { label: "Active Days", value: "6" }] },
-    { date: "Apr 28 - May 4",  metrics: [{ label: "Activities", value: "8" }, { label: "Calories", value: "2,840" }, { label: "Active Days", value: "7" }] },
-    { date: "May 5 - May 11",  metrics: [{ label: "Activities", value: "6" }, { label: "Calories", value: "2,190" }, { label: "Active Days", value: "5" }] },
-  ],
-  run: [
-    { date: "Feb 17 - Feb 23", metrics: [{ label: "Distance", value: "12.1 mi" }, { label: "Time", value: "1h 55m" }, { label: "Avg Pace", value: "9:32/mi" }] },
-    { date: "Feb 24 - Mar 2",  metrics: [{ label: "Distance", value: "11.8 mi" }, { label: "Time", value: "1h 52m" }, { label: "Avg Pace", value: "9:31/mi" }] },
-    { date: "Mar 3 - Mar 9",   metrics: [{ label: "Distance", value: "10.2 mi" }, { label: "Time", value: "1h 42m" }, { label: "Avg Pace", value: "10:00/mi" }] },
-    { date: "Mar 10 - Mar 16", metrics: [{ label: "Distance", value: "13.4 mi" }, { label: "Time", value: "2h 06m" }, { label: "Avg Pace", value: "9:25/mi" }] },
-    { date: "Mar 17 - Mar 23", metrics: [{ label: "Distance", value: "14.1 mi" }, { label: "Time", value: "2h 11m" }, { label: "Avg Pace", value: "9:18/mi" }] },
-    { date: "Mar 24 - Mar 30", metrics: [{ label: "Distance", value: "13.9 mi" }, { label: "Time", value: "2h 09m" }, { label: "Avg Pace", value: "9:18/mi" }] },
-    { date: "Mar 31 - Apr 6",  metrics: [{ label: "Distance", value: "15.2 mi" }, { label: "Time", value: "2h 21m" }, { label: "Avg Pace", value: "9:17/mi" }] },
-    { date: "Apr 7 - Apr 13",  metrics: [{ label: "Distance", value: "16.1 mi" }, { label: "Time", value: "2h 28m" }, { label: "Avg Pace", value: "9:12/mi" }] },
-    { date: "Apr 14 - Apr 20", metrics: [{ label: "Distance", value: "15.8 mi" }, { label: "Time", value: "2h 26m" }, { label: "Avg Pace", value: "9:14/mi" }] },
-    { date: "Apr 21 - Apr 27", metrics: [{ label: "Distance", value: "17.3 mi" }, { label: "Time", value: "2h 38m" }, { label: "Avg Pace", value: "9:08/mi" }] },
-    { date: "Apr 28 - May 4",  metrics: [{ label: "Distance", value: "18.0 mi" }, { label: "Time", value: "2h 44m" }, { label: "Avg Pace", value: "9:07/mi" }] },
-    { date: "May 5 - May 11",  metrics: [{ label: "Distance", value: "15.0 mi" }, { label: "Time", value: "2h 22m" }, { label: "Avg Pace", value: "9:28/mi" }] },
-  ],
-  workout: [
-    { date: "Feb 17 - Feb 23", metrics: [{ label: "Sessions", value: "2" }, { label: "Avg Duration", value: "48 min" }, { label: "Calories", value: "386" }] },
-    { date: "Feb 24 - Mar 2",  metrics: [{ label: "Sessions", value: "3" }, { label: "Avg Duration", value: "50 min" }, { label: "Calories", value: "412" }] },
-    { date: "Mar 3 - Mar 9",   metrics: [{ label: "Sessions", value: "2" }, { label: "Avg Duration", value: "45 min" }, { label: "Calories", value: "378" }] },
-    { date: "Mar 10 - Mar 16", metrics: [{ label: "Sessions", value: "3" }, { label: "Avg Duration", value: "51 min" }, { label: "Calories", value: "408" }] },
-    { date: "Mar 17 - Mar 23", metrics: [{ label: "Sessions", value: "3" }, { label: "Avg Duration", value: "52 min" }, { label: "Calories", value: "418" }] },
-    { date: "Mar 24 - Mar 30", metrics: [{ label: "Sessions", value: "4" }, { label: "Avg Duration", value: "54 min" }, { label: "Calories", value: "436" }] },
-    { date: "Mar 31 - Apr 6",  metrics: [{ label: "Sessions", value: "3" }, { label: "Avg Duration", value: "50 min" }, { label: "Calories", value: "410" }] },
-    { date: "Apr 7 - Apr 13",  metrics: [{ label: "Sessions", value: "4" }, { label: "Avg Duration", value: "55 min" }, { label: "Calories", value: "448" }] },
-    { date: "Apr 14 - Apr 20", metrics: [{ label: "Sessions", value: "4" }, { label: "Avg Duration", value: "53 min" }, { label: "Calories", value: "432" }] },
-    { date: "Apr 21 - Apr 27", metrics: [{ label: "Sessions", value: "3" }, { label: "Avg Duration", value: "51 min" }, { label: "Calories", value: "414" }] },
-    { date: "Apr 28 - May 4",  metrics: [{ label: "Sessions", value: "4" }, { label: "Avg Duration", value: "56 min" }, { label: "Calories", value: "452" }] },
-    { date: "May 5 - May 11",  metrics: [{ label: "Sessions", value: "3" }, { label: "Avg Duration", value: "52 min" }, { label: "Calories", value: "428" }] },
-  ],
-  maintenance: [
-    { date: "Feb 17 - Feb 23", metrics: [{ label: "Sessions", value: "1" }, { label: "Avg Duration", value: "30 min" }, { label: "Type", value: "Yoga" }] },
-    { date: "Feb 24 - Mar 2",  metrics: [{ label: "Sessions", value: "0" }, { label: "Avg Duration", value: "--" }, { label: "Type", value: "--" }] },
-    { date: "Mar 3 - Mar 9",   metrics: [{ label: "Sessions", value: "2" }, { label: "Avg Duration", value: "35 min" }, { label: "Type", value: "Stretch" }] },
-    { date: "Mar 10 - Mar 16", metrics: [{ label: "Sessions", value: "1" }, { label: "Avg Duration", value: "30 min" }, { label: "Type", value: "Yoga" }] },
-    { date: "Mar 17 - Mar 23", metrics: [{ label: "Sessions", value: "1" }, { label: "Avg Duration", value: "40 min" }, { label: "Type", value: "Foam Roll" }] },
-    { date: "Mar 24 - Mar 30", metrics: [{ label: "Sessions", value: "2" }, { label: "Avg Duration", value: "35 min" }, { label: "Type", value: "Yoga" }] },
-    { date: "Mar 31 - Apr 6",  metrics: [{ label: "Sessions", value: "1" }, { label: "Avg Duration", value: "30 min" }, { label: "Type", value: "Stretch" }] },
-    { date: "Apr 7 - Apr 13",  metrics: [{ label: "Sessions", value: "2" }, { label: "Avg Duration", value: "38 min" }, { label: "Type", value: "Yoga" }] },
-    { date: "Apr 14 - Apr 20", metrics: [{ label: "Sessions", value: "1" }, { label: "Avg Duration", value: "30 min" }, { label: "Type", value: "Foam Roll" }] },
-    { date: "Apr 21 - Apr 27", metrics: [{ label: "Sessions", value: "2" }, { label: "Avg Duration", value: "35 min" }, { label: "Type", value: "Yoga" }] },
-    { date: "Apr 28 - May 4",  metrics: [{ label: "Sessions", value: "2" }, { label: "Avg Duration", value: "36 min" }, { label: "Type", value: "Stretch" }] },
-    { date: "May 5 - May 11",  metrics: [{ label: "Sessions", value: "1" }, { label: "Avg Duration", value: "35 min" }, { label: "Type", value: "Yoga" }] },
-  ],
-  other: [
-    { date: "Feb 17 - Feb 23", metrics: [{ label: "Activities", value: "0" }, { label: "Calories", value: "--" }, { label: "Duration", value: "--" }] },
-    { date: "Feb 24 - Mar 2",  metrics: [{ label: "Activities", value: "1" }, { label: "Calories", value: "180" }, { label: "Duration", value: "25 min" }] },
-    { date: "Mar 3 - Mar 9",   metrics: [{ label: "Activities", value: "0" }, { label: "Calories", value: "--" }, { label: "Duration", value: "--" }] },
-    { date: "Mar 10 - Mar 16", metrics: [{ label: "Activities", value: "1" }, { label: "Calories", value: "210" }, { label: "Duration", value: "30 min" }] },
-    { date: "Mar 17 - Mar 23", metrics: [{ label: "Activities", value: "0" }, { label: "Calories", value: "--" }, { label: "Duration", value: "--" }] },
-    { date: "Mar 24 - Mar 30", metrics: [{ label: "Activities", value: "0" }, { label: "Calories", value: "--" }, { label: "Duration", value: "--" }] },
-    { date: "Mar 31 - Apr 6",  metrics: [{ label: "Activities", value: "1" }, { label: "Calories", value: "195" }, { label: "Duration", value: "28 min" }] },
-    { date: "Apr 7 - Apr 13",  metrics: [{ label: "Activities", value: "0" }, { label: "Calories", value: "--" }, { label: "Duration", value: "--" }] },
-    { date: "Apr 14 - Apr 20", metrics: [{ label: "Activities", value: "1" }, { label: "Calories", value: "220" }, { label: "Duration", value: "32 min" }] },
-    { date: "Apr 21 - Apr 27", metrics: [{ label: "Activities", value: "1" }, { label: "Calories", value: "205" }, { label: "Duration", value: "29 min" }] },
-    { date: "Apr 28 - May 4",  metrics: [{ label: "Activities", value: "0" }, { label: "Calories", value: "--" }, { label: "Duration", value: "--" }] },
-    { date: "May 5 - May 11",  metrics: [{ label: "Activities", value: "1" }, { label: "Calories", value: "210" }, { label: "Duration", value: "30 min" }] },
-  ],
-  bike: [
-    { date: "Feb 17 - Feb 23", metrics: [{ label: "Distance", value: "8.2 mi" }, { label: "Avg Ride", value: "58 min" }, { label: "Elevation", value: "280 ft" }] },
-    { date: "Feb 24 - Mar 2",  metrics: [{ label: "Distance", value: "10.1 mi" }, { label: "Avg Ride", value: "1h 05m" }, { label: "Elevation", value: "310 ft" }] },
-    { date: "Mar 3 - Mar 9",   metrics: [{ label: "Distance", value: "7.5 mi" }, { label: "Avg Ride", value: "52 min" }, { label: "Elevation", value: "240 ft" }] },
-    { date: "Mar 10 - Mar 16", metrics: [{ label: "Distance", value: "12.3 mi" }, { label: "Avg Ride", value: "1h 18m" }, { label: "Elevation", value: "380 ft" }] },
-    { date: "Mar 17 - Mar 23", metrics: [{ label: "Distance", value: "9.8 mi" }, { label: "Avg Ride", value: "1h 02m" }, { label: "Elevation", value: "295 ft" }] },
-    { date: "Mar 24 - Mar 30", metrics: [{ label: "Distance", value: "11.4 mi" }, { label: "Avg Ride", value: "1h 10m" }, { label: "Elevation", value: "340 ft" }] },
-    { date: "Mar 31 - Apr 6",  metrics: [{ label: "Distance", value: "13.2 mi" }, { label: "Avg Ride", value: "1h 22m" }, { label: "Elevation", value: "410 ft" }] },
-    { date: "Apr 7 - Apr 13",  metrics: [{ label: "Distance", value: "10.8 mi" }, { label: "Avg Ride", value: "1h 08m" }, { label: "Elevation", value: "320 ft" }] },
-    { date: "Apr 14 - Apr 20", metrics: [{ label: "Distance", value: "14.1 mi" }, { label: "Avg Ride", value: "1h 28m" }, { label: "Elevation", value: "430 ft" }] },
-    { date: "Apr 21 - Apr 27", metrics: [{ label: "Distance", value: "12.6 mi" }, { label: "Avg Ride", value: "1h 15m" }, { label: "Elevation", value: "375 ft" }] },
-    { date: "Apr 28 - May 4",  metrics: [{ label: "Distance", value: "15.3 mi" }, { label: "Avg Ride", value: "1h 35m" }, { label: "Elevation", value: "460 ft" }] },
-    { date: "May 5 - May 11",  metrics: [{ label: "Distance", value: "11.0 mi" }, { label: "Avg Ride", value: "1h 05m" }, { label: "Elevation", value: "320 ft" }] },
-  ],
-  swim: [
-    { date: "Feb 17 - Feb 23", metrics: [{ label: "Distance", value: "1200 yds" }, { label: "Duration", value: "38 min" }, { label: "Stroke", value: "Freestyle" }] },
-    { date: "Feb 24 - Mar 2",  metrics: [{ label: "Distance", value: "1400 yds" }, { label: "Duration", value: "42 min" }, { label: "Stroke", value: "Freestyle" }] },
-    { date: "Mar 3 - Mar 9",   metrics: [{ label: "Distance", value: "1000 yds" }, { label: "Duration", value: "32 min" }, { label: "Stroke", value: "Mixed" }] },
-    { date: "Mar 10 - Mar 16", metrics: [{ label: "Distance", value: "1600 yds" }, { label: "Duration", value: "48 min" }, { label: "Stroke", value: "Freestyle" }] },
-    { date: "Mar 17 - Mar 23", metrics: [{ label: "Distance", value: "1400 yds" }, { label: "Duration", value: "44 min" }, { label: "Stroke", value: "Freestyle" }] },
-    { date: "Mar 24 - Mar 30", metrics: [{ label: "Distance", value: "1800 yds" }, { label: "Duration", value: "52 min" }, { label: "Stroke", value: "Freestyle" }] },
-    { date: "Mar 31 - Apr 6",  metrics: [{ label: "Distance", value: "1500 yds" }, { label: "Duration", value: "46 min" }, { label: "Stroke", value: "Mixed" }] },
-    { date: "Apr 7 - Apr 13",  metrics: [{ label: "Distance", value: "1700 yds" }, { label: "Duration", value: "50 min" }, { label: "Stroke", value: "Freestyle" }] },
-    { date: "Apr 14 - Apr 20", metrics: [{ label: "Distance", value: "2000 yds" }, { label: "Duration", value: "58 min" }, { label: "Stroke", value: "Freestyle" }] },
-    { date: "Apr 21 - Apr 27", metrics: [{ label: "Distance", value: "1600 yds" }, { label: "Duration", value: "48 min" }, { label: "Stroke", value: "Mixed" }] },
-    { date: "Apr 28 - May 4",  metrics: [{ label: "Distance", value: "2200 yds" }, { label: "Duration", value: "62 min" }, { label: "Stroke", value: "Freestyle" }] },
-    { date: "May 5 - May 11",  metrics: [{ label: "Distance", value: "1800 yds" }, { label: "Duration", value: "54 min" }, { label: "Stroke", value: "Freestyle" }] },
-  ],
-};
-
-const TREND_ICONS = {
-  total:       ICON_CHART,
-  run:         ICON_RUN,
-  workout:     ICON_WORKOUT,
-  bike:        ICON_BIKE,
-  swim:        ICON_SWIM,
-  maintenance: ICON_BODY,
-  other:       ICON_STAR,
-};
-
-const TREND_DATA = {
-  total: {
-    label: "Total", color: "#1B8C4E",
-    data: [5, 5, 4, 6, 5, 7, 6, 7, 7, 7, 8, 6],
-    metric: [{ label: "Activities", value: "6" }, { label: "This Month", value: "28" }, { label: "Streak", value: "12d" }],
-    unit: "",
-  },
-  run: {
-    label: "Run", color: "#2563B0",
-    data: [12.1, 11.8, 10.2, 13.4, 14.1, 13.9, 15.2, 16.1, 15.8, 17.3, 18.0, 15.0],
-    metric: [{ label: "Distance", value: "15.0 mi" }, { label: "Time", value: "2h 22m" }, { label: "Avg Pace", value: "9:28/mi" }],
-    unit: " mi",
-  },
-  workout: {
-    label: "Workout", color: "#1B8C4E",
-    data: [2, 3, 2, 3, 3, 4, 3, 4, 4, 3, 4, 3],
-    metric: [{ label: "Sessions", value: "3" }, { label: "Avg Duration", value: "52 min" }, { label: "Calories", value: "428" }],
-    unit: "",
-  },
-  bike: {
-    label: "Bike", color: "#D97706",
-    data: [8.2, 10.1, 7.5, 12.3, 9.8, 11.4, 13.2, 10.8, 14.1, 12.6, 15.3, 11.0],
-    metric: [{ label: "Distance", value: "11.0 mi" }, { label: "Avg Ride", value: "1h 05m" }, { label: "Elevation", value: "320 ft" }],
-    unit: " mi",
-  },
-  swim: {
-    label: "Swim", color: "#0E7490",
-    data: [1200, 1400, 1000, 1600, 1400, 1800, 1500, 1700, 2000, 1600, 2200, 1800],
-    metric: [{ label: "Distance", value: "1800 yds" }, { label: "Avg Session", value: "45 min" }, { label: "Strokes", value: "Freestyle" }],
-    unit: " yds",
-  },
-  maintenance: {
-    label: "Body Care", color: "#9B6FD4",
-    data: [1, 0, 2, 1, 1, 2, 1, 2, 1, 2, 2, 1],
-    metric: [{ label: "Sessions", value: "1" }, { label: "Avg Duration", value: "35 min" }, { label: "Streak", value: "2 wk" }],
-    unit: "",
-  },
-  other: {
-    label: "Other", color: "#E0A020",
-    data: [0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1],
-    metric: [{ label: "Activities", value: "1" }, { label: "This Month", value: "2" }, { label: "Calories", value: "210" }],
-    unit: "",
-  },
-};
 
 function CoachDashboard({ realClients }) {
   var CLIENT_DATA = (realClients && realClients.length > 0) ? realClients.map(function(c) {
@@ -5206,6 +4833,8 @@ function CoachDashboard({ realClients }) {
   );
 }
 
+const TREND_DATA = { total: { label: "Total", color: "#1B8C4E" }, run: { label: "Run", color: "#2563B0" }, workout: { label: "Workout", color: "#1B8C4E" }, bike: { label: "Bike", color: "#D97706" }, swim: { label: "Swim", color: "#0E7490" } };
+
 function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activityLogs, realClients }) {
   var clientCount = realClients && realClients.length > 0 ? realClients.length : 0;
   const stats = monthStats || { totalWorkouts: 15, totalMiles: "18.0", restDays: 5 };
@@ -5225,8 +4854,21 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
     return { initials: c.avatar, name: c.name, val: (c.streak || 0) + "d", color: c.color };
   });
 
+  // Calculate streak from activityLogs
+  var analyticsStreak = 0;
+  if (activityLogs) {
+    var _cd = new Date(TODAY);
+    for (var _i = 0; _i < 365; _i++) {
+      var _mk = _cd.getFullYear() + "-" + _cd.getMonth();
+      var _day = _cd.getDate();
+      var _has = activityLogs[_mk] && activityLogs[_mk][_day] && activityLogs[_mk][_day].length > 0;
+      if (_has) { analyticsStreak++; _cd.setDate(_cd.getDate()-1); }
+      else if (_i === 0) { _cd.setDate(_cd.getDate()-1); }
+      else { break; }
+    }
+  }
   const clientStats = [
-    { val: "12d",                       label: "Day Streak",          html: ICON_FIRE },
+    { val: analyticsStreak+"d",          label: "Day Streak",          html: ICON_FIRE },
     { val: String(stats.totalWorkouts), label: "Activities This Month", html: ICON_WORKOUT },
     { val: avgStepsStr,                 label: "Avg Steps/Day",       html: ICON_SNEAKER },
     { val: stats.totalMiles+"mi",       label: "Miles This Week",     html: ICON_RUN },
@@ -5256,7 +4898,63 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
   }
 
   const validActiveType = loggedTypes[activeType] ? activeType : "total";
-  const trend = TREND_DATA[validActiveType];
+
+  // Build real trend data from activityLogs (last 12 weeks)
+  var now2 = new Date(TODAY);
+  var realTrendData = {};
+  var typeColors2 = { total: "#1B8C4E", run: "#2563B0", workout: "#1B8C4E", bike: "#D97706", swim: "#0E7490", maintenance: "#9B6FD4", other: "#E0A020" };
+  var typeLabels2 = { total: "Total", run: "Run", workout: "Workout", bike: "Bike", swim: "Swim", maintenance: "Body Care", other: "Other" };
+
+  ["total","run","workout","bike","swim","maintenance","other"].forEach(function(type) {
+    var weekCounts = [];
+    var thisWeekStart = new Date(now2); thisWeekStart.setDate(now2.getDate() - now2.getDay()); thisWeekStart.setHours(0,0,0,0);
+    for (var w = 11; w >= 0; w--) {
+      var weekStart2 = new Date(thisWeekStart); weekStart2.setDate(thisWeekStart.getDate() - w*7);
+      var weekEnd2 = new Date(weekStart2); weekEnd2.setDate(weekStart2.getDate() + 6); weekEnd2.setHours(23,59,59,999);
+      var count = 0;
+      if (activityLogs) {
+        Object.keys(activityLogs).forEach(function(mk) {
+          Object.keys(activityLogs[mk]).forEach(function(day) {
+            (activityLogs[mk][day]||[]).forEach(function(e) {
+              var mkParts = mk.split("-");
+              var dt = new Date(parseInt(mkParts[0]), parseInt(mkParts[1]), parseInt(day));
+              var ws = new Date(weekStart2); ws.setHours(0,0,0,0);
+              var we = new Date(weekEnd2); we.setHours(23,59,59,999);
+              if (dt < ws || dt > we) return;
+              var t = (e.type||"").toLowerCase();
+              if (type === "total") count++;
+              else if (type === "run" && t.indexOf("run") !== -1) count += parseFloat(e.miles||0)||1;
+              else if (type === "workout" && (t.indexOf("workout")!==-1||t.indexOf("strength")!==-1||t.indexOf("circuit")!==-1)) count++;
+              else if (type === "bike" && (t.indexOf("bike")!==-1||t.indexOf("cycling")!==-1)) count += parseFloat(e.miles||0)||1;
+              else if (type === "swim" && t.indexOf("swim")!==-1) count++;
+              else if (type === "maintenance" && (t.indexOf("maintenance")!==-1||t.indexOf("mobility")!==-1||t.indexOf("body")!==-1)) count++;
+              else if (type === "other" && ["run","workout","strength","circuit","bike","cycling","swim","maintenance","mobility","body"].every(function(k){return t.indexOf(k)===-1;}) && t) count++;
+            });
+          });
+        });
+      }
+      weekCounts.push(count);
+    }
+    var lastVal = weekCounts[weekCounts.length-1];
+    var typeUnit = (type === "run" || type === "bike") ? " mi" : "";
+    realTrendData[type] = {
+      label: typeLabels2[type], color: typeColors2[type],
+      data: weekCounts.map(function(v){ return type==="run"||type==="bike" ? Math.round(v*10)/10 : v; }),
+      unit: typeUnit,
+      metric: [{ label: "This Week", value: String(lastVal) }, { label: "This Month", value: String(weekCounts.slice(-4).reduce(function(s,v){return s+v;},0)) }],
+    };
+  });
+
+  const trend = realTrendData[validActiveType] || realTrendData["total"];
+
+  // Generate real week date objects for chart labels
+  var realWeekDates = [];
+  var _twStart = new Date(TODAY); _twStart.setDate(TODAY.getDate() - TODAY.getDay()); _twStart.setHours(0,0,0,0);
+  for (var _wi = 11; _wi >= 0; _wi--) {
+    var _ws = new Date(_twStart); _ws.setDate(_twStart.getDate() - _wi*7);
+    var _we = new Date(_ws); _we.setDate(_ws.getDate() + 6);
+    realWeekDates.push({ start: _ws, end: _we });
+  }
 
   // Derive which activity types have been logged
   var loggedTypes = { total: true };
@@ -5429,7 +5127,7 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
             color={trend.color}
             data={trend.data}
             unit={trend.unit}
-            livePace={validActiveType === "run" && stats.avgPace ? stats.avgPace : null}
+            livePace={validActiveType === "run" && stats.avgPace ? stats.avgPace : null} weekDates={realWeekDates}
           />
         </div>
       )}
@@ -5439,72 +5137,91 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
       {!isCoach && (
         <div style={{ marginBottom: 20 }}>
           {(function() {
+            // Build HISTORY_DATA from real activityLogs
+            var MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+            var DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+            var now = new Date(TODAY);
+            var curYear = now.getFullYear();
+            var curMonth = now.getMonth();
+            var curDay = now.getDate();
+
+            // Helper to get run entries
+            function getRunEntries(filterFn) {
+              var entries = [];
+              if (!activityLogs) return entries;
+              Object.keys(activityLogs).forEach(function(mk) {
+                var parts = mk.split("-"); var yr = parseInt(parts[0]); var mo = parseInt(parts[1]);
+                Object.keys(activityLogs[mk]).forEach(function(day) {
+                  var d = parseInt(day);
+                  (activityLogs[mk][day] || []).forEach(function(e) {
+                    if ((e.type||"").toLowerCase().indexOf("run") !== -1) {
+                      if (filterFn(yr, mo, d)) entries.push({ yr, mo, d, miles: parseFloat(e.miles||0)||0, pace: e.pace||"" });
+                    }
+                  });
+                });
+              });
+              return entries;
+            }
+
+            function calcStats(entries) {
+              var miles = entries.reduce(function(s,e){return s+e.miles;},0);
+              var runs = entries.length;
+              var paces = entries.filter(function(e){return e.pace;}).map(function(e){
+                var p=e.pace.split(":"); return p.length===2?parseInt(p[0])*60+parseInt(p[1]):0;
+              }).filter(function(x){return x>0;});
+              var avgPaceStr = paces.length>0 ? (function(){var a=Math.round(paces.reduce(function(s,v){return s+v;},0)/paces.length); return Math.floor(a/60)+":"+(a%60<10?"0":"")+(a%60);}()) : "--";
+              return { miles: Math.round(miles*10)/10, runs, avgPace: avgPaceStr };
+            }
+
+            // All time by year
+            var yearMap = {};
+            for (var y = curYear-5; y <= curYear; y++) yearMap[y] = 0;
+            getRunEntries(function(){return true;}).forEach(function(e){ if(yearMap[e.yr]!==undefined) yearMap[e.yr]+=e.miles; else yearMap[e.yr]=e.miles; });
+            var allEntries = getRunEntries(function(){return true;});
+            var allStats = calcStats(allEntries);
+
+            // This year by month
+            var monthMap = {};
+            for (var m=0;m<12;m++) monthMap[m]=0;
+            getRunEntries(function(yr){return yr===curYear;}).forEach(function(e){monthMap[e.mo]+=e.miles;});
+            var yearEntries = getRunEntries(function(yr){return yr===curYear;});
+            var yearStats = calcStats(yearEntries);
+
+            // This month by week
+            var weekMap = {0:0,1:0,2:0,3:0};
+            getRunEntries(function(yr,mo){return yr===curYear&&mo===curMonth;}).forEach(function(e){weekMap[Math.min(3,Math.floor((e.d-1)/7))]+=e.miles;});
+            var monthEntries = getRunEntries(function(yr,mo){return yr===curYear&&mo===curMonth;});
+            var monthStats2 = calcStats(monthEntries);
+
+            // This week by day
+            var weekStart = new Date(now); weekStart.setDate(curDay - now.getDay());
+            var dayMap = {0:0,1:0,2:0,3:0,4:0,5:0,6:0};
+            getRunEntries(function(yr,mo,d){
+              var dt = new Date(yr,mo,d); return dt >= weekStart && dt <= now;
+            }).forEach(function(e){ var dt=new Date(e.yr,e.mo,e.d); dayMap[dt.getDay()]+=e.miles; });
+            var weekEntries = getRunEntries(function(yr,mo,d){var dt=new Date(yr,mo,d);return dt>=weekStart&&dt<=now;});
+            var weekStats = calcStats(weekEntries);
+
             var HISTORY_DATA = {
               all: {
-                label: "2020 - 2026",
-                miles: 847,
-                runs: 554,
-                avgPace: "9:14",
-                totalTime: "782:39",
-                bars: [
-                  { year: "2020", miles: 210 },
-                  { year: "2021", miles: 285 },
-                  { year: "2022", miles: 320 },
-                  { year: "2023", miles: 410 },
-                  { year: "2024", miles: 780 },
-                  { year: "2025", miles: 260 },
-                  { year: "2026", miles: 420 },
-                ],
+                label: (curYear-5) + " - " + curYear,
+                miles: allStats.miles, runs: allStats.runs, avgPace: allStats.avgPace, totalTime: "--",
+                bars: Object.keys(yearMap).sort().map(function(y){return {year:String(y),miles:Math.round(yearMap[y]*10)/10};}),
               },
               year: {
                 label: "This Year",
-                miles: 420,
-                runs: 87,
-                avgPace: "8:52",
-                totalTime: "62:14",
-                bars: [
-                  { year: "Jan", miles: 48 },
-                  { year: "Feb", miles: 62 },
-                  { year: "Mar", miles: 71 },
-                  { year: "Apr", miles: 55 },
-                  { year: "May", miles: 84 },
-                  { year: "Jun", miles: 0 },
-                  { year: "Jul", miles: 0 },
-                  { year: "Aug", miles: 0 },
-                  { year: "Sep", miles: 0 },
-                  { year: "Oct", miles: 0 },
-                  { year: "Nov", miles: 0 },
-                  { year: "Dec", miles: 0 },
-                ],
+                miles: yearStats.miles, runs: yearStats.runs, avgPace: yearStats.avgPace, totalTime: "--",
+                bars: MONTH_NAMES.map(function(mn,i){return {year:mn,miles:Math.round((monthMap[i]||0)*10)/10};}),
               },
               month: {
                 label: "This Month",
-                miles: 84,
-                runs: 18,
-                avgPace: "8:44",
-                totalTime: "12:22",
-                bars: [
-                  { year: "W1", miles: 18 },
-                  { year: "W2", miles: 24 },
-                  { year: "W3", miles: 22 },
-                  { year: "W4", miles: 20 },
-                ],
+                miles: monthStats2.miles, runs: monthStats2.runs, avgPace: monthStats2.avgPace, totalTime: "--",
+                bars: [{year:"W1",miles:Math.round((weekMap[0]||0)*10)/10},{year:"W2",miles:Math.round((weekMap[1]||0)*10)/10},{year:"W3",miles:Math.round((weekMap[2]||0)*10)/10},{year:"W4",miles:Math.round((weekMap[3]||0)*10)/10}],
               },
               week: {
                 label: "This Week",
-                miles: 22,
-                runs: 4,
-                avgPace: "8:38",
-                totalTime: "3:08",
-                bars: [
-                  { year: "Mon", miles: 0 },
-                  { year: "Tue", miles: 6 },
-                  { year: "Wed", miles: 8 },
-                  { year: "Thu", miles: 5 },
-                  { year: "Fri", miles: 0 },
-                  { year: "Sat", miles: 0 },
-                  { year: "Sun", miles: 3 },
-                ],
+                miles: weekStats.miles, runs: weekStats.runs, avgPace: weekStats.avgPace, totalTime: "--",
+                bars: DAY_NAMES.map(function(dn,i){return {year:dn,miles:Math.round((dayMap[i]||0)*10)/10};}),
               },
             };
 
@@ -5558,13 +5275,13 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
                   {/* Bar chart */}
                   <div style={{ position: "relative" }}>
                     {/* Y-axis grid lines */}
-                    <div style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 24, pointerEvents: "none" }}>
+                    <div style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 50, pointerEvents: "none" }}>
                       {[0, 0.33, 0.67, 1].map(function(pct) {
                         var val = Math.round(maxMiles * pct);
                         return (
                           <div key={pct} style={{ position: "absolute", bottom: pct * 100 + "%", left: 0, right: 0, display: "flex", alignItems: "center" }}>
                             <div style={{ flex: 1, height: 1, background: pct === 0 ? BORDER : SURFACE2, opacity: 0.6 }} />
-                            <div style={{ color: TEXT3, fontSize: 9, paddingLeft: 4, width: 28, textAlign: "right" }}>{val > 0 ? val : "0mi"}</div>
+                            <div style={{ color: "#333", fontSize: 9, paddingLeft: 4, width: 28, textAlign: "right" }}>{val > 0 ? val : "0mi"}</div>
                           </div>
                         );
                       })}
@@ -5573,7 +5290,7 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
                     </div>
 
                     {/* Bars */}
-                    <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 140, paddingBottom: 24, paddingRight: 32, position: "relative", zIndex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 180, paddingBottom: 50, paddingRight: 32, position: "relative", zIndex: 1 }}>
                       {hd.bars.map(function(b, i) {
                         var pct = maxMiles > 0 ? (b.miles / maxMiles) * 100 : 0;
                         var isCurrent = b.year === currentYear || (histPeriod === "year" && b.year === "May") || (histPeriod === "month" && b.year === "W4") || (histPeriod === "week" && b.year === "Wed");
@@ -5595,9 +5312,9 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
                               </div>
                             )}
                             {b.miles > 0 && (
-                              <div style={{ width: "100%", background: isHovered ? GREEN : isCurrent ? GREEN : TEXT, borderRadius: "3px 3px 0 0", height: Math.max(pct, 2)+"%", minHeight: 4, transition: "background 0.15s, height 0.3s ease", opacity: isHovered ? 1 : isCurrent ? 1 : 0.85 }} />
+                              <div style={{ width: "100%", background: isHovered ? "#17a85e" : GREEN, borderRadius: "3px 3px 0 0", height: Math.max(pct, 2)+"%", minHeight: 4, transition: "background 0.15s, height 0.3s ease", opacity: 1 }} />
                             )}
-                            <div style={{ position: "absolute", bottom: 0, color: isHovered ? GREEN : isCurrent ? GREEN : TEXT3, fontSize: hd.bars.length > 8 ? 8 : 10, fontWeight: isCurrent || isHovered ? 700 : 400, paddingTop: 4, textAlign: "center", width: "100%" }}>{b.year}</div>
+                            <div style={{ position: "absolute", bottom: 0, color: "#222", fontSize: hd.bars.length > 8 ? 7 : 9, fontWeight: 500, paddingTop: 4, textAlign: "center", width: "100%", lineHeight: 1 }}>{b.year}</div>
                           </div>
                         );
                       })}
@@ -6073,12 +5790,19 @@ function CoachCodeCard() {
   );
 }
 
-function SettingsMenu({ isCoach, goTo, tab, onLogout, onReplayTutorial, notifSettings, setNotifSettings }) {
+function SettingsMenu({ isCoach, goTo, tab, onLogout, onReplayTutorial, notifSettings, setNotifSettings, myProfile }) {
   const [open, setOpen]           = useState(false);
   const [view, setView]           = useState("menu");
-  const [name, setName]           = useState(isCoach ? COACH_NAME : CLIENTS[0].name);
-  const [birthday, setBirthday]   = useState(isCoach ? "1988-04-14" : "1995-09-22");
-  const [email, setEmail]         = useState(isCoach ? "cameron@moneyfitness.com" : "marcus@email.com");
+  const [name, setName]           = useState(isCoach ? COACH_NAME : (myProfile ? myProfile.name : CLIENTS[0].name));
+  const [birthday, setBirthday]   = useState(isCoach ? "1988-04-14" : (myProfile && myProfile.birthday ? myProfile.birthday : ""));
+  const [email, setEmail]         = useState(isCoach ? "cameron@moneyfitness.com" : (myProfile ? myProfile.email : ""));
+  useEffect(function() {
+    if (!isCoach && myProfile) {
+      setName(myProfile.name || "");
+      setEmail(myProfile.email || "");
+      if (myProfile.birthday) setBirthday(myProfile.birthday);
+    }
+  }, [myProfile]);
   const [resetSent, setResetSent] = useState(false);
   const [saved, setSaved]         = useState(false);
   // notifSettings + setNotifSettings lifted to MainApp
@@ -6132,7 +5856,7 @@ function SettingsMenu({ isCoach, goTo, tab, onLogout, onReplayTutorial, notifSet
           {view === "menu" && (
             <div>
               <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid "+SURFACE2 }}>
-                <div style={{ color: TEXT, fontSize: 13, fontWeight: 700 }}>{isCoach ? COACH_NAME : CLIENTS[0].name}</div>
+                <div style={{ color: TEXT, fontSize: 13, fontWeight: 700 }}>{isCoach ? COACH_NAME : (myProfile ? myProfile.name : CLIENTS[0].name)}</div>
                 <div style={{ color: TEXT3, fontSize: 11, marginTop: 2 }}>{isCoach ? "Coach" : "Client"}</div>
               </div>
               {menuItems.map(function(item) {
@@ -6230,15 +5954,27 @@ function SettingsMenu({ isCoach, goTo, tab, onLogout, onReplayTutorial, notifSet
               <div style={{ background: CARD, borderRadius: 14, padding: "14px 16px", marginBottom: 16, border: "1.5px solid "+BORDER }}>
                 <div style={{ color: TEXT, fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Push Notifications</div>
                 <div style={{ color: TEXT3, fontSize: 12, marginBottom: 12 }}>Get notified even when the app is closed</div>
-                <button onClick={function() {
+                <button onClick={async function() {
                   if (!('Notification' in window)) { alert('Notifications not supported on this device'); return; }
-                  if (Notification.permission === 'granted') { alert('Notifications already enabled!'); return; }
-                  Notification.requestPermission().then(function(perm) {
-                    if (perm === 'granted') alert('Notifications enabled!');
-                    else alert('Please enable notifications in your device settings');
-                  });
+                  if (Notification.permission === 'granted') {
+                    if (window.OneSignal && window.OneSignal.User) {
+                      const userId = window.__mf_user_id;
+                      if (userId) { try { await window.OneSignal.login(userId); await window.OneSignal.User.addTag('user_id', userId); } catch(e) {} }
+                    }
+                    alert('Push notifications already enabled!'); return;
+                  }
+                  const perm = await Notification.requestPermission();
+                  if (perm === 'granted') {
+                    if (window.OneSignal && window.OneSignal.User) {
+                      const userId = window.__mf_user_id;
+                      if (userId) { try { await window.OneSignal.login(userId); await window.OneSignal.User.addTag('user_id', userId); } catch(e) {} }
+                    }
+                    alert('Push notifications enabled!');
+                  } else {
+                    alert('Please enable notifications in your device settings');
+                  }
                 }} style={{ background: GREEN, border: "none", color: "#fff", padding: "10px 20px", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                  {typeof Notification !== 'undefined' && Notification.permission === 'granted' ? '✓ Enabled' : 'Enable Push Notifications'}
+                  {typeof window !== 'undefined' && window.OneSignal && window.OneSignal.Notifications && window.OneSignal.Notifications.permission ? '✓ Enabled' : 'Enable Push Notifications'}
                 </button>
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid "+SURFACE2, marginBottom: 8 }}>
@@ -6255,7 +5991,6 @@ function SettingsMenu({ isCoach, goTo, tab, onLogout, onReplayTutorial, notifSet
                 ...(isCoach ? [
                   { key: "message",          label: "Client Messages",       desc: "When a client sends you a message",            html: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M216,48H40A16,16,0,0,0,24,64V224a8,8,0,0,0,13,6.22L72,208H216a16,16,0,0,0,16-16V64A16,16,0,0,0,216,48Zm0,144H69.47a8,8,0,0,0-5.19,1.91L40,212.12V64H216Z"/></svg>' },
                   { key: "checkin",          label: "Check-in Responses",    desc: "When a client submits a weekly check-in",       html: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/></svg>' },
-                  { key: "coachCheckinAlert",label: "Client Activity Alert", desc: "When a client completes a logged workout",      html: ICON_WORKOUT },
                   { key: "streak",           label: "Inactivity Alerts",     desc: "When a client hasn't logged in 3+ days",        html: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M236.8,188.09,149.35,36.22a24.76,24.76,0,0,0-42.7,0L19.2,188.09a23.51,23.51,0,0,0,0,23.72A24.35,24.35,0,0,0,40.55,224h174.9a24.35,24.35,0,0,0,21.33-12.19A23.51,23.51,0,0,0,236.8,188.09ZM120,104a8,8,0,0,1,16,0v40a8,8,0,0,1-16,0Zm8,88a12,12,0,1,1,12-12A12,12,0,0,1,128,192Z"/></svg>' },
                   { key: "newClient",        label: "New Client Signup",     desc: "When someone joins with your coach code",       html: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 256 256" fill="currentColor"><path d="M256,136a8,8,0,0,1-8,8H232v16a8,8,0,0,1-16,0V144H200a8,8,0,0,1,0-16h16V112a8,8,0,0,1,16,0v16h16A8,8,0,0,1,256,136Zm-57.87,58.85a8,8,0,0,1-12.26,10.3C165.78,181.19,147.55,172,128,172s-37.78,9.19-57.87,33.15a8,8,0,0,1-12.26-10.3c14.94-17.78,33-28.47,52.28-33.2a72,72,0,1,1,75.7,0C205.1,166.38,223.19,177.07,238.13,194.85ZM128,164a56,56,0,1,0-56-56A56.06,56.06,0,0,0,128,164Z"/></svg>' },
                   { key: "weeklySummary",    label: "Weekly Summary",        desc: "Monday recap of all client activity",           html: ICON_CHART },
@@ -6266,7 +6001,6 @@ function SettingsMenu({ isCoach, goTo, tab, onLogout, onReplayTutorial, notifSet
                   { key: "checkin",          label: "Check-in Reminders",     desc: "When your coach requests a weekly check-in",      html: ICON_PENCIL },
                   { key: "goalMilestone",    label: "Goal Milestones",        desc: "When you hit a goal or personal best",            html: ICON_STAR },
                   { key: "streak",           label: "Streak Milestones",      desc: "When you hit a 7, 14 or 30-day streak",           html: ICON_LIGHTNING },
-                  { key: "streakRisk",       label: "Streak Risk Alert",      desc: "Reminder if you haven't logged by 6pm",           html: ICON_MOON },
                 ]),
               ].map(function(item) {
                 var on = notifSettings[item.key];
@@ -6909,10 +6643,10 @@ function WorkoutsSection({ weekDates, onAddToDay }) {
 
 function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setPlans }) {
   var [activeTab,    setActiveTab]    = useState("plan");
-  var [raceDateStr,  setRaceDateStr]  = useState("2026-10-11");
-  var [raceName,     setRaceName]     = useState("Chicago Marathon");
-  var [goalTime,     setGoalTime]     = useState("3:45:00");  var [raceDistKey,  setRaceDistKey]  = useState("full");
-  var [paceInput,    setPaceInput]    = useState("3:45:00");
+  var [raceDateStr,  setRaceDateStr]  = useState(function(){ try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); return r.raceDateStr||""; } catch(e){return "";} });
+  var [raceName,     setRaceName]     = useState(function(){ try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); return r.raceName||""; } catch(e){return "";} });
+  var [goalTime,     setGoalTime]     = useState(function(){ try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); return r.goalTime||""; } catch(e){return "";} });  var [raceDistKey,  setRaceDistKey]  = useState(function(){ try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); return r.raceDistKey||"full"; } catch(e){return "full";} });
+  var [paceInput,    setPaceInput]    = useState("");
   var [showSetup,    setShowSetup]    = useState(false);
   var [weekOffset,   setWeekOffset]   = useState(0);
   // plans state is lifted to MainApp so HomeScreen can read it
@@ -6950,7 +6684,7 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
     }
   }
 
-  var raceDate  = (function(){ var p = raceDateStr.split("-"); return new Date(+p[0], +p[1]-1, +p[2]); })();
+  var raceDate = raceDateStr ? (function(){ var p = raceDateStr.split("-"); return new Date(+p[0], +p[1]-1, +p[2]); })() : null;
   var countdown = useCountdown(raceDate);
   var RACE_MILES = { "5k": 3.1069, "10k": 6.2137, "half": 13.1094, "full": 26.2188, "ultra": 31.0686 };
 
@@ -7016,10 +6750,10 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 10, fontWeight: 700, letterSpacing: 2, marginBottom: raceCollapsed ? 2 : 4 }}>RACE DAY</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ color: WHITE, fontSize: raceCollapsed ? 15 : 22, fontWeight: 900, lineHeight: 1.1, letterSpacing: -0.5 }}>{raceName}</div>
-                    {raceCollapsed && <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }}>· {countdown.days}d {countdown.hours}h {countdown.mins}m</div>}
+                    <div style={{ color: WHITE, fontSize: raceCollapsed ? 15 : 22, fontWeight: 900, lineHeight: 1.1, letterSpacing: -0.5 }}>{raceName || "Schedule your next race"}</div>
+                    {raceCollapsed && <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }}>· {raceDateStr ? countdown.days : "00"}d {raceDateStr ? countdown.hours : "00"}h {countdown.mins}m</div>}
                   </div>
-                  {!raceCollapsed && <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, marginTop: 3 }}>{(function(){ var p = raceDateStr.split("-"); var d = new Date(+p[0], +p[1]-1, +p[2]); return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }); })()}</div>}
+                  {!raceCollapsed && raceDateStr && <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, marginTop: 3 }}>{(function(){ var p = raceDateStr.split("-"); var d = new Date(+p[0], +p[1]-1, +p[2]); return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }); })()}</div>}
                 </div>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0, marginLeft: 12 }}>
                   {!raceCollapsed && (
@@ -7040,7 +6774,7 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
               {!raceCollapsed && showSetup && (
                 <div style={{ background: "rgba(0,0,0,0.3)", borderRadius: 14, padding: 14, marginBottom: 14, border: "1px solid rgba(255,255,255,0.1)" }}>
                   {[
-                    { label: "RACE NAME", value: raceName, set: setRaceName, placeholder: "Race name" },
+                    { label: "RACE NAME", value: raceName, set: function(v) { setRaceName(v); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.raceName=v; localStorage.setItem("mf_race",JSON.stringify(r)); } catch(e){} }, placeholder: "Race name" },
                   ].map(function(f) {
                     return (
                       <div key={f.label} style={{ marginBottom: 10 }}>
@@ -7053,9 +6787,9 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
                     <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 5 }}>GOAL TIME</div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       {[
-                        { label: "HRS", max: 23, val: parseInt(goalTime.split(":")[0]) || 0, set: function(v) { var p = goalTime.split(":"); p[0] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); } },
-                        { label: "MIN", max: 59, val: parseInt(goalTime.split(":")[1]) || 0, set: function(v) { var p = goalTime.split(":"); p[1] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); } },
-                        { label: "SEC", max: 59, val: parseInt(goalTime.split(":")[2]) || 0, set: function(v) { var p = goalTime.split(":"); p[2] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); } },
+                        { label: "HRS", max: 23, val: parseInt((goalTime||"00:00:00").split(":")[0]) || 0, set: function(v) { var p = (goalTime||"00:00:00").split(":"); while(p.length<3) p.push("00"); p[0] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.goalTime=s; localStorage.setItem("mf_race",JSON.stringify(r)); } catch(ex){} } },
+                        { label: "MIN", max: 59, val: parseInt((goalTime||"00:00:00").split(":")[1]) || 0, set: function(v) { var p = (goalTime||"00:00:00").split(":"); while(p.length<3) p.push("00"); p[1] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.goalTime=s; localStorage.setItem("mf_race",JSON.stringify(r)); } catch(ex){} } },
+                        { label: "SEC", max: 59, val: parseInt((goalTime||"00:00:00").split(":")[2]) || 0, set: function(v) { var p = (goalTime||"00:00:00").split(":"); while(p.length<3) p.push("00"); p[2] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.goalTime=s; localStorage.setItem("mf_race",JSON.stringify(r)); } catch(ex){} } },
                       ].map(function(seg, si) {
                         return (
                           <div key={seg.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
@@ -7072,7 +6806,7 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
                   </div>
                   <div style={{ marginBottom: 10 }}>
                     <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 5 }}>RACE DATE</div>
-                    <input type="date" value={raceDateStr} onChange={function(e) { setRaceDateStr(e.target.value); }} style={{ width: "100%", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, padding: "10px 12px", color: WHITE, fontSize: 14, fontWeight: 600, outline: "none", boxSizing: "border-box", colorScheme: "dark" }} />
+                    <input type="date" value={raceDateStr} onChange={function(e) { setRaceDateStr(e.target.value); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.raceDateStr=e.target.value; localStorage.setItem("mf_race",JSON.stringify(r)); } catch(ex){} }} style={{ width: "100%", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, padding: "10px 12px", color: WHITE, fontSize: 14, fontWeight: 600, outline: "none", boxSizing: "border-box", colorScheme: "dark" }} />
                   </div>
                   <div>
                     <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>RACE DISTANCE</div>
@@ -7080,7 +6814,7 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
                       {[["5k","5K"],["10k","10K"],["half","Half"],["full","Marathon"],["ultra","50K"]].map(function(kv) {
                         var active = raceDistKey === kv[0];
                         return (
-                          <button key={kv[0]} onClick={function() { setRaceDistKey(kv[0]); }} style={{ flex: 1, padding: "7px 2px", borderRadius: 8, background: active ? WHITE : "rgba(255,255,255,0.08)", border: "1px solid "+(active ? WHITE : "rgba(255,255,255,0.15)"), color: active ? DKGREEN : WHITE, fontSize: 10, fontWeight: active ? 800 : 500, cursor: "pointer" }}>{kv[1]}</button>
+                          <button key={kv[0]} onClick={function() { setRaceDistKey(kv[0]); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.raceDistKey=kv[0]; localStorage.setItem("mf_race",JSON.stringify(r)); } catch(ex){} }} style={{ flex: 1, padding: "7px 2px", borderRadius: 8, background: active ? WHITE : "rgba(255,255,255,0.08)", border: "1px solid "+(active ? WHITE : "rgba(255,255,255,0.15)"), color: active ? DKGREEN : WHITE, fontSize: 10, fontWeight: active ? 800 : 500, cursor: "pointer" }}>{kv[1]}</button>
                         );
                       })}
                     </div>
@@ -7094,7 +6828,7 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
                   ? <div style={{ textAlign: "center", padding: "6px 0" }}><div style={{ color: WHITE, fontSize: 16, fontWeight: 900 }}>Race Day!</div></div>
                   : (
                     <div style={{ display: "flex", justifyContent: "center" }}>
-                      {[{ val: countdown.days, label: "DAYS" }, { val: countdown.hours, label: "HRS" }, { val: countdown.mins, label: "MIN" }].map(function(item, i) {
+                      {[{ val: raceDateStr ? countdown.days : "00", label: "DAYS" }, { val: raceDateStr ? countdown.hours : "00", label: "HRS" }, { val: raceDateStr ? countdown.mins : "00", label: "MIN" }].map(function(item, i) {
                         return (
                           <div key={item.label} style={{ flex: 1, textAlign: "center", position: "relative" }}>
                             {i > 0 && <div style={{ position: "absolute", left: 0, top: "40%", color: "rgba(255,255,255,0.3)", fontSize: 24, fontWeight: 200 }}>:</div>}
@@ -7573,6 +7307,17 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
     }).catch(function(e) { console.log("push registration error", e); });
   }, [authUserId, authToken]);
   const [realClients, setRealClients] = useState([]);
+  const [myProfile, setMyProfile] = useState(null);
+
+  // Load own profile (client only)
+  useEffect(function() {
+    if (!authToken || !authUserId || initCoach) return;
+    fetch(SUPABASE_URL + "/rest/v1/profiles?id=eq." + authUserId + "&select=*", {
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+    }).then(function(r) { return r.json(); }).then(function(rows) {
+      if (Array.isArray(rows) && rows.length > 0) setMyProfile(rows[0]);
+    }).catch(function() {});
+  }, [authUserId, authToken]);
 
   // Load real clients from Supabase (coach only)
   useEffect(function() {
@@ -7604,7 +7349,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
     })
     .catch(function(e) { console.log("clients load error", e); });
   }, [authToken, authUserId, initCoach]);
-  const [showTutorial, setShowTutorial] = useState(true); // show on first launch
+  const [showTutorial, setShowTutorial] = useState(false);
   const [selected, setSelected] = useState(null);
   const [clientDefaultTab, setClientDefaultTab] = useState("Progress");
   const [favorites, setFavorites] = useState({});
@@ -7692,6 +7437,15 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
     setNotifications(function(prev) { return [notif].concat(prev); });
   }
 
+  function sendPush(userId, title, body) {
+    if (!userId || !authToken) return;
+    fetch(SUPABASE_URL + "/functions/v1/send-push", {
+      method: "POST",
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json" },
+      body: JSON.stringify({ external_id: userId, title: title, body: body, url: "/" })
+    }).catch(function() {});
+  }
+
   // -- SHARED ACTIVITY LOGS -------------------------------------
   // activityLogs: { "YYYY-M": { day: [ {type, notes, miles, ...} ] } }
   // Start empty - real data loads from Supabase
@@ -7771,17 +7525,65 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
       });
     });
     if (allEntries.length === 0) return;
+    var newEntries = allEntries.filter(function(e) { return !e.id; });
+    var existingEntries = allEntries.filter(function(e) { return !!e.id; });
+
+    function doReload() {
+      fetch(SUPABASE_URL + "/rest/v1/activity_logs?client_id=eq." + authUserId + "&order=logged_date.desc&limit=200", {
+        headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+      }).then(function(r2) { return r2.json(); }).then(function(rows) {
+        if (!Array.isArray(rows)) return;
+        var built = {};
+        rows.forEach(function(row) {
+          var parts = row.logged_date.split("-");
+          var mk = parseInt(parts[0]) + "-" + (parseInt(parts[1]) - 1);
+          var day = parseInt(parts[2]);
+          if (!built[mk]) built[mk] = {};
+          if (!built[mk][day]) built[mk][day] = [];
+          built[mk][day].push({ id: row.id, type: row.type, notes: row.notes || "", miles: row.miles ? String(row.miles) : "", duration: row.duration || "", calories: row.calories ? String(row.calories) : "", steps: row.steps ? String(row.steps) : "", pace: row.pace || "", source: row.source || "", fromDevice: row.source && row.source !== "manual" });
+        });
+        setActivityLogs(built);
+      }).catch(function() {});
+    }
+
+    var saves = [];
+    if (newEntries.length > 0) {
+      saves.push(fetch(SUPABASE_URL + "/rest/v1/activity_logs", {
+        method: "POST",
+        headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json", "Prefer": "return=minimal" },
+        body: JSON.stringify(newEntries)
+      }).then(function(r) { if (!r.ok) r.text().then(function(t) { console.log("new entry save error:", r.status, t); }); }));
+    }
+    if (existingEntries.length > 0) {
+      saves.push(fetch(SUPABASE_URL + "/rest/v1/activity_logs", {
+        method: "POST",
+        headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates,return=minimal" },
+        body: JSON.stringify(existingEntries)
+      }).then(function(r) { if (!r.ok) r.text().then(function(t) { console.log("existing entry save error:", r.status, t); }); }));
+    }
+    Promise.all(saves).then(doReload);
     fetch(SUPABASE_URL + "/rest/v1/activity_logs", {
       method: "POST",
-      headers: {
-        "apikey": SUPABASE_ANON_KEY,
-        "Authorization": "Bearer " + authToken,
-        "Content-Type": "application/json",
-        "Prefer": "return=minimal"
-      },
-      body: JSON.stringify(allEntries)
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json", "Prefer": "return=minimal" },
+      body: JSON.stringify([])
     }).then(function(r) {
-      if (!r.ok) r.text().then(function(t) { console.log("log save error:", r.status, t); });
+      if (!r.ok) { r.text().then(function(t) { console.log("log save error:", r.status, t); }); return; }
+      // Reload logs from Supabase so new entries get their real UUIDs
+      fetch(SUPABASE_URL + "/rest/v1/activity_logs?client_id=eq." + authUserId + "&order=logged_date.desc&limit=200", {
+        headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+      }).then(function(r2) { return r2.json(); }).then(function(rows) {
+        if (!Array.isArray(rows)) return;
+        var built = {};
+        rows.forEach(function(row) {
+          var parts = row.logged_date.split("-");
+          var mk = parseInt(parts[0]) + "-" + (parseInt(parts[1]) - 1);
+          var day = parseInt(parts[2]);
+          if (!built[mk]) built[mk] = {};
+          if (!built[mk][day]) built[mk][day] = [];
+          built[mk][day].push({ id: row.id, type: row.type, notes: row.notes || "", miles: row.miles ? String(row.miles) : "", duration: row.duration || "", calories: row.calories ? String(row.calories) : "", steps: row.steps ? String(row.steps) : "", pace: row.pace || "", source: row.source || "", fromDevice: row.source && row.source !== "manual" });
+        });
+        setActivityLogs(built);
+      }).catch(function() {});
     }).catch(function(e) { console.log("log save network error", e); });
   }
 
@@ -7845,28 +7647,24 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
   // Check once on mount (and whenever activityLogs changes) if any client
   // hasn't logged anything in 3+ days. Fire a single notification per client,
   // deduped so we don't spam the same alert repeatedly.
-  const [inactivityFired, setInactivityFired] = useState({});
+  const [inactivityFired, setInactivityFired] = useState(function() { try { var s = localStorage.getItem("mf_inactivity_fired"); return s ? JSON.parse(s) : {}; } catch(e) { return {}; } });
 
   useEffect(function() {
     if (!isCoach) return;
     var todayNum = TODAY.getDate();
     var monthKey2 = TODAY.getFullYear() + "-" + TODAY.getMonth();
 
-    CLIENTS.forEach(function(client) {
-      // Find the most recent logged day for this client in activityLogs
-      // (for the coach view, activityLogs tracks the shared client log)
+    (realClients && realClients.length > 0 ? realClients : []).forEach(function(client) {
       var logs = activityLogs[monthKey2] || {};
       var loggedDays = Object.keys(logs).map(Number).filter(function(d) { return d <= todayNum; });
-
-      // Also consider workedOut seed data
-      var allDays = loggedDays.concat(client.workedOut.filter(function(d) { return d <= todayNum; }));
+      var allDays = loggedDays;
       var lastDay = allDays.length > 0 ? Math.max.apply(null, allDays) : 0;
       var daysSince = lastDay > 0 ? todayNum - lastDay : todayNum;
 
       if (daysSince >= 3) {
         var key = "inactive-" + client.id + "-" + lastDay;
         if (!inactivityFired[key]) {
-          setInactivityFired(function(prev) { return Object.assign({}, prev, { [key]: true }); });
+          setInactivityFired(function(prev) { var next = Object.assign({}, prev, { [key]: true }); try { localStorage.setItem("mf_inactivity_fired", JSON.stringify(next)); } catch(e) {} return next; });
           if (!notifSettings.streak) return;
           addNotification({
             id: Date.now() + client.id,
@@ -7877,6 +7675,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
             read: false,
             clientId: client.id,
           });
+          sendPush(authUserId, "⚠️ " + client.name + " hasn't logged in " + daysSince + " days", "Consider sending them a check-in.");
         }
       }
     });
@@ -7898,7 +7697,8 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
     var totalWorkoutsWeek = 0;
     var inactiveNames = [];
 
-    CLIENTS.forEach(function(client) {
+    var clientsToCheck = realClients && realClients.length > 0 ? realClients : [];
+    clientsToCheck.forEach(function(client) {
       var loggedDays = Object.keys(logs3).map(Number);
       var lastWeekDays = loggedDays.filter(function(d) {
         return d <= TODAY.getDate() && d >= TODAY.getDate() - 7;
@@ -7913,14 +7713,16 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
 
     setWeeklySummaryFired(true);
     if (!notifSettings.weeklySummary) return;
+    if (clientsToCheck.length === 0) return;
     addNotification({
       id: Date.now() + 999,
       type: "streak",
       title: "Weekly Summary 📊",
-      body: activeClients + " of " + CLIENTS.length + " clients active last week · " + totalWorkoutsWeek + " workouts logged" + (inactiveNames.length > 0 ? " · " + inactiveNames.join(", ") + " need check-ins" : " · Great week all round!"),
+      body: activeClients + " of " + clientsToCheck.length + " clients active last week · " + totalWorkoutsWeek + " workouts logged" + (inactiveNames.length > 0 ? " · " + inactiveNames.join(", ") + " need check-ins" : " · Great week all round!"),
       time: "Today",
       read: false,
     });
+    sendPush(authUserId, "Weekly Summary 📊", activeClients + " of " + CLIENTS.length + " clients active last week · " + totalWorkoutsWeek + " workouts logged");
   }, [isCoach]);
 
   // ── CLIENT: STREAK AT RISK (fires if no activity logged today after 6pm) ──
@@ -7936,8 +7738,14 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
 
     if (todayLogs4.length === 0) {
       // Check if they have a streak worth protecting
-      var myClient = CLIENTS[0];
-      var streak = myClient ? myClient.streak : 0;
+      var streak = 0;
+      if (activityLogs) {
+        var _sc = new Date(TODAY); _sc.setDate(TODAY.getDate()-1);
+        for (var _si=0;_si<365;_si++) {
+          var _smk=_sc.getFullYear()+"-"+_sc.getMonth(); var _sd=_sc.getDate();
+          if(activityLogs[_smk]&&activityLogs[_smk][_sd]&&activityLogs[_smk][_sd].length>0){streak++;_sc.setDate(_sc.getDate()-1);}else{break;}
+        }
+      }
       if (streak > 0) {
         setStreakAlertFired(true);
         if (!notifSettings.streakRisk) return;
@@ -7986,16 +7794,19 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
           time: "Just now",
           read: false,
         });
+        sendPush(authUserId, "Activity logged! 💪", msg);
       }
     }
     setLastActivityCount(totalCount);
   }, [activityLogs]);
 
   // ── CLIENT: GOAL MILESTONE ─────────────────────────────────────
-  const [firedGoalMilestones, setFiredGoalMilestones] = useState({});
+  const [firedGoalMilestones, setFiredGoalMilestones] = useState(function() { try { var s = localStorage.getItem("mf_fired_goals"); return s ? JSON.parse(s) : {}; } catch(e) { return {}; } });
 
   useEffect(function() {
     if (isCoach) return;
+    // Only fire goal milestones from real goals, not mock data
+    return;
     var myClient = CLIENTS[0];
     if (!myClient || !myClient.goals) return;
     myClient.goals.forEach(function(g) {
@@ -8006,32 +7817,41 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
         if (pct >= m && !firedGoalMilestones[key]) {
           setFiredGoalMilestones(function(prev) { return Object.assign({}, prev, { [key]: true }); });
           if (!notifSettings.goalMilestone) return;
+          var gtitle = m === 100 ? "Goal achieved! 🏆" : m + "% of your goal reached!";
+          var gbody = m === 100 ? "You hit your " + (g.label || g.unit) + " goal. Incredible work!" : "You're " + m + "% of the way to your " + (g.label || g.unit) + " goal. Keep pushing!";
           addNotification({
             id: Date.now() + m,
             type: "streak",
-            title: m === 100 ? "Goal achieved!" : m + "% of your goal reached!",
-            body: m === 100
-              ? "You hit your " + (g.label || g.unit) + " goal. Incredible work — time to set the next one!"
-              : "You're " + m + "% of the way to your " + (g.label || g.unit) + " goal. Keep pushing!",
+            title: gtitle,
+            body: gbody,
             time: "Just now",
             read: false,
           });
+          sendPush(authUserId, gtitle, gbody);
         }
       });
     });
   }, [activityLogs]);
 
   // ── COACH: STREAK MILESTONE ────────────────────────────────────
-  const [firedStreakMilestones, setFiredStreakMilestones] = useState({});
+  const [firedStreakMilestones, setFiredStreakMilestones] = useState(function() { try { var s = localStorage.getItem("mf_fired_streaks"); return s ? JSON.parse(s) : {}; } catch(e) { return {}; } });
 
   useEffect(function() {
     if (isCoach) return;
-    var myClient = CLIENTS[0];
-    var streak = myClient ? myClient.streak : 0;
+    var streak = 0;
+    if (activityLogs) {
+      var _sc2 = new Date(TODAY);
+      for (var _si2=0;_si2<365;_si2++) {
+        var _smk2=_sc2.getFullYear()+"-"+_sc2.getMonth(); var _sd2=_sc2.getDate();
+        if(activityLogs[_smk2]&&activityLogs[_smk2][_sd2]&&activityLogs[_smk2][_sd2].length>0){streak++;_sc2.setDate(_sc2.getDate()-1);}
+        else if(_si2===0){_sc2.setDate(_sc2.getDate()-1);}
+        else{break;}
+      }
+    }
     var milestones = [7, 14, 30];
     milestones.forEach(function(m) {
       if (streak >= m && !firedStreakMilestones[m]) {
-        setFiredStreakMilestones(function(prev) { return Object.assign({}, prev, { [m]: true }); });
+        setFiredStreakMilestones(function(prev) { var next = Object.assign({}, prev, { [m]: true }); try { localStorage.setItem("mf_fired_streaks", JSON.stringify(next)); } catch(e) {} return next; });
         if (!notifSettings.streak) return;
         addNotification({
           id: Date.now() + m + 100,
@@ -8041,6 +7861,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
           time: "Just now",
           read: false,
         });
+        sendPush(authUserId, "🔥 " + m + "-day streak!", "You've logged activity " + m + " days in a row. That kind of consistency is what gets results!");
       }
     });
   }, [activityLogs]);
@@ -8055,6 +7876,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
       time: "Just now",
       read: false,
     });
+    sendPush(authUserId, "New client joined! 🎉", newClientName + " just signed up using your coach code.");
   }, [newClientName]);
 
   function handleSendMessage(clientId, msg) {
@@ -8126,6 +7948,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
             read: false,
             clientId: clientId,
           });
+          sendPush(authUserId, notifTitle, notifBody);
         }
       } else if (msg.type === "media") {
         notifTitle = "New message from " + clientName;
@@ -8243,19 +8066,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
 
   const [watchDays, setWatchDays] = useState(defaultWatchDays);
   const [raceCollapsed, setRaceCollapsed] = useState(false);
-  const [myPlans, setMyPlans] = useState(function() {
-    // Always use fresh Date so key matches current week regardless of when module loaded
-    var _now = new Date();
-    var _m = getMondayOf(_now);
-    var _w = weekKey(_m);
-    var _s = {};
-    _s[_w+"-0"] = [{id:"seed-0",label:"Push Day", emoji: ICON_WORKOUT,color:"#1B8C4E",miles:"",   notes:"Upper body"}];
-    _s[_w+"-1"] = [{id:"seed-1",label:"Easy Run", emoji: ICON_RUN,color:"#3B7DD8",miles:"3.0",notes:"Easy pace"}];
-    _s[_w+"-3"] = [{id:"seed-3",label:"Pull Day", emoji: ICON_WORKOUT,color:"#1B8C4E",miles:"",   notes:"Back, biceps"}];
-    _s[_w+"-4"] = [{id:"seed-4",label:"Tempo Run",emoji: ICON_RUN,color:"#3B7DD8",miles:"4.0",notes:"Tempo effort"}];
-    _s[_w+"-5"] = [{id:"seed-5",label:"Leg Day",  emoji: ICON_WORKOUT,color:"#9B6FD4",miles:"",   notes:"Squat, deadlift"}];
-    return _s;
-  }); // lifted from RaceScreen so HomeScreen can read it
+  const [myPlans, setMyPlans] = useState(function(){ try { var s=localStorage.getItem("mf_plans"); return s?JSON.parse(s):{}; } catch(e){return {};} }); // lifted from RaceScreen so HomeScreen can read it
 
   // Map mock workout dates to actual day numbers in current month
   const WATCH_DAY_MAP = {
@@ -8338,7 +8149,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
   }
 
   function goToClientTab(clientTab, dayIdx) {
-    setSelected(CLIENTS[0]);
+    setSelected(null);
     setClientDefaultTab(clientTab);
     if (dayIdx !== undefined) setProgramDayIndex(dayIdx);
     setTab("clients");
@@ -8354,7 +8165,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
       {showTutorial && (
         <OnboardingTutorial
           isCoach={isCoach}
-          onComplete={function() { setShowTutorial(false); }}
+          onComplete={function() { setShowTutorial(false); try { localStorage.setItem("mf_tutorial_done", "1"); } catch(e) {} }}
         />
       )}
       <div style={{ padding: "14px 18px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", background: CARD, borderBottom: "1px solid "+BORDER, flexShrink: 0 }}>
@@ -8369,7 +8180,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
             <button onClick={function() { setIsCoach(true); setSelected(null); goTo("home"); }} style={{ padding: "6px 12px", background: isCoach ? CARD : "transparent", borderRadius: 8, border: "none", color: isCoach ? TEXT : TEXT3, fontSize: 12, fontWeight: isCoach ? 700 : 500, cursor: "pointer", boxShadow: isCoach ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}>Coach</button>
             <button onClick={function() { setIsCoach(false); setSelected(null); goTo("home"); }} style={{ padding: "6px 12px", background: !isCoach ? CARD : "transparent", borderRadius: 8, border: "none", color: !isCoach ? TEXT : TEXT3, fontSize: 12, fontWeight: !isCoach ? 700 : 500, cursor: "pointer", boxShadow: !isCoach ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}>Client</button>
           </div>}
-          <SettingsMenu isCoach={isCoach} goTo={goTo} tab={tab} onLogout={onLogout} onReplayTutorial={function() { setShowTutorial(true); }} notifSettings={notifSettings} setNotifSettings={setNotifSettings} />
+          <SettingsMenu isCoach={isCoach} goTo={goTo} tab={tab} onLogout={onLogout} onReplayTutorial={function() { setShowTutorial(true); }} notifSettings={notifSettings} setNotifSettings={setNotifSettings} myProfile={myProfile} />
           <button onClick={function() { goTo("directmessage"); }} style={{ width: 36, height: 36, borderRadius: 99, background: (function() { var u = 0; Object.keys(messages).forEach(function(tid) { var lastViewed = viewedCounts[tid] !== undefined ? viewedCounts[tid] : (messages[tid]||[]).length; (messages[tid]||[]).slice(lastViewed).forEach(function(m){ if(m.from!==(isCoach?"coach":"client")) u++; }); }); return u > 0 ? GREEN_BG : (tab === "directmessage" ? ORANGE_BG : SURFACE); })(), border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={(function() { var u = 0; Object.keys(messages).forEach(function(tid) { var lastViewed = viewedCounts[tid] !== undefined ? viewedCounts[tid] : (messages[tid]||[]).length; (messages[tid]||[]).slice(lastViewed).forEach(function(m){ if(m.from!==(isCoach?"coach":"client")) u++; }); }); return u > 0 ? GREEN : (tab === "directmessage" ? ORANGE : TEXT2); })()} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             {(function() {
@@ -8403,9 +8214,9 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
             var _k = weekKey(_mon) + "-" + i;
             return { day: dn, date: _d, acts: myPlans[_k] || [], isToday: _d.toDateString() === TODAY.toDateString() };
           });
-          return <HomeScreen isCoach={isCoach} goTo={goTo} setClient={setSelected} goToClientTab={goToClientTab} messages={messages} monthStats={monthStats} coachProgram={coachProgram} activityLogs={activityLogs} myPlans={myPlans} thisWeekPlanned={_planned} realClients={realClients} viewedCounts={viewedCounts} />;
+          return <HomeScreen isCoach={isCoach} goTo={goTo} setClient={setSelected} goToClientTab={goToClientTab} messages={messages} monthStats={monthStats} coachProgram={coachProgram} activityLogs={activityLogs} myPlans={myPlans} thisWeekPlanned={_planned} realClients={realClients} viewedCounts={viewedCounts} myProfile={myProfile} />;
         })()}
-        {tab === "clients"       && <ClientsScreen isCoach={isCoach} selected={selected} setSelected={setSelected} clientDefaultTab={clientDefaultTab} setClientDefaultTab={setClientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages} onSend={handleSendMessage} coachProgram={coachProgram} setCoachProgram={handleProgramUpdate} activityLogs={activityLogs} onLogsChange={handleLogsChange} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} realClients={realClients} authUserId={authUserId} authToken={authToken} goTo={goTo} />}
+        {tab === "clients"       && <ClientsScreen isCoach={isCoach} selected={selected} setSelected={setSelected} clientDefaultTab={clientDefaultTab} setClientDefaultTab={setClientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages} onSend={handleSendMessage} coachProgram={coachProgram} setCoachProgram={handleProgramUpdate} activityLogs={activityLogs} onLogsChange={handleLogsChange} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} realClients={realClients} authUserId={authUserId} authToken={authToken} goTo={goTo} myProfile={myProfile} />}
         {tab === "directmessage" && (
           <div style={{ padding: "0 0 24px" }}>
             <div style={{ padding: "12px 16px 10px", display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid "+BORDER, background: CARD }}>
@@ -8425,10 +8236,10 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
           </div>
         )}
         {tab === "library"       && <LibraryScreen isCoach={isCoach} favorites={favorites} toggleFavorite={toggleFavorite} />}
-        {tab === "watch"         && <AppleWatchScreen connected={watchConnected} onConnect={function() { setWatchConnected(true); }} onDisconnect={function() { setWatchConnected(false); setImportedIds({}); setWatchDays({}); }} importedIds={importedIds} onImport={handleImport} />}
-        {tab === "activity"      && <ActivityScreen isCoach={isCoach} watchDays={watchDays} activityLogs={activityLogs} onLogsChange={handleLogsChange} realClients={realClients} />}
+        {tab === "watch"         && <AppleWatchScreen connected={watchConnected} onConnect={function() { setWatchConnected(true); }} onDisconnect={function() { setWatchConnected(false); setImportedIds({}); setWatchDays({}); }} importedIds={importedIds} onImport={handleImport} authUserId={authUserId} authToken={authToken} />}
+        {tab === "activity"      && <ActivityScreen isCoach={isCoach} watchDays={watchDays} activityLogs={activityLogs} onLogsChange={handleLogsChange} realClients={realClients} myProfile={myProfile} />}
         {tab === "analytics"     && <AnalyticsScreen isCoach={isCoach} monthStats={monthStats} todaySteps={monthStats.todaySteps} last7Steps={monthStats.last7Steps} activityLogs={activityLogs} realClients={realClients} />}
-        {tab === "race"          && <RaceScreen activityLogs={activityLogs} raceCollapsed={raceCollapsed} setRaceCollapsed={setRaceCollapsed} plans={myPlans} setPlans={setMyPlans} />}
+        {tab === "race"          && <RaceScreen activityLogs={activityLogs} raceCollapsed={raceCollapsed} setRaceCollapsed={setRaceCollapsed} plans={myPlans} setPlans={function(v) { var next = typeof v === "function" ? v(myPlans) : v; setMyPlans(next); try { localStorage.setItem("mf_plans", JSON.stringify(next)); } catch(e) {} }} />}
         {tab === "notifications" && <NotificationsScreen notifications={notifications} onRead={function(id) { setNotifications(function(p) { return p.map(function(n) { return n.id === id ? Object.assign({}, n, { read: true }) : n; }); }); }} onClearAll={function() { setNotifications(function(p) { return p.map(function(n) { return Object.assign({}, n, { read: true }); }); }); }} isCoach={isCoach} goTo={goTo} onNavigateToClient={function(clientId, defaultTab) {
     var client = CLIENTS.find(function(c) { return c.id === clientId; });
     if (client) { setSelected(client); setClientDefaultTab(defaultTab || "Messages"); goTo("clients"); }
@@ -8442,7 +8253,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
           return (
             <button key={item.key} onClick={function() {
                 if (item.key === "clients" && !isCoach) {
-                  setSelected(CLIENTS[0]);
+                  setSelected(null);
                   setClientDefaultTab("Program");
                 }
                 goTo(item.key);
@@ -8458,17 +8269,19 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
 }
 
 export default function App() {
-  const [authed, setAuthed]       = useState(false);
+  const stored = (function() { try { var s = localStorage.getItem("mf_session"); return s ? JSON.parse(s) : null; } catch(e) { return null; } })();
+  const [authed, setAuthed]       = useState(!!stored);
   const [newClientName, setNewClientName] = useState(null);
-  const [isCoach, setIsCoach]     = useState(true);
+  const [isCoach, setIsCoach]     = useState(stored ? stored.isCoach : true);
   const [authScreen, setAuthScreen] = useState("welcome");
-  const [authToken, setAuthToken] = useState(null);
-  const [authUserId, setAuthUserId] = useState(null);
-  const [authCoachId, setAuthCoachId] = useState(null);
+  const [authToken, setAuthToken] = useState(stored ? stored.token : null);
+  const [authUserId, setAuthUserId] = useState(stored ? stored.userId : null);
+  const [authCoachId, setAuthCoachId] = useState(stored ? stored.coachId : null);
   const wrapStyle = { width: "100%", maxWidth: 430, margin: "0 auto", height: "100vh", display: "flex", flexDirection: "column", background: BG, overflow: "hidden", fontFamily: "system-ui,sans-serif" };
 
   async function handleLogout() {
     if (authToken) await sb.signOut(authToken);
+    try { localStorage.removeItem("mf_session"); } catch(e) {}
     setAuthed(false);
     setAuthScreen("welcome");
     setNewClientName(null);
@@ -8488,6 +8301,15 @@ export default function App() {
           setAuthUserId(userId || null);
           setAuthCoachId(coachId || null);
           if (!coach && clientName) setNewClientName(clientName);
+          try { localStorage.setItem("mf_session", JSON.stringify({ isCoach: coach, token: token, userId: userId, coachId: coachId })); } catch(e) {}
+          if (userId) {
+            window.__mf_user_id = userId;
+            if (window.OneSignalDeferred) {
+              window.OneSignalDeferred.push(async function(OneSignal) {
+                try { await OneSignal.login(userId); } catch(e) {}
+              });
+            }
+          }
         }} />
       </div>
     );

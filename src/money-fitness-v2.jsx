@@ -4882,39 +4882,62 @@ function WorkoutTrendChart({ workoutType, color, data, unit, livePace, weekDates
     return "rgba("+r+","+g+","+b+","+a+")";
   }
 
+  const [hoveredIdx, setHoveredIdx] = React.useState(null);
+  var hovered = hoveredIdx !== null ? hoveredIdx : weeks.length - 1;
+  var hoveredVal = weeks[hovered] || 0;
+  var hoveredLabel = weekDates && weekDates[hovered] ? (function() {
+    var d = weekDates[hovered].start;
+    var e = weekDates[hovered].end;
+    return monthNames[d.getMonth()] + " " + d.getDate() + " – " + monthNames[e.getMonth()] + " " + e.getDate();
+  })() : "";
+
   return (
     <div style={{ background: CARD, borderRadius: 18, padding: "16px", marginBottom: 16, border: "1.5px solid "+BORDER }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-        <div>
-          <div style={{ color: TEXT, fontSize: 22, fontWeight: 800 }}>{thisWeek}{unit} <span style={{ fontSize: 13, fontWeight: 500, color: TEXT3 }}>this week</span></div>
-          {livePace && <div style={{ color: TEXT3, fontSize: 11, marginTop: 2 }}>Avg pace: {livePace}/mi</div>}
-        </div>
-        <div style={{ color: trendColor, fontSize: 11, fontWeight: 600, textAlign: "right" }}>{trendLabel}</div>
+      {/* Stats row first */}
+      <div style={{ display: "flex", marginBottom: 14 }}>
+        <div style={{ flex: 1 }}><div style={{ color: TEXT3, fontSize: 10, fontWeight: 600 }}>THIS WEEK</div><div style={{ color: TEXT, fontSize: 16, fontWeight: 700 }}>{thisWeek}{unit}</div></div>
+        <div style={{ flex: 1 }}><div style={{ color: TEXT3, fontSize: 10, fontWeight: 600 }}>LAST WEEK</div><div style={{ color: TEXT, fontSize: 16, fontWeight: 700 }}>{lastWeek}{unit}</div></div>
+        <div style={{ flex: 1 }}><div style={{ color: TEXT3, fontSize: 10, fontWeight: 600 }}>12-WK AVG</div><div style={{ color: TEXT, fontSize: 16, fontWeight: 700 }}>{avg12}{unit}</div></div>
       </div>
+
+      {/* Hover tooltip */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+        <div style={{ color: TEXT, fontSize: 20, fontWeight: 800 }}>{hoveredVal}{unit}</div>
+        <div style={{ color: TEXT3, fontSize: 11 }}>{hoveredLabel}</div>
+      </div>
+      {livePace && hoveredIdx === null && <div style={{ color: TEXT3, fontSize: 11, marginBottom: 6 }}>Avg pace: {livePace}/mi</div>}
 
       {/* SVG line chart */}
       <svg width="100%" viewBox={"0 0 "+W+" "+(H+18)} style={{ display: "block", overflow: "visible" }}>
-        {/* Grid lines */}
-        {[0.5, 1].map(function(frac) {
-          var y = padT + chartH - frac * chartH;
-          return <line key={frac} x1={padL} y1={y} x2={W-padR} y2={y} stroke={BORDER} strokeWidth="1" />;
-        })}
-        {/* Area fill */}
         <defs>
           <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={color} stopOpacity="0.25" />
             <stop offset="100%" stopColor={color} stopOpacity="0.03" />
           </linearGradient>
         </defs>
+        {/* Grid lines */}
+        {[0.5, 1].map(function(frac) {
+          var y = padT + chartH - frac * chartH;
+          return <line key={frac} x1={padL} y1={y} x2={W-padR} y2={y} stroke={BORDER} strokeWidth="1" />;
+        })}
+        {/* Hover vertical line */}
+        {hoveredIdx !== null && (
+          <line x1={points[hoveredIdx][0]} y1={padT} x2={points[hoveredIdx][0]} y2={padT+chartH} stroke={color} strokeWidth="1" strokeDasharray="3,3" />
+        )}
         <path d={areaPath} fill="url(#areaGrad)" />
-        {/* Line */}
         <path d={linePath} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-        {/* Dots — only last point filled, rest hollow */}
+        {/* Dots */}
         {points.map(function(p, i) {
-          var isLast = i === points.length - 1;
+          var isActive = i === hovered;
           return (
-            <circle key={i} cx={p[0]} cy={p[1]} r={isLast ? 5 : 3.5}
-              fill={isLast ? color : CARD} stroke={color} strokeWidth={isLast ? 0 : 1.5} />
+            <circle key={i} cx={p[0]} cy={p[1]} r={isActive ? 6 : 3.5}
+              fill={isActive ? color : CARD} stroke={color} strokeWidth={isActive ? 0 : 1.5}
+              style={{ cursor: "pointer" }}
+              onMouseEnter={function() { setHoveredIdx(i); }}
+              onMouseLeave={function() { setHoveredIdx(null); }}
+              onTouchStart={function(e) { e.stopPropagation(); setHoveredIdx(i); }}
+              onTouchEnd={function() { setTimeout(function(){ setHoveredIdx(null); }, 1500); }}
+            />
           );
         })}
         {/* X-axis month labels */}
@@ -4922,12 +4945,6 @@ function WorkoutTrendChart({ workoutType, color, data, unit, livePace, weekDates
           return <text key={lbl.i} x={xPos(lbl.i)} y={H+14} textAnchor="middle" fontSize="9" fill={TEXT3} fontWeight="600">{lbl.label}</text>;
         })}
       </svg>
-
-      <div style={{ display: "flex", borderTop: "1px solid "+BORDER, paddingTop: 12, marginTop: 4 }}>
-        <div style={{ flex: 1 }}><div style={{ color: TEXT3, fontSize: 10, fontWeight: 600 }}>THIS WEEK</div><div style={{ color: TEXT, fontSize: 16, fontWeight: 700 }}>{thisWeek}{unit}</div></div>
-        <div style={{ flex: 1 }}><div style={{ color: TEXT3, fontSize: 10, fontWeight: 600 }}>LAST WEEK</div><div style={{ color: TEXT, fontSize: 16, fontWeight: 700 }}>{lastWeek}{unit}</div></div>
-        <div style={{ flex: 1 }}><div style={{ color: TEXT3, fontSize: 10, fontWeight: 600 }}>12-WK AVG</div><div style={{ color: TEXT, fontSize: 16, fontWeight: 700 }}>{avg12}{unit}</div></div>
-      </div>
     </div>
   );
 }

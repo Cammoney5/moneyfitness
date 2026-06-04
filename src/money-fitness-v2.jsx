@@ -7665,6 +7665,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
       fetch(SUPABASE_URL + "/rest/v1/activity_logs?client_id=in.(" + clientIds.join(",") + ")&select=client_id,logged_date&order=logged_date.desc&limit=1000", {
         headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
       }).then(function(r2) { return r2.json(); }).then(function(logs) {
+        console.log("[coach stats] logs response:", logs, "clientIds:", clientIds);
         if (!Array.isArray(logs)) return;
         var today = new Date();
         var thisMonth = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2,"0");

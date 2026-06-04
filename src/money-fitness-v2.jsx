@@ -7589,7 +7589,8 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
         if (perm !== 'granted') return;
         return reg.pushManager.getSubscription().then(function(existing) {
           if (existing) return existing;
-          var key = VAPID_PUBLIC_KEY;
+          var key = (typeof VAPID_PUBLIC_KEY !== "undefined" ? VAPID_PUBLIC_KEY : null);
+          if (!key) return;
           var padding = '='.repeat((4 - key.length % 4) % 4);
           var raw = atob((key + padding).replace(/-/g, '+').replace(/_/g, '/'));
           var buffer = new Uint8Array(raw.length);

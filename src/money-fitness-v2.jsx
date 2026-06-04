@@ -7715,7 +7715,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
       }).catch(function(){});
     })
     .catch(function(e) { console.log("clients load error", e); });
-  }, [authToken, authUserId, initCoach]);
+  }, [authToken, authUserId]);
   const [showTutorial, setShowTutorial] = useState(false);
   const [selected, setSelected] = useState(null);
   const [clientDefaultTab, setClientDefaultTab] = useState("Progress");

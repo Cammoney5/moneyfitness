@@ -3362,6 +3362,7 @@ function CoachProgramTabView({ program, color, onUpdate }) {
   const [exLogs, setExLogs] = useState({});
   const [videoModal, setVideoModal] = useState(null);
   const [loadModal, setLoadModal] = useState(null);
+  const [copiedSession, setCopiedSession] = useState(null); // { day } for copy/paste
   const c = color || ORANGE;
 
   var ACCENT = ["#1B8C4E","#3B7DD8","#1B8C4E","#9B6FD4","#E0A020","#E05252","#1B8C4E"];
@@ -3585,19 +3586,27 @@ function CoachProgramTabView({ program, color, onUpdate }) {
                     <div style={{color:"#0A1A0F",fontSize:20,fontWeight:900,lineHeight:1.1}}>{(day.focus||"").toUpperCase()}</div>
                     <div style={{color:"#7AAB8A",fontSize:12,marginTop:3}}>{exs.length} exercises</div>
                   </div>
-                  {/* Bookmark */}
-                  {(function(){
-                    var bKey = "saved-"+coachWk+"-"+dayIdx;
-                    var isSaved = savedSessions.some(function(s){return s.id===bKey+"-"+day.focus;});
-                    return (
-                      <button onClick={function(e){e.stopPropagation(); saveSession(coachWk, dayIdx, day);}}
-                        style={{width:36,height:36,borderRadius:10,background:isSaved?dc+"18":"#F0F5F2",border:"1.5px solid "+(isSaved?dc+"44":"#D0E6D8"),display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill={isSaved?dc:"none"} stroke={isSaved?dc:"#7AAB8A"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                        </svg>
-                      </button>
-                    );
-                  })()}
+                  <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                    {/* Copy button */}
+                    <button onClick={function(e){ e.stopPropagation(); setCopiedSession(day); }}
+                      title="Copy this session"
+                      style={{ width:36, height:36, borderRadius:10, background: copiedSession === day ? dc+"18" : "#F0F5F2", border:"1.5px solid "+(copiedSession === day ? dc+"44" : "#D0E6D8"), display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0 }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={copiedSession === day ? dc : "#7AAB8A"} strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    </button>
+                    {/* Bookmark */}
+                    {(function(){
+                      var bKey = "saved-"+coachWk+"-"+dayIdx;
+                      var isSaved = savedSessions.some(function(s){return s.id===bKey+"-"+day.focus;});
+                      return (
+                        <button onClick={function(e){e.stopPropagation(); saveSession(coachWk, dayIdx, day);}}
+                          style={{width:36,height:36,borderRadius:10,background:isSaved?dc+"18":"#F0F5F2",border:"1.5px solid "+(isSaved?dc+"44":"#D0E6D8"),display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill={isSaved?dc:"none"} stroke={isSaved?dc:"#7AAB8A"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                          </svg>
+                        </button>
+                      );
+                    })()}
+                  </div>
                 </div>
 
                 {/* Exercises — grouped by circuit */}
@@ -3651,6 +3660,29 @@ function CoachProgramTabView({ program, color, onUpdate }) {
             );
           })}
 
+          {/* Paste session button — shows when a session is copied */}
+          {copiedSession && (
+            <button onClick={function() {
+              if (!onUpdate) return;
+              var newDay = Object.assign({}, copiedSession, {
+                day: copiedSession.day || "Day",
+                focus: copiedSession.focus,
+                exercises: (copiedSession.exercises || []).slice()
+              });
+              onUpdate(function(prev) {
+                var next = prev.map(function(wk, wi) {
+                  if (wi !== coachWk) return wk;
+                  return Object.assign({}, wk, { days: wk.days.concat([newDay]) });
+                });
+                return next;
+              });
+              setCopiedSession(null);
+            }}
+              style={{ width: "100%", padding: "12px", borderRadius: 14, background: "#E8F7EF", border: "1.5px dashed #1B8C4E", color: "#1B8C4E", fontSize: 13, fontWeight: 700, cursor: "pointer", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+              Paste "{copiedSession.focus}" into Week {coachWk + 1}
+            </button>
+          )}
 
         </div>
       )}
@@ -6980,7 +7012,6 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
   // plans state is lifted to MainApp so HomeScreen can read it
   var safePlans = plans || {};
   var [modalDay,     setModalDay]     = useState(null);
-  var [copiedDay,    setCopiedDay]    = useState(null); // stores copied activities for paste
 
   var today      = new Date();
   var thisMonday = getMondayOf(today);
@@ -7271,22 +7302,10 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                               Missed
                             </button>
-                            <button onClick={function(e) { e.stopPropagation(); setCopiedDay(acts.map(function(a){ return Object.assign({}, a, {id: Date.now() + Math.random()}); })); }}
-                              style={{ padding: "8px 12px", borderRadius: 10, border: "none", background: copiedDay ? TEXT3+"22" : SURFACE, color: TEXT3, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                              Copy
-                            </button>
+
                           </div>
                         )}
-                        {isEmpty && copiedDay && (
-                          <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid "+BORDER }}>
-                            <button onClick={function(e) { e.stopPropagation(); saveDayActivities(i, copiedDay.map(function(a){ return Object.assign({}, a, {id: Date.now() + Math.random()}); })); setCopiedDay(null); }}
-                              style={{ width: "100%", padding: "8px 0", borderRadius: 10, border: "1.5px dashed "+GREEN, background: GREEN+"0D", color: GREEN, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
-                              Paste copied workouts
-                            </button>
-                          </div>
-                        )}
+
                       </div>
                     );
                 })()

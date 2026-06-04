@@ -9,6 +9,8 @@ serve(async (req) => {
   const code = url.searchParams.get("code");
   const userId = url.searchParams.get("state");
 
+  console.log("strava-auth called, code:", code ? "present" : "missing", "userId:", userId);
+
   if (!code || !userId) {
     return new Response("Missing code or state", { status: 400 });
   }
@@ -26,8 +28,11 @@ serve(async (req) => {
   });
 
   const tokens = await tokenRes.json();
+  console.log("Token exchange status:", tokenRes.status, "athlete:", tokens.athlete?.id);
+
   if (!tokens.access_token) {
-    return new Response("Token exchange failed: " + JSON.stringify(tokens), { status: 400 });
+    console.error("Token exchange failed:", JSON.stringify(tokens));
+    return new Response("Token exchange failed", { status: 400 });
   }
 
   // Save tokens to Supabase
@@ -36,13 +41,19 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  await supabase.from("strava_tokens").upsert({
+  const { error } = await supabase.from("strava_tokens").upsert({
     user_id: userId,
     strava_athlete_id: tokens.athlete.id,
     access_token: tokens.access_token,
     refresh_token: tokens.refresh_token,
     expires_at: tokens.expires_at,
   }, { onConflict: "strava_athlete_id" });
+
+  if (error) {
+    console.error("Supabase save error:", JSON.stringify(error));
+  } else {
+    console.log("Token saved successfully for user:", userId);
+  }
 
   // Redirect back to app
   return new Response(null, {

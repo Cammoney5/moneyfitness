@@ -4924,24 +4924,44 @@ function WorkoutTrendChart({ workoutType, color, data, unit, livePace, weekDates
         )}
         <path d={areaPath} fill="url(#areaGrad)" />
         <path d={linePath} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-        {/* Dots */}
+        {/* Dots — no events on circles to avoid flicker */}
         {points.map(function(p, i) {
           var isActive = i === hovered;
           return (
             <circle key={i} cx={p[0]} cy={p[1]} r={isActive ? 6 : 3.5}
               fill={isActive ? color : CARD} stroke={color} strokeWidth={isActive ? 0 : 1.5}
-              style={{ cursor: "pointer" }}
-              onMouseEnter={function() { setHoveredIdx(i); }}
-              onMouseLeave={function() { setHoveredIdx(null); }}
-              onTouchStart={function(e) { e.stopPropagation(); setHoveredIdx(i); }}
-              onTouchEnd={function() { setTimeout(function(){ setHoveredIdx(null); }, 1500); }}
+              style={{ pointerEvents: "none" }}
             />
           );
         })}
         {/* X-axis month labels */}
         {xLabels.map(function(lbl) {
-          return <text key={lbl.i} x={xPos(lbl.i)} y={H+14} textAnchor="middle" fontSize="9" fill={TEXT3} fontWeight="600">{lbl.label}</text>;
+          return <text key={lbl.i} x={xPos(lbl.i)} y={H+14} textAnchor="middle" fontSize="9" fill={TEXT3} fontWeight="600" style={{ pointerEvents: "none" }}>{lbl.label}</text>;
         })}
+        {/* Invisible overlay for hit detection — finds nearest point on move */}
+        <rect x={padL} y={padT} width={chartW} height={chartH} fill="transparent" style={{ cursor: "crosshair" }}
+          onMouseMove={function(e) {
+            var svg = e.currentTarget.ownerSVGElement;
+            var pt = svg.createSVGPoint();
+            pt.x = e.clientX; pt.y = e.clientY;
+            var svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
+            var closest = 0, minDist = Infinity;
+            points.forEach(function(p, i) { var d = Math.abs(p[0] - svgP.x); if (d < minDist) { minDist = d; closest = i; } });
+            setHoveredIdx(closest);
+          }}
+          onMouseLeave={function() { setHoveredIdx(null); }}
+          onTouchMove={function(e) {
+            e.preventDefault();
+            var svg = e.currentTarget.ownerSVGElement;
+            var pt = svg.createSVGPoint();
+            pt.x = e.touches[0].clientX; pt.y = e.touches[0].clientY;
+            var svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
+            var closest = 0, minDist = Infinity;
+            points.forEach(function(p, i) { var d = Math.abs(p[0] - svgP.x); if (d < minDist) { minDist = d; closest = i; } });
+            setHoveredIdx(closest);
+          }}
+          onTouchEnd={function() { setTimeout(function(){ setHoveredIdx(null); }, 1500); }}
+        />
       </svg>
     </div>
   );

@@ -6638,7 +6638,7 @@ var LIBRARY_WORKOUTS = [
   { id: "l5", name: "Active Recovery",  exercises: ["Foam Roll 10 min","Hip Flexor Stretch","Hamstring Stretch","Shoulder Mobility"] },
 ];
 
-function DayModal({ date, activities, onSave, onClose }) {
+function DayModal({ date, activities, onSave, onClose, coachProgram }) {
   var DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
   var dayName = DAY_NAMES[date.getDay()];
   var dateStr = fmtShortDate(date);
@@ -6792,14 +6792,18 @@ function DayModal({ date, activities, onSave, onClose }) {
 
               {addTab === "coach" && (
                 <div>
-                  <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-                    {COACH_PROGRAM.map(function(w, i) {
-                      return (
-                        <button key={"coachwk-"+i} onClick={function() { setCoachWk(i); }} style={{ flex: 1, padding: "8px 0", borderRadius: 10, background: coachWk === i ? GREEN : WHITE, border: "1.5px solid "+(coachWk === i ? GREEN : BORDER), color: coachWk === i ? WHITE : TEXT2, fontSize: 12, fontWeight: coachWk === i ? 700 : 500, cursor: "pointer" }}>Week {w.week}</button>
-                      );
-                    })}
-                  </div>
-                  {COACH_PROGRAM[coachWk].days.map(function(day, i) {
+                  {(function() {
+                    var prog = (coachProgram && coachProgram.length > 0) ? coachProgram : COACH_PROGRAM;
+                    return (
+                      <div>
+                        <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+                          {prog.map(function(w, i) {
+                            return (
+                              <button key={"coachwk-"+i} onClick={function() { setCoachWk(i); }} style={{ flex: 1, padding: "8px 0", borderRadius: 10, background: coachWk === i ? GREEN : WHITE, border: "1.5px solid "+(coachWk === i ? GREEN : BORDER), color: coachWk === i ? WHITE : TEXT2, fontSize: 12, fontWeight: coachWk === i ? 700 : 500, cursor: "pointer" }}>Week {w.week || i+1}</button>
+                            );
+                          })}
+                        </div>
+                        {prog[coachWk] && prog[coachWk].days && prog[coachWk].days.map(function(day, i) {
                     return (
                       <div key={"plan-sess-"+i} style={{ background: WHITE, borderRadius: 14, padding: "12px 14px", marginBottom: 8, border: "1.5px solid "+BORDER }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
@@ -6809,14 +6813,17 @@ function DayModal({ date, activities, onSave, onClose }) {
                           </div>
                           <button onClick={function() { addWorkoutSession(day); }} style={{ background: GREEN, border: "none", borderRadius: 10, padding: "7px 14px", color: WHITE, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Add</button>
                         </div>
-                        {day.exercises.slice(0,3).map(function(ex, j) { return <div key={j} style={{ color: TEXT3, fontSize: 11 }}>&bull; {ex}</div>; })}
+                        {day.exercises.slice(0,3).map(function(ex, j) { return <div key={j} style={{ color: TEXT3, fontSize: 11 }}>&bull; {typeof ex === "string" ? ex : (ex.name || "")}</div>; })}
                         {day.exercises.length > 3 && <div style={{ color: TEXT3, fontSize: 11 }}>+{day.exercises.length - 3} more</div>}
                       </div>
                     );
                   })}
-                  <button onClick={function() { setAdding(false); }} style={{ width: "100%", padding: 11, borderRadius: 12, background: "none", border: "1.5px solid "+BORDER, color: TEXT2, fontSize: 13, cursor: "pointer", marginTop: 4 }}>Cancel</button>
-                </div>
-              )}
+                        <button onClick={function() { setAdding(false); }} style={{ width: "100%", padding: 11, borderRadius: 12, background: "none", border: "1.5px solid "+BORDER, color: TEXT2, fontSize: 13, cursor: "pointer", marginTop: 4 }}>Cancel</button>
+                      </div>
+                    );
+                  })()
+                }
+              </div>
 
               {addTab === "library" && (
                 <div>
@@ -7039,7 +7046,7 @@ function WorkoutsSection({ weekDates, onAddToDay }) {
   );
 }
 
-function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setPlans, completions, onToggleCompletion }) {
+function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setPlans, completions, onToggleCompletion, coachProgram }) {
   var [activeTab,    setActiveTab]    = useState("plan");
   var [raceDateStr,  setRaceDateStr]  = useState(function(){ try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); return r.raceDateStr||""; } catch(e){return "";} });
   var [raceName,     setRaceName]     = useState(function(){ try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); return r.raceName||""; } catch(e){return "";} });
@@ -7354,7 +7361,7 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
           </div>
 
           {modalDay !== null ? (
-            <DayModal date={weekDates[modalDay]} activities={activitiesForDay(modalDay)} onSave={function(list) { saveDayActivities(modalDay, list); }} onClose={function() { setModalDay(null); }} />
+            <DayModal date={weekDates[modalDay]} activities={activitiesForDay(modalDay)} onSave={function(list) { saveDayActivities(modalDay, list); }} onClose={function() { setModalDay(null); }} coachProgram={coachProgram} />
           ) : null}
         </div>
       )}
@@ -8752,7 +8759,7 @@ if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.stat
         {tab === "watch"         && <AppleWatchScreen connected={watchConnected} onConnect={function() { setWatchConnected(true); }} onDisconnect={function() { setWatchConnected(false); setImportedIds({}); setWatchDays({}); }} importedIds={importedIds} onImport={handleImport} authUserId={authUserId} authToken={authToken} onLogsChange={function() { if (authUserId && authToken) { fetch(SUPABASE_URL + "/rest/v1/activity_logs?client_id=eq." + authUserId + "&order=logged_date.desc&limit=200", { headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken } }).then(function(r){return r.json();}).then(function(rows){ if (!Array.isArray(rows)) return; var built = {}; rows.forEach(function(row){ var parts = row.logged_date.split("-"); var mk = parseInt(parts[0]) + "-" + (parseInt(parts[1])-1); var day = parseInt(parts[2]); if (!built[mk]) built[mk]={}; if (!built[mk][day]) built[mk][day]=[]; built[mk][day].push({id:row.id,type:row.type,notes:row.notes||"",miles:row.miles?String(row.miles):"",duration:row.duration||"",calories:row.calories?String(row.calories):"",steps:row.steps?String(row.steps):"",pace:row.pace||"",source:row.source||"",fromDevice:row.source&&row.source!=="manual"}); }); setActivityLogs(built); }).catch(function(){}); } }} />}
         {tab === "activity"      && <ActivityScreen isCoach={isCoach} watchDays={watchDays} activityLogs={activityLogs} onLogsChange={handleLogsChange} realClients={realClients} myProfile={myProfile} authToken={authToken} authUserId={authUserId} />}
         {tab === "analytics"     && <AnalyticsScreen isCoach={isCoach} monthStats={monthStats} todaySteps={monthStats.todaySteps} last7Steps={monthStats.last7Steps} activityLogs={activityLogs} realClients={realClients} />}
-        {tab === "race"          && <RaceScreen activityLogs={activityLogs} raceCollapsed={raceCollapsed} setRaceCollapsed={setRaceCollapsed} plans={myPlans} setPlans={function(v) { var next = typeof v === "function" ? v(myPlans) : v; setMyPlans(next); try { localStorage.setItem("mf_plans", JSON.stringify(next)); } catch(e) {} }} completions={completions} onToggleCompletion={handleToggleCompletion} />}
+        {tab === "race"          && <RaceScreen activityLogs={activityLogs} raceCollapsed={raceCollapsed} setRaceCollapsed={setRaceCollapsed} plans={myPlans} setPlans={function(v) { var next = typeof v === "function" ? v(myPlans) : v; setMyPlans(next); try { localStorage.setItem("mf_plans", JSON.stringify(next)); } catch(e) {} }} completions={completions} onToggleCompletion={handleToggleCompletion} coachProgram={coachProgram} />}
         {tab === "notifications" && <NotificationsScreen notifications={notifications} onRead={function(id) { setNotifications(function(p) { return p.map(function(n) { return n.id === id ? Object.assign({}, n, { read: true }) : n; }); }); }} onClearAll={function() { setNotifications(function(p) { return p.map(function(n) { return Object.assign({}, n, { read: true }); }); }); }} isCoach={isCoach} goTo={goTo} onNavigateToClient={function(clientId, defaultTab) {
     var client = CLIENTS.find(function(c) { return c.id === clientId; });
     if (client) { setSelected(client); setClientDefaultTab(defaultTab || "Messages"); goTo("clients"); }

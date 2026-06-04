@@ -534,7 +534,10 @@ function WorkoutLogModal({ day, activities, accentColor, onSave, onClose, readOn
   }
 
   function handleDelete(id) {
-    setList(list.filter(function(a) { return a.id !== id; }));
+    var next = list.filter(function(a) { return a.id !== id; });
+    setList(next);
+    // Auto-save immediately so the deletion persists without requiring a separate Save tap
+    onSave(day, next);
   }
 
   function handleSave() {
@@ -5486,7 +5489,7 @@ function AuthFlow({ screen, setScreen, onAuth }) {
       await sb.insertProfile(token, profile);
 
       // 4. Done
-      onAuth(role === "coach", name.trim(), token, userId, coachId);
+      onAuth(role === "coach", name.trim(), token, userId, coachId, null);
     } catch(err) {
       setAuthError("Something went wrong — please try again");
     }
@@ -5506,7 +5509,8 @@ function AuthFlow({ screen, setScreen, onAuth }) {
       var res = await sb.signIn(email, password);
       if (res.error) { setAuthError(res.error.message); setLoading(false); return; }
 
-      var token  = res.access_token;
+      var token        = res.access_token;
+      var refreshToken = res.refresh_token || null;
       var userId = res.user ? res.user.id : null;
 
       if (!token || !userId) { setAuthError("Login failed — please try again"); setLoading(false); return; }
@@ -5515,7 +5519,7 @@ function AuthFlow({ screen, setScreen, onAuth }) {
       var profile = await sb.getProfile(token, userId);
       if (!profile) { setAuthError("Account not found — please sign up first"); setLoading(false); return; }
 
-      onAuth(profile.role === "coach", profile.name, token, userId, profile.coach_id);
+      onAuth(profile.role === "coach", profile.name, token, userId, profile.coach_id, refreshToken);
     } catch(err) {
       setAuthError("Something went wrong — please try again");
     }
@@ -7492,41 +7496,32 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
   }, [authUserId, authToken]);
 
   function handleLogsChange(monthKey, newLogs) {
+    // Collect UUIDs present in the incoming newLogs for this month
+    var incomingIds = new Set();
+    Object.keys(newLogs).forEach(function(day) {
+      (newLogs[day] || []).forEach(function(entry) {
+        var idStr = String(entry.id || "");
+        if (idStr.length === 36 && idStr.includes("-")) incomingIds.add(idStr);
+      });
+    });
+
+    // Find UUIDs that were in the previous state for this month but are no longer present — these were deleted
+    var prevMonthLogs = (activityLogs && activityLogs[monthKey]) || {};
+    var deletedIds = [];
+    Object.keys(prevMonthLogs).forEach(function(day) {
+      (prevMonthLogs[day] || []).forEach(function(entry) {
+        var idStr = String(entry.id || "");
+        if (idStr.length === 36 && idStr.includes("-") && !incomingIds.has(idStr)) {
+          deletedIds.push(idStr);
+        }
+      });
+    });
+    console.log("[handleLogsChange] monthKey:", monthKey, "incomingIds:", [...incomingIds], "deletedIds:", deletedIds, "prevMonthLogs keys:", Object.keys(prevMonthLogs));
+
     setActivityLogs(function(prev) {
       return Object.assign({}, prev, { [monthKey]: newLogs });
     });
     if (!authUserId || !authToken) return;
-    var allEntries = [];
-    Object.keys(newLogs).forEach(function(day) {
-      (newLogs[day] || []).forEach(function(entry) {
-        if (String(entry.id || "").indexOf("device-") === 0) return; // skip mock device entries
-        var year = parseInt(monthKey.split("-")[0]);
-        var month = parseInt(monthKey.split("-")[1]);
-        var dateStr = year + "-" + String(month+1).padStart(2,"0") + "-" + String(day).padStart(2,"0");
-        // Only include id if it looks like a real UUID
-        var entryData = {
-          client_id: authUserId,
-          logged_date: dateStr,
-          type: entry.type || "workout",
-          notes: entry.notes || "",
-          duration: entry.duration || "",
-          miles: entry.miles ? parseFloat(entry.miles) : null,
-          calories: entry.calories ? parseInt(entry.calories) : null,
-          steps: entry.steps ? parseInt(entry.steps) : null,
-          pace: entry.pace || "",
-          source: entry.source || "manual",
-        };
-        // Only include id if it looks like a real UUID, otherwise let Supabase generate one
-        var idStr = String(entry.id || "");
-        if (idStr.length === 36 && idStr.includes("-")) {
-          entryData.id = entry.id;
-        }
-        allEntries.push(entryData);
-      });
-    });
-    if (allEntries.length === 0) return;
-    var newEntries = allEntries.filter(function(e) { return !e.id; });
-    var existingEntries = allEntries.filter(function(e) { return !!e.id; });
 
     function doReload() {
       fetch(SUPABASE_URL + "/rest/v1/activity_logs?client_id=eq." + authUserId + "&order=logged_date.desc&limit=200", {
@@ -7546,45 +7541,70 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
       }).catch(function() {});
     }
 
-    var saves = [];
+    var allEntries = [];
+    Object.keys(newLogs).forEach(function(day) {
+      (newLogs[day] || []).forEach(function(entry) {
+        if (String(entry.id || "").indexOf("device-") === 0) return; // skip mock device entries
+        var year = parseInt(monthKey.split("-")[0]);
+        var month = parseInt(monthKey.split("-")[1]);
+        var dateStr = year + "-" + String(month+1).padStart(2,"0") + "-" + String(day).padStart(2,"0");
+        var entryData = {
+          client_id: authUserId,
+          logged_date: dateStr,
+          type: entry.type || "workout",
+          notes: entry.notes || "",
+          duration: entry.duration || "",
+          miles: entry.miles ? parseFloat(entry.miles) : null,
+          calories: entry.calories ? parseInt(entry.calories) : null,
+          steps: entry.steps ? parseInt(entry.steps) : null,
+          pace: entry.pace || "",
+          source: entry.source || "manual",
+        };
+        var idStr = String(entry.id || "");
+        if (idStr.length === 36 && idStr.includes("-")) {
+          entryData.id = entry.id;
+        }
+        allEntries.push(entryData);
+      });
+    });
+
+    var newEntries = allEntries.filter(function(e) { return !e.id; });
+    var existingEntries = allEntries.filter(function(e) { return !!e.id; });
+
+    var ops = [];
+
+    // DELETE removed entries from Supabase
+    if (deletedIds.length > 0) {
+      console.log("[handleLogsChange] DELETing IDs:", deletedIds);
+      ops.push(fetch(SUPABASE_URL + "/rest/v1/activity_logs?id=in.(" + deletedIds.join(",") + ")", {
+        method: "DELETE",
+        headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json" }
+      }).then(function(r) { 
+        console.log("[handleLogsChange] DELETE response status:", r.status);
+        if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.status, t); }); 
+      }));
+    } else {
+      console.log("[handleLogsChange] No deletedIds — skipping DELETE");
+    }
+
     if (newEntries.length > 0) {
-      saves.push(fetch(SUPABASE_URL + "/rest/v1/activity_logs", {
+      ops.push(fetch(SUPABASE_URL + "/rest/v1/activity_logs", {
         method: "POST",
         headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json", "Prefer": "return=minimal" },
         body: JSON.stringify(newEntries)
       }).then(function(r) { if (!r.ok) r.text().then(function(t) { console.log("new entry save error:", r.status, t); }); }));
     }
     if (existingEntries.length > 0) {
-      saves.push(fetch(SUPABASE_URL + "/rest/v1/activity_logs", {
+      ops.push(fetch(SUPABASE_URL + "/rest/v1/activity_logs", {
         method: "POST",
         headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates,return=minimal" },
         body: JSON.stringify(existingEntries)
       }).then(function(r) { if (!r.ok) r.text().then(function(t) { console.log("existing entry save error:", r.status, t); }); }));
     }
-    Promise.all(saves).then(doReload);
-    fetch(SUPABASE_URL + "/rest/v1/activity_logs", {
-      method: "POST",
-      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json", "Prefer": "return=minimal" },
-      body: JSON.stringify([])
-    }).then(function(r) {
-      if (!r.ok) { r.text().then(function(t) { console.log("log save error:", r.status, t); }); return; }
-      // Reload logs from Supabase so new entries get their real UUIDs
-      fetch(SUPABASE_URL + "/rest/v1/activity_logs?client_id=eq." + authUserId + "&order=logged_date.desc&limit=200", {
-        headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
-      }).then(function(r2) { return r2.json(); }).then(function(rows) {
-        if (!Array.isArray(rows)) return;
-        var built = {};
-        rows.forEach(function(row) {
-          var parts = row.logged_date.split("-");
-          var mk = parseInt(parts[0]) + "-" + (parseInt(parts[1]) - 1);
-          var day = parseInt(parts[2]);
-          if (!built[mk]) built[mk] = {};
-          if (!built[mk][day]) built[mk][day] = [];
-          built[mk][day].push({ id: row.id, type: row.type, notes: row.notes || "", miles: row.miles ? String(row.miles) : "", duration: row.duration || "", calories: row.calories ? String(row.calories) : "", steps: row.steps ? String(row.steps) : "", pace: row.pace || "", source: row.source || "", fromDevice: row.source && row.source !== "manual" });
-        });
-        setActivityLogs(built);
-      }).catch(function() {});
-    }).catch(function(e) { console.log("log save network error", e); });
+
+    if (ops.length > 0) {
+      Promise.all(ops).then(doReload);
+    }
   }
 
   // Computed stats from activityLogs for current month
@@ -8277,7 +8297,36 @@ export default function App() {
   const [authToken, setAuthToken] = useState(stored ? stored.token : null);
   const [authUserId, setAuthUserId] = useState(stored ? stored.userId : null);
   const [authCoachId, setAuthCoachId] = useState(stored ? stored.coachId : null);
+  const [authRefreshToken, setAuthRefreshToken] = useState(stored ? (stored.refreshToken || null) : null);
   const wrapStyle = { width: "100%", maxWidth: 430, margin: "0 auto", height: "100vh", display: "flex", flexDirection: "column", background: BG, overflow: "hidden", fontFamily: "system-ui,sans-serif" };
+
+  // Auto-refresh Supabase token every 50 minutes to prevent expiry-induced fallback to mock data
+  useEffect(function() {
+    if (!authRefreshToken) return;
+    var interval = setInterval(async function() {
+      try {
+        var r = await fetch(SUPABASE_URL + "/auth/v1/token?grant_type=refresh_token", {
+          method: "POST",
+          headers: { "apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh_token: authRefreshToken })
+        });
+        var data = await r.json();
+        if (data.access_token) {
+          setAuthToken(data.access_token);
+          var newRefresh = data.refresh_token || authRefreshToken;
+          setAuthRefreshToken(newRefresh);
+          try {
+            var s = localStorage.getItem("mf_session");
+            var session = s ? JSON.parse(s) : {};
+            session.token = data.access_token;
+            session.refreshToken = newRefresh;
+            localStorage.setItem("mf_session", JSON.stringify(session));
+          } catch(e) {}
+        }
+      } catch(e) { console.log("token refresh error", e); }
+    }, 50 * 60 * 1000); // every 50 minutes
+    return function() { clearInterval(interval); };
+  }, [authRefreshToken]);
 
   async function handleLogout() {
     if (authToken) await sb.signOut(authToken);
@@ -8288,20 +8337,22 @@ export default function App() {
     setAuthToken(null);
     setAuthUserId(null);
     setAuthCoachId(null);
+    setAuthRefreshToken(null);
   }
 
   if (!authed) {
     return (
       <div style={wrapStyle}>
         <style>{GLOBAL_STYLES}</style>
-        <AuthFlow screen={authScreen} setScreen={setAuthScreen} onAuth={function(coach, clientName, token, userId, coachId) {
+        <AuthFlow screen={authScreen} setScreen={setAuthScreen} onAuth={function(coach, clientName, token, userId, coachId, refreshToken) {
           setIsCoach(coach);
           setAuthed(true);
           setAuthToken(token || null);
           setAuthUserId(userId || null);
           setAuthCoachId(coachId || null);
+          setAuthRefreshToken(refreshToken || null);
           if (!coach && clientName) setNewClientName(clientName);
-          try { localStorage.setItem("mf_session", JSON.stringify({ isCoach: coach, token: token, userId: userId, coachId: coachId })); } catch(e) {}
+          try { localStorage.setItem("mf_session", JSON.stringify({ isCoach: coach, token: token, userId: userId, coachId: coachId, refreshToken: refreshToken || null })); } catch(e) {}
           if (userId) {
             window.__mf_user_id = userId;
             if (window.OneSignalDeferred) {

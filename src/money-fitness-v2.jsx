@@ -7630,6 +7630,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
 
   // Load real clients from Supabase (coach only)
   useEffect(function() {
+    console.log("[coach effect] authToken:", !!authToken, "authUserId:", authUserId, "initCoach:", initCoach);
     if (!authToken || !authUserId || !initCoach) return;
     fetch(SUPABASE_URL + "/rest/v1/profiles?coach_id=eq." + authUserId + "&role=eq.client&select=id,name,email,color,created_at", {
       headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }

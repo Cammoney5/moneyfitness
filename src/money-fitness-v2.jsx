@@ -3587,6 +3587,35 @@ function CoachProgramTabView({ program, color, onUpdate }) {
                     <div style={{color:"#7AAB8A",fontSize:12,marginTop:3}}>{exs.length} exercises</div>
                   </div>
                   <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                    {/* Move up/down buttons */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                      <button onClick={function(e){ e.stopPropagation(); if (dayIdx === 0 || !onUpdate) return;
+                        onUpdate(function(prev) {
+                          return prev.map(function(wk, wi) {
+                            if (wi !== coachWk) return wk;
+                            var days = wk.days.slice();
+                            var tmp = days[dayIdx-1]; days[dayIdx-1] = days[dayIdx]; days[dayIdx] = tmp;
+                            return Object.assign({}, wk, { days: days });
+                          });
+                        });
+                      }} disabled={dayIdx === 0}
+                        style={{ width:28, height:17, borderRadius:6, background: dayIdx === 0 ? "#F0F5F2" : "#E8F7EF", border:"1px solid "+(dayIdx===0?"#E0E0E0":"#B8DFC8"), display:"flex", alignItems:"center", justifyContent:"center", cursor: dayIdx===0?"default":"pointer", opacity: dayIdx===0?0.4:1 }}>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={dayIdx===0?"#ccc":"#1B8C4E"} strokeWidth="3" strokeLinecap="round"><polyline points="18 15 12 9 6 15"/></svg>
+                      </button>
+                      <button onClick={function(e){ e.stopPropagation(); var total = program[coachWk] ? program[coachWk].days.length : 0; if (dayIdx >= total-1 || !onUpdate) return;
+                        onUpdate(function(prev) {
+                          return prev.map(function(wk, wi) {
+                            if (wi !== coachWk) return wk;
+                            var days = wk.days.slice();
+                            var tmp = days[dayIdx+1]; days[dayIdx+1] = days[dayIdx]; days[dayIdx] = tmp;
+                            return Object.assign({}, wk, { days: days });
+                          });
+                        });
+                      }} disabled={!program[coachWk] || dayIdx >= program[coachWk].days.length-1}
+                        style={{ width:28, height:17, borderRadius:6, background: (!program[coachWk]||dayIdx>=program[coachWk].days.length-1) ? "#F0F5F2" : "#E8F7EF", border:"1px solid "+((!program[coachWk]||dayIdx>=program[coachWk].days.length-1)?"#E0E0E0":"#B8DFC8"), display:"flex", alignItems:"center", justifyContent:"center", cursor:(!program[coachWk]||dayIdx>=program[coachWk].days.length-1)?"default":"pointer", opacity:(!program[coachWk]||dayIdx>=program[coachWk].days.length-1)?0.4:1 }}>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={(!program[coachWk]||dayIdx>=program[coachWk].days.length-1)?"#ccc":"#1B8C4E"} strokeWidth="3" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                      </button>
+                    </div>
                     {/* Copy button */}
                     <button onClick={function(e){ e.stopPropagation(); setCopiedSession(day); }}
                       title="Copy this session"

@@ -4837,6 +4837,7 @@ function CoachDashboard({ realClients }) {
 }
 
 const TREND_DATA = { total: { label: "Total", color: "#1B8C4E" }, run: { label: "Run", color: "#2563B0" }, workout: { label: "Workout", color: "#1B8C4E" }, bike: { label: "Bike", color: "#D97706" }, swim: { label: "Swim", color: "#0E7490" } };
+const TREND_ICONS = { total: ICON_WORKOUT, run: ICON_RUN, workout: ICON_WORKOUT, bike: ICON_BIKE, swim: ICON_SWIM };
 
 function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activityLogs, realClients }) {
   var clientCount = realClients && realClients.length > 0 ? realClients.length : 0;

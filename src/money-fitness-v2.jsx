@@ -3898,16 +3898,21 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
               {plannedCount > 0 ? (
                 <div style={{ display: "flex", gap: 6, marginBottom: 20, overflowX: "auto" }}>
                   {_twp.map(function(d, i) {
-                    var hasPlan = d.acts.length > 0;
-                    if (!hasPlan) return null;
-                    var act = d.acts[0];
-                    var actColor = act.color || "#1B8C4E";
+                    if (!d.acts.length) return null;
                     var isToday = d.isToday;
+                    var primaryColor = d.acts[0].color || "#1B8C4E";
                     return (
-                      <div key={"plan-chip-"+i} onClick={function() { goTo("race"); }} style={{ background: isToday ? actColor : "rgba(255,255,255,0.12)", border: isToday ? "none" : "1px solid rgba(255,255,255,0.2)", borderRadius: 12, padding: "10px 12px", textAlign: "center", cursor: "pointer", flexShrink: 0 }}>
-                        <div style={{ color: "#fff", fontSize: 11, fontWeight: 700 }}>{d.day.toUpperCase()}</div>
-                        <div style={{ fontSize: 14, marginTop: 2, color: "#fff", display:"flex", alignItems:"center", justifyContent:"center" }} dangerouslySetInnerHTML={{ __html: act.emoji || ICON_WORKOUT }} />
-                        <div style={{ color: "rgba(255,255,255,0.7)", fontSize: 9, marginTop: 2, maxWidth: 60, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{act.label}</div>
+                      <div key={"plan-chip-"+i} onClick={function() { goTo("race"); }}
+                        style={{ background: isToday ? primaryColor : "rgba(255,255,255,0.12)", border: isToday ? "none" : "1px solid rgba(255,255,255,0.2)", borderRadius: 12, padding: "10px 12px", textAlign: "center", cursor: "pointer", flexShrink: 0, minWidth: 64 }}>
+                        <div style={{ color: "#fff", fontSize: 11, fontWeight: 700, marginBottom: 4 }}>{d.day.toUpperCase()}</div>
+                        {d.acts.map(function(act, ai) {
+                          return (
+                            <div key={ai} style={{ marginTop: ai > 0 ? 6 : 0 }}>
+                              <div style={{ fontSize: 14, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }} dangerouslySetInnerHTML={{ __html: act.emoji || ICON_WORKOUT }} />
+                              <div style={{ color: "rgba(255,255,255,0.7)", fontSize: 9, marginTop: 2, maxWidth: 68, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{act.label}</div>
+                            </div>
+                          );
+                        })}
                       </div>
                     );
                   })}

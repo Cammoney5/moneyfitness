@@ -4923,9 +4923,8 @@ function WorkoutTrendChart({ workoutType, color, data, unit, livePace, weekDates
       <div style={{ color: TEXT, fontSize: 17, fontWeight: 800, marginBottom: 10 }}>{hoveredLabel}</div>
 
       {/* Stats row */}
-      <div style={{ display: "flex", gap: 16, marginBottom: 14, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 24, marginBottom: 14 }}>
         <div><div style={{ color: TEXT3, fontSize: 11 }}>{statLabels.week}</div><div style={{ color: TEXT, fontSize: 22, fontWeight: 800 }}>{hoveredVal}{unit}</div></div>
-        <div><div style={{ color: TEXT3, fontSize: 11 }}>{statLabels.last}</div><div style={{ color: TEXT, fontSize: 22, fontWeight: 800 }}>{lastWeek}{unit}</div></div>
         <div><div style={{ color: TEXT3, fontSize: 11 }}>{statLabels.avg}</div><div style={{ color: TEXT, fontSize: 22, fontWeight: 800 }}>{avg12}{unit}</div></div>
       </div>
       {livePace && <div style={{ color: TEXT3, fontSize: 11, marginBottom: 8 }}>Avg pace: {livePace}/mi</div>}

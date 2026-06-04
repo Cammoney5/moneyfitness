@@ -4883,7 +4883,8 @@ function WorkoutTrendChart({ workoutType, color, data, unit, livePace, weekDates
   }
 
   const [hoveredIdx, setHoveredIdx] = React.useState(null);
-  var hovered = hoveredIdx !== null ? hoveredIdx : weeks.length - 1;
+  const [pinnedIdx, setPinnedIdx] = React.useState(null);
+  var hovered = pinnedIdx !== null ? pinnedIdx : (hoveredIdx !== null ? hoveredIdx : weeks.length - 1);
   var hoveredVal = weeks[hovered] || 0;
   var hoveredLabel = weekDates && weekDates[hovered] ? (function() {
     var d = weekDates[hovered].start;
@@ -4892,7 +4893,8 @@ function WorkoutTrendChart({ workoutType, color, data, unit, livePace, weekDates
   })() : "";
 
   return (
-    <div style={{ background: CARD, borderRadius: 18, padding: "16px", marginBottom: 16, border: "1.5px solid "+BORDER }}>
+    <div style={{ background: CARD, borderRadius: 18, padding: "16px", marginBottom: 16, border: "1.5px solid "+BORDER }}
+      onClick={function(e) { if (e.target.tagName !== "rect") setPinnedIdx(null); }}>
       {/* Date range header */}
       <div style={{ color: TEXT, fontSize: 17, fontWeight: 800, marginBottom: 10 }}>{hoveredLabel}</div>
 
@@ -4941,6 +4943,7 @@ function WorkoutTrendChart({ workoutType, color, data, unit, livePace, weekDates
         {/* Invisible overlay for hit detection — finds nearest point on move */}
         <rect x={padL} y={padT} width={chartW} height={chartH} fill="transparent" style={{ cursor: "crosshair" }}
           onMouseMove={function(e) {
+            if (pinnedIdx !== null) return;
             var svg = e.currentTarget.ownerSVGElement;
             var pt = svg.createSVGPoint();
             pt.x = e.clientX; pt.y = e.clientY;
@@ -4950,7 +4953,16 @@ function WorkoutTrendChart({ workoutType, color, data, unit, livePace, weekDates
             setHoveredIdx(closest);
           }}
           onMouseLeave={function() { setHoveredIdx(null); }}
-          onTouchMove={function(e) {
+          onClick={function(e) {
+            var svg = e.currentTarget.ownerSVGElement;
+            var pt = svg.createSVGPoint();
+            pt.x = e.clientX; pt.y = e.clientY;
+            var svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
+            var closest = 0, minDist = Infinity;
+            points.forEach(function(p, i) { var d = Math.abs(p[0] - svgP.x); if (d < minDist) { minDist = d; closest = i; } });
+            setPinnedIdx(function(prev) { return prev === closest ? null : closest; });
+          }}
+          onTouchStart={function(e) {
             e.preventDefault();
             var svg = e.currentTarget.ownerSVGElement;
             var pt = svg.createSVGPoint();
@@ -4958,9 +4970,8 @@ function WorkoutTrendChart({ workoutType, color, data, unit, livePace, weekDates
             var svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
             var closest = 0, minDist = Infinity;
             points.forEach(function(p, i) { var d = Math.abs(p[0] - svgP.x); if (d < minDist) { minDist = d; closest = i; } });
-            setHoveredIdx(closest);
+            setPinnedIdx(function(prev) { return prev === closest ? null : closest; });
           }}
-          onTouchEnd={function() { setTimeout(function(){ setHoveredIdx(null); }, 1500); }}
         />
       </svg>
     </div>

@@ -4839,7 +4839,7 @@ function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onI
 
 function CoachDashboard({ realClients }) {
   var CLIENT_DATA = (realClients && realClients.length > 0) ? realClients.map(function(c) {
-    return { id: c.id, name: c.name, initials: c.avatar, color: c.color, streak: c.streak || 0, lastActive: "Recent", workouts: 0, goal: 16, status: "active", since: c.since || "", revenue: 0, checkIns: 0 };
+    return { id: c.id, name: c.name, initials: c.avatar, color: c.color, streak: c.streak || 0, lastActive: c.lastActive || "Never", workouts: c.monthlyWorkouts || 0, goal: 16, status: c.streak > 0 ? "active" : "inactive", since: c.since || "", revenue: 0, checkIns: 0 };
   }) : [];
   var REVENUE_DATA = [1800,1800,2040,2040,2280,2400,2400,2520,2520,2640,2640,2760];
   var maxRev = Math.max.apply(null, REVENUE_DATA);
@@ -7637,7 +7637,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
     .then(function(r) { return r.json(); })
     .then(function(rows) {
       if (!Array.isArray(rows)) return;
-      setRealClients(rows.map(function(r, i) {
+      var baseClients = rows.map(function(r) {
         var initials = (r.name || "?").split(" ").map(function(w) { return w[0]; }).join("").toUpperCase().slice(0,2);
         return {
           id: r.id,
@@ -7649,12 +7649,66 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
           goal: "",
           type: "Training",
           streak: 0,
+          lastActive: "Never",
+          monthlyWorkouts: 0,
           checkIns: [],
           goals: [],
           workedOut: [],
           isReal: true,
         };
-      }));
+      });
+      setRealClients(baseClients);
+
+      // Fetch activity stats for all clients
+      var clientIds = baseClients.map(function(c) { return c.id; });
+      if (clientIds.length === 0) return;
+      fetch(SUPABASE_URL + "/rest/v1/activity_logs?client_id=in.(" + clientIds.join(",") + ")&select=client_id,logged_date&order=logged_date.desc&limit=1000", {
+        headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+      }).then(function(r2) { return r2.json(); }).then(function(logs) {
+        if (!Array.isArray(logs)) return;
+        var today = new Date();
+        var thisMonth = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2,"0");
+
+        // Group logs by client
+        var byClient = {};
+        logs.forEach(function(log) {
+          if (!byClient[log.client_id]) byClient[log.client_id] = [];
+          byClient[log.client_id].push(log.logged_date);
+        });
+
+        setRealClients(function(prev) {
+          return prev.map(function(c) {
+            var dates = byClient[c.id] || [];
+            if (dates.length === 0) return c;
+
+            // Sort descending
+            dates.sort(function(a, b) { return b.localeCompare(a); });
+
+            // Last active
+            var lastDate = new Date(dates[0] + "T12:00:00");
+            var diffDays = Math.floor((today - lastDate) / 86400000);
+            var lastActive = diffDays === 0 ? "Today" : diffDays === 1 ? "Yesterday" : diffDays + "d ago";
+
+            // Monthly workouts (this month)
+            var monthlyWorkouts = dates.filter(function(d) { return d.startsWith(thisMonth); }).length;
+
+            // Streak — consecutive days up to today
+            var uniqueDates = Array.from(new Set(dates)).sort(function(a,b){ return b.localeCompare(a); });
+            var streak = 0;
+            var check = new Date(today);
+            check.setHours(0,0,0,0);
+            for (var i = 0; i < uniqueDates.length; i++) {
+              var d = new Date(uniqueDates[i] + "T12:00:00");
+              d.setHours(0,0,0,0);
+              var diff = Math.round((check - d) / 86400000);
+              if (diff === 0 || diff === 1) { streak++; check = d; }
+              else break;
+            }
+
+            return Object.assign({}, c, { streak: streak, lastActive: lastActive, monthlyWorkouts: monthlyWorkouts });
+          });
+        });
+      }).catch(function(){});
     })
     .catch(function(e) { console.log("clients load error", e); });
   }, [authToken, authUserId, initCoach]);

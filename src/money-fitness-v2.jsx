@@ -4882,8 +4882,8 @@ function WorkoutTrendChart({ workoutType, color, data, unit, livePace, weekDates
     return "rgba("+r+","+g+","+b+","+a+")";
   }
 
-  const [hoveredIdx, setHoveredIdx] = React.useState(null);
   const [pinnedIdx, setPinnedIdx] = React.useState(null);
+  const [hoveredIdx, setHoveredIdx] = React.useState(null);
   var hovered = pinnedIdx !== null ? pinnedIdx : (hoveredIdx !== null ? hoveredIdx : weeks.length - 1);
   var hoveredVal = weeks[hovered] || 0;
   var hoveredLabel = weekDates && weekDates[hovered] ? (function() {
@@ -4892,19 +4892,43 @@ function WorkoutTrendChart({ workoutType, color, data, unit, livePace, weekDates
     return monthNames[d.getMonth()] + " " + d.getDate() + " – " + monthNames[e.getMonth()] + " " + e.getDate();
   })() : "";
 
+  // Activity-specific stat labels
+  var statLabels = (function() {
+    if (workoutType === "run")     return { week: "Miles This Week", last: "Miles Last Week", avg: "Weekly Avg Miles" };
+    if (workoutType === "bike")    return { week: "Miles This Week", last: "Miles Last Week", avg: "Weekly Avg Miles" };
+    if (workoutType === "swim")    return { week: "Swims This Week", last: "Swims Last Week", avg: "Weekly Avg Swims" };
+    if (workoutType === "workout") return { week: "Workouts This Week", last: "Workouts Last Week", avg: "Weekly Avg" };
+    return { week: "Activities This Week", last: "Activities Last Week", avg: "Weekly Avg" };
+  })();
+
+  function getClosestIdx(clientX, el) {
+    var rect = el.getBoundingClientRect();
+    var relX = clientX - rect.left;
+    var fracX = relX / rect.width;
+    // map fracX back to SVG x coordinate
+    var svgX = padL + fracX * (W - padL - padR) * (rect.width / rect.width);
+    // simpler: just use fraction of chartW
+    var closest = 0, minDist = Infinity;
+    points.forEach(function(p, i) {
+      var px = (p[0] - padL) / chartW;
+      var d = Math.abs(px - fracX);
+      if (d < minDist) { minDist = d; closest = i; }
+    });
+    return closest;
+  }
+
   return (
-    <div style={{ background: CARD, borderRadius: 18, padding: "16px", marginBottom: 16, border: "1.5px solid "+BORDER }}
-      onClick={function(e) { if (e.target.tagName !== "rect") setPinnedIdx(null); }}>
+    <div style={{ background: CARD, borderRadius: 18, padding: "16px", marginBottom: 16, border: "1.5px solid "+BORDER }}>
       {/* Date range header */}
       <div style={{ color: TEXT, fontSize: 17, fontWeight: 800, marginBottom: 10 }}>{hoveredLabel}</div>
 
       {/* Stats row */}
-      <div style={{ display: "flex", gap: 20, marginBottom: 14 }}>
-        <div><div style={{ color: TEXT3, fontSize: 11 }}>This Week</div><div style={{ color: TEXT, fontSize: 22, fontWeight: 800 }}>{hoveredVal}{unit}</div></div>
-        <div><div style={{ color: TEXT3, fontSize: 11 }}>Last Week</div><div style={{ color: TEXT, fontSize: 22, fontWeight: 800 }}>{lastWeek}{unit}</div></div>
-        <div><div style={{ color: TEXT3, fontSize: 11 }}>12-Wk Avg</div><div style={{ color: TEXT, fontSize: 22, fontWeight: 800 }}>{avg12}{unit}</div></div>
+      <div style={{ display: "flex", gap: 16, marginBottom: 14, flexWrap: "wrap" }}>
+        <div><div style={{ color: TEXT3, fontSize: 11 }}>{statLabels.week}</div><div style={{ color: TEXT, fontSize: 22, fontWeight: 800 }}>{hoveredVal}{unit}</div></div>
+        <div><div style={{ color: TEXT3, fontSize: 11 }}>{statLabels.last}</div><div style={{ color: TEXT, fontSize: 22, fontWeight: 800 }}>{lastWeek}{unit}</div></div>
+        <div><div style={{ color: TEXT3, fontSize: 11 }}>{statLabels.avg}</div><div style={{ color: TEXT, fontSize: 22, fontWeight: 800 }}>{avg12}{unit}</div></div>
       </div>
-      {livePace && hoveredIdx === null && <div style={{ color: TEXT3, fontSize: 11, marginBottom: 8 }}>Avg pace: {livePace}/mi</div>}
+      {livePace && <div style={{ color: TEXT3, fontSize: 11, marginBottom: 8 }}>Avg pace: {livePace}/mi</div>}
       <div style={{ color: TEXT3, fontSize: 11, marginBottom: 10 }}>Past 12 weeks</div>
 
       {/* SVG line chart */}
@@ -4915,65 +4939,51 @@ function WorkoutTrendChart({ workoutType, color, data, unit, livePace, weekDates
             <stop offset="100%" stopColor={color} stopOpacity="0.03" />
           </linearGradient>
         </defs>
-        {/* Grid lines */}
         {[0.5, 1].map(function(frac) {
           var y = padT + chartH - frac * chartH;
           return <line key={frac} x1={padL} y1={y} x2={W-padR} y2={y} stroke={BORDER} strokeWidth="1" />;
         })}
-        {/* Hover vertical line */}
-        {hoveredIdx !== null && (
-          <line x1={points[hoveredIdx][0]} y1={padT} x2={points[hoveredIdx][0]} y2={padT+chartH} stroke={color} strokeWidth="1" strokeDasharray="3,3" />
+        {pinnedIdx !== null && (
+          <line x1={points[pinnedIdx][0]} y1={padT} x2={points[pinnedIdx][0]} y2={padT+chartH} stroke={color} strokeWidth="1" strokeDasharray="3,3" />
         )}
         <path d={areaPath} fill="url(#areaGrad)" />
         <path d={linePath} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-        {/* Dots — no events on circles to avoid flicker */}
         {points.map(function(p, i) {
           var isActive = i === hovered;
           return (
             <circle key={i} cx={p[0]} cy={p[1]} r={isActive ? 6 : 3.5}
               fill={isActive ? color : CARD} stroke={color} strokeWidth={isActive ? 0 : 1.5}
-              style={{ pointerEvents: "none" }}
-            />
+              style={{ pointerEvents: "none" }} />
           );
         })}
-        {/* X-axis month labels */}
         {xLabels.map(function(lbl) {
           return <text key={lbl.i} x={xPos(lbl.i)} y={H+14} textAnchor="middle" fontSize="9" fill={TEXT3} fontWeight="600" style={{ pointerEvents: "none" }}>{lbl.label}</text>;
         })}
-        {/* Invisible overlay for hit detection — finds nearest point on move */}
-        <rect x={padL} y={padT} width={chartW} height={chartH} fill="transparent" style={{ cursor: "crosshair" }}
+        {/* Single overlay rect — uses getBoundingClientRect for reliable mobile coords */}
+        <rect x={padL} y={padT} width={chartW} height={chartH} fill="transparent" style={{ cursor: "crosshair", touchAction: "none" }}
           onMouseMove={function(e) {
             if (pinnedIdx !== null) return;
-            var svg = e.currentTarget.ownerSVGElement;
-            var pt = svg.createSVGPoint();
-            pt.x = e.clientX; pt.y = e.clientY;
-            var svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
-            var closest = 0, minDist = Infinity;
-            points.forEach(function(p, i) { var d = Math.abs(p[0] - svgP.x); if (d < minDist) { minDist = d; closest = i; } });
-            setHoveredIdx(closest);
+            setHoveredIdx(getClosestIdx(e.clientX, e.currentTarget));
           }}
           onMouseLeave={function() { setHoveredIdx(null); }}
           onClick={function(e) {
-            var svg = e.currentTarget.ownerSVGElement;
-            var pt = svg.createSVGPoint();
-            pt.x = e.clientX; pt.y = e.clientY;
-            var svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
-            var closest = 0, minDist = Infinity;
-            points.forEach(function(p, i) { var d = Math.abs(p[0] - svgP.x); if (d < minDist) { minDist = d; closest = i; } });
-            setPinnedIdx(function(prev) { return prev === closest ? null : closest; });
+            var idx = getClosestIdx(e.clientX, e.currentTarget);
+            setPinnedIdx(function(prev) { return prev === idx ? null : idx; });
+            setHoveredIdx(null);
           }}
           onTouchStart={function(e) {
             e.preventDefault();
-            var svg = e.currentTarget.ownerSVGElement;
-            var pt = svg.createSVGPoint();
-            pt.x = e.touches[0].clientX; pt.y = e.touches[0].clientY;
-            var svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
-            var closest = 0, minDist = Infinity;
-            points.forEach(function(p, i) { var d = Math.abs(p[0] - svgP.x); if (d < minDist) { minDist = d; closest = i; } });
-            setPinnedIdx(function(prev) { return prev === closest ? null : closest; });
+            var idx = getClosestIdx(e.touches[0].clientX, e.currentTarget);
+            setPinnedIdx(function(prev) { return prev === idx ? null : idx; });
           }}
         />
       </svg>
+      {pinnedIdx !== null && (
+        <div onClick={function() { setPinnedIdx(null); }}
+          style={{ textAlign: "center", color: TEXT3, fontSize: 11, marginTop: 6, cursor: "pointer" }}>
+          Tap to dismiss
+        </div>
+      )}
     </div>
   );
 }

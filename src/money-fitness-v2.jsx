@@ -6980,6 +6980,7 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
   // plans state is lifted to MainApp so HomeScreen can read it
   var safePlans = plans || {};
   var [modalDay,     setModalDay]     = useState(null);
+  var [copiedDay,    setCopiedDay]    = useState(null); // stores copied activities for paste
 
   var today      = new Date();
   var thisMonday = getMondayOf(today);
@@ -7269,6 +7270,20 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
                               style={{ flex: 1, padding: "8px 0", borderRadius: 10, border: "none", background: completion === "missed" ? "#E05252" : "#E0525218", color: completion === "missed" ? "#fff" : "#E05252", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                               Missed
+                            </button>
+                            <button onClick={function(e) { e.stopPropagation(); setCopiedDay(acts.map(function(a){ return Object.assign({}, a, {id: Date.now() + Math.random()}); })); }}
+                              style={{ padding: "8px 12px", borderRadius: 10, border: "none", background: copiedDay ? TEXT3+"22" : SURFACE, color: TEXT3, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                              Copy
+                            </button>
+                          </div>
+                        )}
+                        {isEmpty && copiedDay && (
+                          <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid "+BORDER }}>
+                            <button onClick={function(e) { e.stopPropagation(); saveDayActivities(i, copiedDay.map(function(a){ return Object.assign({}, a, {id: Date.now() + Math.random()}); })); setCopiedDay(null); }}
+                              style={{ width: "100%", padding: "8px 0", borderRadius: 10, border: "1.5px dashed "+GREEN, background: GREEN+"0D", color: GREEN, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+                              Paste copied workouts
                             </button>
                           </div>
                         )}

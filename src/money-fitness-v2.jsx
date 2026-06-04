@@ -4496,7 +4496,10 @@ function ActivityScreen({ isCoach, watchDays, activityLogs, onLogsChange, realCl
   const [calViewMonth, setCalViewMonth] = React.useState(TODAY.getMonth());
   var calMonthKey = calViewYear + "-" + calViewMonth;
   var calMonthName = new Date(calViewYear, calViewMonth, 1).toLocaleString("default", { month: "long" });
-  var workoutsInView = Object.keys((activityLogs && activityLogs[calMonthKey]) || {}).length;
+  var workoutsInView = (function() {
+    var monthLogs = (activityLogs && activityLogs[calMonthKey]) || {};
+    return Object.values(monthLogs).reduce(function(sum, dayArr) { return sum + (Array.isArray(dayArr) ? dayArr.length : 0); }, 0);
+  })();
 
   if (!isCoach) {
     return (

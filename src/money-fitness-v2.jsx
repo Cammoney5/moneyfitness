@@ -831,10 +831,30 @@ function YouTubeLite({ ytId, title }) {
 
 function VideoModal({ video, exName, onClose }) {
   const ytId = video ? getYTId(video.url) : null;
+  const [dragY, setDragY] = React.useState(0);
+  const dragStart = React.useRef(null);
+
+  function handleTouchStart(e) {
+    dragStart.current = e.touches[0].clientY;
+  }
+  function handleTouchMove(e) {
+    var dy = e.touches[0].clientY - dragStart.current;
+    if (dy > 0) setDragY(dy);
+  }
+  function handleTouchEnd() {
+    if (dragY > 80) { onClose(); }
+    setDragY(0);
+    dragStart.current = null;
+  }
+
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(26,23,20,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 600, padding: "0" }} onClick={onClose}>
-      <div style={{ background: CARD, borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 430, maxHeight: "90vh", overflow: "auto", paddingBottom: 32 }} onClick={function(e) { e.stopPropagation(); }}>
-        <div style={{ width: 36, height: 4, background: BORDER, borderRadius: 99, margin: "12px auto 16px" }} />
+      <div style={{ background: CARD, borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 430, maxHeight: "90vh", overflow: "auto", paddingBottom: 32, transform: "translateY("+dragY+"px)", transition: dragY === 0 ? "transform 0.3s" : "none" }}
+        onClick={function(e) { e.stopPropagation(); }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}>
+        <div style={{ width: 36, height: 4, background: BORDER, borderRadius: 99, margin: "12px auto 16px", cursor: "grab" }} />
         {ytId ? (
           <YouTubeLite ytId={ytId} title={exName} />
         ) : (

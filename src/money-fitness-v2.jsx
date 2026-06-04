@@ -4642,25 +4642,89 @@ function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onI
   }
 
   async function importStravaActivities() {
-    if (!authUserId) return;
+    if (!authUserId || !authToken) return;
     setImporting(true);
     setImportResult(null);
     try {
-      var res = await fetch("https://ebphyejgauwgguwcbmgj.supabase.co/functions/v1/strava-import", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + SUPABASE_ANON_KEY },
-        body: JSON.stringify({ userId: authUserId }),
+      // Step 1: Get Strava access token from Supabase profiles
+      var profileRes = await fetch(SUPABASE_URL + "/rest/v1/profiles?id=eq." + authUserId + "&select=strava_access_token,strava_refresh_token,strava_token_expires_at", {
+        headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
       });
-      var data = await res.json();
-      if (data.imported !== undefined) {
-        setImportResult({ success: true, count: data.imported });
-        // Reload logs in parent if callback provided
-        if (onLogsChange) onLogsChange();
-      } else {
-        setImportResult({ success: false, error: data.error || "Import failed" });
+      var profiles = await profileRes.json();
+      if (!profiles || !profiles[0] || !profiles[0].strava_access_token) {
+        setImportResult({ success: false, error: "Strava not connected — please reconnect" });
+        setImporting(false);
+        return;
       }
+      var stravaToken = profiles[0].strava_access_token;
+
+      // Step 2: Fetch up to 200 activities from Strava (2 pages of 100)
+      var allActivities = [];
+      for (var page = 1; page <= 2; page++) {
+        var actRes = await fetch("https://www.strava.com/api/v3/athlete/activities?per_page=100&page=" + page, {
+          headers: { "Authorization": "Bearer " + stravaToken }
+        });
+        var acts = await actRes.json();
+        if (!Array.isArray(acts) || acts.length === 0) break;
+        allActivities = allActivities.concat(acts);
+      }
+
+      if (allActivities.length === 0) {
+        setImportResult({ success: true, count: 0 });
+        setImporting(false);
+        return;
+      }
+
+      // Step 3: Map Strava activities to activity_logs rows
+      function mapStravaType(t) {
+        var tl = (t || "").toLowerCase();
+        if (tl.includes("run")) return "run";
+        if (tl.includes("ride") || tl.includes("cycling") || tl.includes("bike")) return "bike";
+        if (tl.includes("swim")) return "swim";
+        return "workout";
+      }
+
+      var rows = allActivities.map(function(a) {
+        var d = new Date(a.start_date_local);
+        var dateStr = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+        var miles = a.distance ? Math.round((a.distance / 1609.34) * 100) / 100 : null;
+        var durationMins = a.moving_time ? Math.round(a.moving_time / 60) : null;
+        var type = mapStravaType(a.type);
+        var pace = (type === "run" && miles && durationMins && miles > 0) ? (function() {
+          var mpm = durationMins / miles;
+          var m = Math.floor(mpm);
+          var s = Math.round((mpm - m) * 60);
+          return m + ":" + String(s).padStart(2,"0");
+        })() : null;
+        return {
+          client_id: authUserId,
+          logged_date: dateStr,
+          type: type,
+          notes: a.name || "",
+          duration: durationMins ? durationMins + " min" : "",
+          miles: miles,
+          calories: a.calories || null,
+          steps: null,
+          pace: pace || "",
+          source: "strava",
+        };
+      });
+
+      // Step 4: Save to Supabase in batches of 50
+      var batchSize = 50;
+      for (var i = 0; i < rows.length; i += batchSize) {
+        var batch = rows.slice(i, i + batchSize);
+        await fetch(SUPABASE_URL + "/rest/v1/activity_logs", {
+          method: "POST",
+          headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json", "Prefer": "return=minimal" },
+          body: JSON.stringify(batch)
+        });
+      }
+
+      setImportResult({ success: true, count: rows.length });
+      if (onLogsChange) onLogsChange();
     } catch(e) {
-      setImportResult({ success: false, error: "Network error" });
+      setImportResult({ success: false, error: "Import failed: " + e.message });
     }
     setImporting(false);
   }

@@ -4614,10 +4614,12 @@ const MOCK_WATCH_WORKOUTS = [
   },
 ];
 
-function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onImport, authUserId, authToken }) {
+function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onImport, authUserId, authToken, onLogsChange }) {
   const [stravaConnected, setStravaConnected] = React.useState(function() {
     try { return !!localStorage.getItem("mf_strava_connected"); } catch(e) { return false; }
   });
+  const [importing, setImporting] = React.useState(false);
+  const [importResult, setImportResult] = React.useState(null);
 
   const STRAVA_CLIENT_ID = "255151";
   const REDIRECT_URI = "https://ebphyejgauwgguwcbmgj.supabase.co/functions/v1/strava-auth";
@@ -4636,15 +4638,44 @@ function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onI
   function disconnectStrava() {
     try { localStorage.removeItem("mf_strava_connected"); } catch(e) {}
     setStravaConnected(false);
+    setImportResult(null);
+  }
+
+  async function importStravaActivities() {
+    if (!authUserId) return;
+    setImporting(true);
+    setImportResult(null);
+    try {
+      var res = await fetch("https://ebphyejgauwgguwcbmgj.supabase.co/functions/v1/strava-import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + authToken },
+        body: JSON.stringify({ userId: authUserId }),
+      });
+      var data = await res.json();
+      if (data.imported !== undefined) {
+        setImportResult({ success: true, count: data.imported });
+        // Reload logs in parent if callback provided
+        if (onLogsChange) onLogsChange();
+      } else {
+        setImportResult({ success: false, error: data.error || "Import failed" });
+      }
+    } catch(e) {
+      setImportResult({ success: false, error: "Network error" });
+    }
+    setImporting(false);
   }
 
   useEffect(function() {
-    var params = new URLSearchParams(window.location.search);
-    if (params.get("strava") === "connected") {
-      setStravaConnected(true);
-      try { localStorage.setItem("mf_strava_connected", "1"); } catch(e) {}
-      window.history.replaceState({}, "", window.location.pathname);
-    }
+    // mf_strava_connected is set by the top-level redirect handler on page load
+    try {
+      if (localStorage.getItem("mf_strava_connected")) {
+        setStravaConnected(true);
+      }
+      if (localStorage.getItem("mf_strava_error")) {
+        setImportResult({ success: false, error: "Strava connection failed — please try again" });
+        localStorage.removeItem("mf_strava_error");
+      }
+    } catch(e) {}
   }, []);
 
   return (
@@ -4674,9 +4705,20 @@ function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onI
           </div>
         </div>
         {stravaConnected ? (
-          <button onClick={disconnectStrava} style={{ width: "100%", padding: 12, borderRadius: 12, background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.3)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-            Disconnect Strava
-          </button>
+          <div>
+            <button onClick={importStravaActivities} disabled={importing}
+              style={{ width: "100%", padding: 13, borderRadius: 12, background: "#fff", border: "none", color: "#FC4C02", fontSize: 14, fontWeight: 800, cursor: importing ? "default" : "pointer", marginBottom: 8, opacity: importing ? 0.7 : 1 }}>
+              {importing ? "Importing…" : "Import Past 200 Activities"}
+            </button>
+            {importResult && (
+              <div style={{ background: importResult.success ? "rgba(255,255,255,0.15)" : "rgba(255,0,0,0.2)", borderRadius: 10, padding: "8px 12px", marginBottom: 8, color: "#fff", fontSize: 12, textAlign: "center" }}>
+                {importResult.success ? "✓ Imported " + importResult.count + " activities from Strava!" : "⚠ " + importResult.error}
+              </div>
+            )}
+            <button onClick={disconnectStrava} style={{ width: "100%", padding: 10, borderRadius: 12, background: "rgba(255,255,255,0.1)", border: "1.5px solid rgba(255,255,255,0.2)", color: "rgba(255,255,255,0.7)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+              Disconnect Strava
+            </button>
+          </div>
         ) : (
           <button onClick={connectStrava} style={{ width: "100%", padding: 12, borderRadius: 12, background: "#fff", border: "none", color: "#FC4C02", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
             Connect Strava
@@ -8400,7 +8442,7 @@ if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.stat
           </div>
         )}
         {tab === "library"       && <LibraryScreen isCoach={isCoach} favorites={favorites} toggleFavorite={toggleFavorite} />}
-        {tab === "watch"         && <AppleWatchScreen connected={watchConnected} onConnect={function() { setWatchConnected(true); }} onDisconnect={function() { setWatchConnected(false); setImportedIds({}); setWatchDays({}); }} importedIds={importedIds} onImport={handleImport} authUserId={authUserId} authToken={authToken} />}
+        {tab === "watch"         && <AppleWatchScreen connected={watchConnected} onConnect={function() { setWatchConnected(true); }} onDisconnect={function() { setWatchConnected(false); setImportedIds({}); setWatchDays({}); }} importedIds={importedIds} onImport={handleImport} authUserId={authUserId} authToken={authToken} onLogsChange={function() { if (authUserId && authToken) { fetch(SUPABASE_URL + "/rest/v1/activity_logs?client_id=eq." + authUserId + "&order=logged_date.desc&limit=200", { headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken } }).then(function(r){return r.json();}).then(function(rows){ if (!Array.isArray(rows)) return; var built = {}; rows.forEach(function(row){ var parts = row.logged_date.split("-"); var mk = parseInt(parts[0]) + "-" + (parseInt(parts[1])-1); var day = parseInt(parts[2]); if (!built[mk]) built[mk]={}; if (!built[mk][day]) built[mk][day]=[]; built[mk][day].push({id:row.id,type:row.type,notes:row.notes||"",miles:row.miles?String(row.miles):"",duration:row.duration||"",calories:row.calories?String(row.calories):"",steps:row.steps?String(row.steps):"",pace:row.pace||"",source:row.source||"",fromDevice:row.source&&row.source!=="manual"}); }); setActivityLogs(built); }).catch(function(){}); } }} />}
         {tab === "activity"      && <ActivityScreen isCoach={isCoach} watchDays={watchDays} activityLogs={activityLogs} onLogsChange={handleLogsChange} realClients={realClients} myProfile={myProfile} />}
         {tab === "analytics"     && <AnalyticsScreen isCoach={isCoach} monthStats={monthStats} todaySteps={monthStats.todaySteps} last7Steps={monthStats.last7Steps} activityLogs={activityLogs} realClients={realClients} />}
         {tab === "race"          && <RaceScreen activityLogs={activityLogs} raceCollapsed={raceCollapsed} setRaceCollapsed={setRaceCollapsed} plans={myPlans} setPlans={function(v) { var next = typeof v === "function" ? v(myPlans) : v; setMyPlans(next); try { localStorage.setItem("mf_plans", JSON.stringify(next)); } catch(e) {} }} />}
@@ -8431,6 +8473,20 @@ if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.stat
     </div>
   );
 }
+
+// Handle Strava OAuth redirect — runs immediately on page load before any component mounts
+(function() {
+  try {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get("strava") === "connected") {
+      localStorage.setItem("mf_strava_connected", "1");
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (params.get("strava") === "error") {
+      localStorage.setItem("mf_strava_error", "1");
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  } catch(e) {}
+})();
 
 export default function App() {
   const stored = (function() { try { var s = localStorage.getItem("mf_session"); return s ? JSON.parse(s) : null; } catch(e) { return null; } })();

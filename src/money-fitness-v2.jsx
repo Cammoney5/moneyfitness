@@ -4839,7 +4839,7 @@ function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onI
 
 function CoachDashboard({ realClients }) {
   var CLIENT_DATA = (realClients && realClients.length > 0) ? realClients.map(function(c) {
-    return { id: c.id, name: c.name, initials: c.avatar, color: c.color, streak: c.streak || 0, lastActive: c.lastActive || "Never", workouts: c.monthlyWorkouts || 0, goal: 16, status: c.streak > 0 ? "active" : "inactive", since: c.since || "", revenue: 0, checkIns: 0 };
+    var daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate(); return { id: c.id, name: c.name, initials: c.avatar, color: c.color, streak: c.streak || 0, lastActive: c.lastActive || "Never", workouts: c.monthlyWorkouts || 0, goal: daysInMonth, status: c.streak > 0 ? "active" : "inactive", since: c.since || "", revenue: 0, checkIns: 0 };
   }) : [];
   var REVENUE_DATA = [1800,1800,2040,2040,2280,2400,2400,2520,2520,2640,2640,2760];
   var maxRev = Math.max.apply(null, REVENUE_DATA);

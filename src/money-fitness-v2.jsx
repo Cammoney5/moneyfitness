@@ -4893,19 +4893,17 @@ function WorkoutTrendChart({ workoutType, color, data, unit, livePace, weekDates
 
   return (
     <div style={{ background: CARD, borderRadius: 18, padding: "16px", marginBottom: 16, border: "1.5px solid "+BORDER }}>
-      {/* Stats row first */}
-      <div style={{ display: "flex", marginBottom: 14 }}>
-        <div style={{ flex: 1 }}><div style={{ color: TEXT3, fontSize: 10, fontWeight: 600 }}>THIS WEEK</div><div style={{ color: TEXT, fontSize: 16, fontWeight: 700 }}>{thisWeek}{unit}</div></div>
-        <div style={{ flex: 1 }}><div style={{ color: TEXT3, fontSize: 10, fontWeight: 600 }}>LAST WEEK</div><div style={{ color: TEXT, fontSize: 16, fontWeight: 700 }}>{lastWeek}{unit}</div></div>
-        <div style={{ flex: 1 }}><div style={{ color: TEXT3, fontSize: 10, fontWeight: 600 }}>12-WK AVG</div><div style={{ color: TEXT, fontSize: 16, fontWeight: 700 }}>{avg12}{unit}</div></div>
-      </div>
+      {/* Date range header */}
+      <div style={{ color: TEXT, fontSize: 17, fontWeight: 800, marginBottom: 10 }}>{hoveredLabel}</div>
 
-      {/* Hover tooltip */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-        <div style={{ color: TEXT, fontSize: 20, fontWeight: 800 }}>{hoveredVal}{unit}</div>
-        <div style={{ color: TEXT3, fontSize: 11 }}>{hoveredLabel}</div>
+      {/* Stats row */}
+      <div style={{ display: "flex", gap: 20, marginBottom: 14 }}>
+        <div><div style={{ color: TEXT3, fontSize: 11 }}>This Week</div><div style={{ color: TEXT, fontSize: 22, fontWeight: 800 }}>{hoveredVal}{unit}</div></div>
+        <div><div style={{ color: TEXT3, fontSize: 11 }}>Last Week</div><div style={{ color: TEXT, fontSize: 22, fontWeight: 800 }}>{lastWeek}{unit}</div></div>
+        <div><div style={{ color: TEXT3, fontSize: 11 }}>12-Wk Avg</div><div style={{ color: TEXT, fontSize: 22, fontWeight: 800 }}>{avg12}{unit}</div></div>
       </div>
-      {livePace && hoveredIdx === null && <div style={{ color: TEXT3, fontSize: 11, marginBottom: 6 }}>Avg pace: {livePace}/mi</div>}
+      {livePace && hoveredIdx === null && <div style={{ color: TEXT3, fontSize: 11, marginBottom: 8 }}>Avg pace: {livePace}/mi</div>}
+      <div style={{ color: TEXT3, fontSize: 11, marginBottom: 10 }}>Past 12 weeks</div>
 
       {/* SVG line chart */}
       <svg width="100%" viewBox={"0 0 "+W+" "+(H+18)} style={{ display: "block", overflow: "visible" }}>

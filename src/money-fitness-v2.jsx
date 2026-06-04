@@ -6678,7 +6678,18 @@ function DayModal({ date, activities, onSave, onClose, coachProgram }) {
   }
 
   function addWorkoutSession(session) {
-    var entry = { id: Date.now(), label: session.focus || session.name, notes: (session.exercises || []).join(", "), miles: "", duration: "" };
+    var rawLabel = session.focus || session.name || "";
+    // Map program session names to known activity preset labels for correct icon
+    var lower = rawLabel.toLowerCase();
+    var label = rawLabel;
+    if (lower.includes("run") || lower.includes("cardio")) label = lower.includes("tempo") ? "Tempo Run" : lower.includes("long") ? "Long Run" : "Easy Run";
+    else if (lower.includes("swim")) label = "Swim";
+    else if (lower.includes("bike") || lower.includes("ride") || lower.includes("cycling")) label = "Bike Ride";
+    else if (lower.includes("yoga") || lower.includes("stretch") || lower.includes("flex")) label = "Yoga";
+    else if (lower.includes("hiit")) label = "HIIT";
+    else label = "Workout"; // default to Workout icon for strength/push/pull/legs etc.
+    var exNotes = (session.exercises || []).map(function(ex){ return typeof ex === "string" ? ex : (ex.name || ""); }).join(", ");
+    var entry = { id: Date.now(), label: label, notes: rawLabel !== label ? rawLabel + (exNotes ? ": " + exNotes : "") : exNotes, miles: "", duration: "" };
     setList(list.concat([entry]));
     setAdding(false);
   }

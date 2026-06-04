@@ -7231,7 +7231,8 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
                         )}
                       </div>
                     );
-                })()}
+                })()
+              })}
             </div>
 
 

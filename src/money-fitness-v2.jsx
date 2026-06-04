@@ -4842,22 +4842,49 @@ const TREND_ICONS = { total: ICON_WORKOUT, run: ICON_RUN, workout: ICON_WORKOUT,
 function WorkoutTrendChart({ workoutType, color, data, unit, livePace, weekDates }) {
   var weeks = data || [];
   var maxVal = Math.max.apply(null, weeks.concat([1]));
+  var minVal = 0;
+  var range = maxVal - minVal || 1;
   var monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  function weekLabel(i) {
-    if (!weekDates || !weekDates[i]) return "";
+  var W = 358, H = 110, padL = 8, padR = 8, padT = 12, padB = 2;
+  var chartW = W - padL - padR;
+  var chartH = H - padT - padB;
+  var n = weeks.length;
+
+  function xPos(i) { return padL + (n <= 1 ? chartW/2 : (i / (n-1)) * chartW); }
+  function yPos(v) { return padT + chartH - ((v - minVal) / range) * chartH; }
+
+  // Build SVG path
+  var points = weeks.map(function(v, i) { return [xPos(i), yPos(v)]; });
+  var linePath = points.map(function(p, i) { return (i===0?"M":"L") + p[0].toFixed(1) + "," + p[1].toFixed(1); }).join(" ");
+  var areaPath = linePath + " L" + points[points.length-1][0].toFixed(1) + "," + (padT+chartH) + " L" + points[0][0].toFixed(1) + "," + (padT+chartH) + " Z";
+
+  // X-axis month labels — show when month changes
+  var xLabels = [];
+  weeks.forEach(function(_, i) {
+    if (!weekDates || !weekDates[i]) return;
     var d = weekDates[i].start;
-    return monthNames[d.getMonth()] + " " + d.getDate();
-  }
+    var prevD = i > 0 && weekDates[i-1] ? weekDates[i-1].start : null;
+    if (i === 0 || (prevD && d.getMonth() !== prevD.getMonth())) {
+      xLabels.push({ i: i, label: monthNames[d.getMonth()].toUpperCase() });
+    }
+  });
+
   var thisWeek = weeks[weeks.length-1] || 0;
   var lastWeek = weeks[weeks.length-2] || 0;
+  var avg12 = weeks.length > 0 ? Math.round(weeks.reduce(function(s,v){return s+v;},0)/weeks.length*10)/10 : 0;
   var trend = thisWeek > lastWeek ? "up" : thisWeek < lastWeek ? "down" : "same";
   var trendColor = trend === "up" ? "#1B8C4E" : trend === "down" ? "#E05252" : TEXT3;
   var trendLabel = trend === "up" ? "▲ Up from last week" : trend === "down" ? "▼ Down from last week" : "— Same as last week";
-  var avg12 = weeks.length > 0 ? Math.round(weeks.reduce(function(s,v){return s+v;},0)/weeks.length*10)/10 : 0;
+
+  // Color with alpha for area fill
+  function hexAlpha(hex, a) {
+    var r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    return "rgba("+r+","+g+","+b+","+a+")";
+  }
 
   return (
     <div style={{ background: CARD, borderRadius: 18, padding: "16px", marginBottom: 16, border: "1.5px solid "+BORDER }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
         <div>
           <div style={{ color: TEXT, fontSize: 22, fontWeight: 800 }}>{thisWeek}{unit} <span style={{ fontSize: 13, fontWeight: 500, color: TEXT3 }}>this week</span></div>
           {livePace && <div style={{ color: TEXT3, fontSize: 11, marginTop: 2 }}>Avg pace: {livePace}/mi</div>}
@@ -4865,31 +4892,38 @@ function WorkoutTrendChart({ workoutType, color, data, unit, livePace, weekDates
         <div style={{ color: trendColor, fontSize: 11, fontWeight: 600, textAlign: "right" }}>{trendLabel}</div>
       </div>
 
-      {/* Bar chart */}
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 72, marginBottom: 6 }}>
-        {weeks.map(function(val, i) {
-          var isLast = i === weeks.length - 1;
-          var barH = val > 0 ? Math.max(Math.round((val / maxVal) * 60), 8) : 3;
+      {/* SVG line chart */}
+      <svg width="100%" viewBox={"0 0 "+W+" "+(H+18)} style={{ display: "block", overflow: "visible" }}>
+        {/* Grid lines */}
+        {[0.5, 1].map(function(frac) {
+          var y = padT + chartH - frac * chartH;
+          return <line key={frac} x1={padL} y1={y} x2={W-padR} y2={y} stroke={BORDER} strokeWidth="1" />;
+        })}
+        {/* Area fill */}
+        <defs>
+          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+            <stop offset="100%" stopColor={color} stopOpacity="0.03" />
+          </linearGradient>
+        </defs>
+        <path d={areaPath} fill="url(#areaGrad)" />
+        {/* Line */}
+        <path d={linePath} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        {/* Dots — only last point filled, rest hollow */}
+        {points.map(function(p, i) {
+          var isLast = i === points.length - 1;
           return (
-            <div key={i} title={weekLabel(i) + ": " + val + unit}
-              style={{ flex: 1, height: barH + "px", background: isLast ? color : (val > 0 ? color + "88" : BORDER), borderRadius: "3px 3px 0 0", alignSelf: "flex-end", transition: "height 0.3s" }} />
+            <circle key={i} cx={p[0]} cy={p[1]} r={isLast ? 5 : 3.5}
+              fill={isLast ? color : CARD} stroke={color} strokeWidth={isLast ? 0 : 1.5} />
           );
         })}
-      </div>
-
-      {/* X-axis: show every 4th label */}
-      <div style={{ display: "flex", marginBottom: 12 }}>
-        {weeks.map(function(_, i) {
-          var show = i === 0 || i === 3 || i === 7 || i === weeks.length - 1;
-          return (
-            <div key={i} style={{ flex: 1, textAlign: "center" }}>
-              {show && <div style={{ color: TEXT3, fontSize: 8, whiteSpace: "nowrap" }}>{weekLabel(i)}</div>}
-            </div>
-          );
+        {/* X-axis month labels */}
+        {xLabels.map(function(lbl) {
+          return <text key={lbl.i} x={xPos(lbl.i)} y={H+14} textAnchor="middle" fontSize="9" fill={TEXT3} fontWeight="600">{lbl.label}</text>;
         })}
-      </div>
+      </svg>
 
-      <div style={{ display: "flex", gap: 0, borderTop: "1px solid "+BORDER, paddingTop: 12 }}>
+      <div style={{ display: "flex", borderTop: "1px solid "+BORDER, paddingTop: 12, marginTop: 4 }}>
         <div style={{ flex: 1 }}><div style={{ color: TEXT3, fontSize: 10, fontWeight: 600 }}>THIS WEEK</div><div style={{ color: TEXT, fontSize: 16, fontWeight: 700 }}>{thisWeek}{unit}</div></div>
         <div style={{ flex: 1 }}><div style={{ color: TEXT3, fontSize: 10, fontWeight: 600 }}>LAST WEEK</div><div style={{ color: TEXT, fontSize: 16, fontWeight: 700 }}>{lastWeek}{unit}</div></div>
         <div style={{ flex: 1 }}><div style={{ color: TEXT3, fontSize: 10, fontWeight: 600 }}>12-WK AVG</div><div style={{ color: TEXT, fontSize: 16, fontWeight: 700 }}>{avg12}{unit}</div></div>

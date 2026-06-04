@@ -4840,8 +4840,8 @@ const TREND_DATA = { total: { label: "Total", color: "#1B8C4E" }, run: { label: 
 const TREND_ICONS = { total: ICON_WORKOUT, run: ICON_RUN, workout: ICON_WORKOUT, bike: ICON_BIKE, swim: ICON_SWIM };
 
 function WorkoutTrendChart({ workoutType, color, data, unit, livePace, weekDates }) {
-  var maxVal = Math.max.apply(null, (data||[]).concat([1]));
   var weeks = data || [];
+  var maxVal = Math.max.apply(null, weeks.concat([1]));
   var monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   function weekLabel(i) {
     if (!weekDates || !weekDates[i]) return "";
@@ -4853,37 +4853,46 @@ function WorkoutTrendChart({ workoutType, color, data, unit, livePace, weekDates
   var trend = thisWeek > lastWeek ? "up" : thisWeek < lastWeek ? "down" : "same";
   var trendColor = trend === "up" ? "#1B8C4E" : trend === "down" ? "#E05252" : TEXT3;
   var trendLabel = trend === "up" ? "▲ Up from last week" : trend === "down" ? "▼ Down from last week" : "— Same as last week";
+  var avg12 = weeks.length > 0 ? Math.round(weeks.reduce(function(s,v){return s+v;},0)/weeks.length*10)/10 : 0;
 
   return (
     <div style={{ background: CARD, borderRadius: 18, padding: "16px", marginBottom: 16, border: "1.5px solid "+BORDER }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
         <div>
           <div style={{ color: TEXT, fontSize: 22, fontWeight: 800 }}>{thisWeek}{unit} <span style={{ fontSize: 13, fontWeight: 500, color: TEXT3 }}>this week</span></div>
           {livePace && <div style={{ color: TEXT3, fontSize: 11, marginTop: 2 }}>Avg pace: {livePace}/mi</div>}
         </div>
-        <div style={{ color: trendColor, fontSize: 11, fontWeight: 600 }}>{trendLabel}</div>
+        <div style={{ color: trendColor, fontSize: 11, fontWeight: 600, textAlign: "right" }}>{trendLabel}</div>
       </div>
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 80 }}>
+
+      {/* Bar chart */}
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 72, marginBottom: 6 }}>
         {weeks.map(function(val, i) {
-          var pct = maxVal > 0 ? Math.max(val / maxVal, val > 0 ? 0.06 : 0) : 0;
           var isLast = i === weeks.length - 1;
+          var barH = val > 0 ? Math.max(Math.round((val / maxVal) * 60), 8) : 3;
           return (
-            <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-              <div style={{ width: "100%", height: 72, display: "flex", alignItems: "flex-end" }}>
-                <div style={{ width: "100%", height: (pct * 68 + (val > 0 ? 4 : 0)) + "px", background: isLast ? color : color+"66", borderRadius: "4px 4px 0 0", transition: "height 0.3s", minHeight: val > 0 ? 4 : 0 }} />
-              </div>
+            <div key={i} title={weekLabel(i) + ": " + val + unit}
+              style={{ flex: 1, height: barH + "px", background: isLast ? color : (val > 0 ? color + "88" : BORDER), borderRadius: "3px 3px 0 0", alignSelf: "flex-end", transition: "height 0.3s" }} />
+          );
+        })}
+      </div>
+
+      {/* X-axis: show every 4th label */}
+      <div style={{ display: "flex", marginBottom: 12 }}>
+        {weeks.map(function(_, i) {
+          var show = i === 0 || i === 3 || i === 7 || i === weeks.length - 1;
+          return (
+            <div key={i} style={{ flex: 1, textAlign: "center" }}>
+              {show && <div style={{ color: TEXT3, fontSize: 8, whiteSpace: "nowrap" }}>{weekLabel(i)}</div>}
             </div>
           );
         })}
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
-        <div style={{ color: TEXT3, fontSize: 9 }}>{weekLabel(0)}</div>
-        <div style={{ color: TEXT3, fontSize: 9 }}>{weekLabel(weeks.length-1)}</div>
-      </div>
-      <div style={{ display: "flex", gap: 16, marginTop: 12, paddingTop: 12, borderTop: "1px solid "+BORDER }}>
-        <div><div style={{ color: TEXT3, fontSize: 10, fontWeight: 600 }}>THIS WEEK</div><div style={{ color: TEXT, fontSize: 16, fontWeight: 700 }}>{thisWeek}{unit}</div></div>
-        <div><div style={{ color: TEXT3, fontSize: 10, fontWeight: 600 }}>LAST WEEK</div><div style={{ color: TEXT, fontSize: 16, fontWeight: 700 }}>{lastWeek}{unit}</div></div>
-        <div><div style={{ color: TEXT3, fontSize: 10, fontWeight: 600 }}>12-WK AVG</div><div style={{ color: TEXT, fontSize: 16, fontWeight: 700 }}>{weeks.length > 0 ? (Math.round(weeks.reduce(function(s,v){return s+v;},0)/weeks.length*10)/10)+unit : "0"}</div></div>
+
+      <div style={{ display: "flex", gap: 0, borderTop: "1px solid "+BORDER, paddingTop: 12 }}>
+        <div style={{ flex: 1 }}><div style={{ color: TEXT3, fontSize: 10, fontWeight: 600 }}>THIS WEEK</div><div style={{ color: TEXT, fontSize: 16, fontWeight: 700 }}>{thisWeek}{unit}</div></div>
+        <div style={{ flex: 1 }}><div style={{ color: TEXT3, fontSize: 10, fontWeight: 600 }}>LAST WEEK</div><div style={{ color: TEXT, fontSize: 16, fontWeight: 700 }}>{lastWeek}{unit}</div></div>
+        <div style={{ flex: 1 }}><div style={{ color: TEXT3, fontSize: 10, fontWeight: 600 }}>12-WK AVG</div><div style={{ color: TEXT, fontSize: 16, fontWeight: 700 }}>{avg12}{unit}</div></div>
       </div>
     </div>
   );

@@ -3726,7 +3726,7 @@ function ClientDetail({ client, onBack, isCoach, defaultTab, favorites, watchDay
 
 // ---
 
-function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthStats, coachProgram, activityLogs, myPlans, thisWeekPlanned, realClients, viewedCounts, myProfile }) {
+function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthStats, coachProgram, activityLogs, myPlans, thisWeekPlanned, realClients, viewedCounts, myProfile, completions }) {
   // Calculate real streak from activityLogs
   var currentStreak = 0;
   if (activityLogs) {
@@ -3901,9 +3901,19 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
                     if (!d.acts.length) return null;
                     var isToday = d.isToday;
                     var primaryColor = d.acts[0].color || "#1B8C4E";
+                    var chipDate = d.date ? (d.date.getFullYear()+"-"+String(d.date.getMonth()+1).padStart(2,"0")+"-"+String(d.date.getDate()).padStart(2,"0")) : null;
+                    var chipCompletion = chipDate && completions && completions[chipDate];
                     return (
                       <div key={"plan-chip-"+i} onClick={function() { goTo("race"); }}
-                        style={{ background: isToday ? primaryColor : "rgba(255,255,255,0.12)", border: isToday ? "none" : "1px solid rgba(255,255,255,0.2)", borderRadius: 12, padding: "10px 12px", textAlign: "center", cursor: "pointer", flexShrink: 0, minWidth: 64 }}>
+                        style={{ background: isToday ? primaryColor : "rgba(255,255,255,0.12)", border: chipCompletion === "completed" ? "2px solid #4ADE80" : chipCompletion === "missed" ? "2px solid #F87171" : isToday ? "none" : "1px solid rgba(255,255,255,0.2)", borderRadius: 12, padding: "10px 12px", textAlign: "center", cursor: "pointer", flexShrink: 0, minWidth: 64, position: "relative" }}>
+                        {chipCompletion && (
+                          <div style={{ position: "absolute", top: 4, right: 4, width: 14, height: 14, borderRadius: "50%", background: chipCompletion === "completed" ? "#4ADE80" : "#F87171", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            {chipCompletion === "completed"
+                              ? <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                              : <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            }
+                          </div>
+                        )}
                         <div style={{ color: "#fff", fontSize: 11, fontWeight: 700, marginBottom: 6 }}>{d.day.toUpperCase()}</div>
                         <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
                           {d.acts.map(function(act, ai) {
@@ -6916,7 +6926,7 @@ function WorkoutsSection({ weekDates, onAddToDay }) {
   );
 }
 
-function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setPlans }) {
+function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setPlans, completions, onToggleCompletion }) {
   var [activeTab,    setActiveTab]    = useState("plan");
   var [raceDateStr,  setRaceDateStr]  = useState(function(){ try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); return r.raceDateStr||""; } catch(e){return "";} });
   var [raceName,     setRaceName]     = useState(function(){ try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); return r.raceName||""; } catch(e){return "";} });
@@ -7170,41 +7180,58 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
                 var isToday = isSameDay(date, today);
                 var isPast  = date < today && !isToday;
                 var isEmpty = acts.length === 0;
-                return (
-                  <div key={"weekday-"+i} onClick={function() { setModalDay(i); }} style={{ background: WHITE, borderRadius: 16, padding: "14px 16px", border: "1.5px solid "+(isToday ? GREEN : BORDER), cursor: "pointer", opacity: isPast ? 0.6 : 1, boxShadow: isToday ? "0 0 0 2px "+GREEN+"33" : "0 1px 3px rgba(0,0,0,0.05)", position: "relative", overflow: "hidden" }}>
-                    {isToday && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: GREEN, borderRadius: "16px 16px 0 0" }} />}
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                      <div style={{ textAlign: "center", width: 44, flexShrink: 0, paddingTop: 2 }}>
-                        <div style={{ color: isToday ? GREEN : TEXT3, fontSize: 11, fontWeight: 700 }}>{DAYS[i]}</div>
-                        <div style={{ color: isToday ? GREEN : TEXT, fontSize: 20, fontWeight: 900, lineHeight: 1.1 }}>{date.getDate()}</div>
-                        {isToday && <div style={{ color: GREEN, fontSize: 9, fontWeight: 700, marginTop: 1 }}>TODAY</div>}
+                return (function() {
+                    var dateStr2 = date.getFullYear()+"-"+String(date.getMonth()+1).padStart(2,"0")+"-"+String(date.getDate()).padStart(2,"0");
+                    var completion = completions && completions[dateStr2];
+                    var borderColor = completion === "completed" ? GREEN : completion === "missed" ? "#E05252" : isToday ? GREEN : BORDER;
+                    return (
+                      <div key={"weekday-"+i} style={{ background: WHITE, borderRadius: 16, padding: "14px 16px", border: "1.5px solid "+borderColor, cursor: "pointer", boxShadow: isToday ? "0 0 0 2px "+GREEN+"33" : "0 1px 3px rgba(0,0,0,0.05)", position: "relative", overflow: "hidden" }}>
+                        {isToday && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: GREEN, borderRadius: "16px 16px 0 0" }} />}
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }} onClick={function() { setModalDay(i); }}>
+                          <div style={{ textAlign: "center", width: 44, flexShrink: 0, paddingTop: 2 }}>
+                            <div style={{ color: isToday ? GREEN : TEXT3, fontSize: 11, fontWeight: 700 }}>{DAYS[i]}</div>
+                            <div style={{ color: isToday ? GREEN : TEXT, fontSize: 20, fontWeight: 900, lineHeight: 1.1 }}>{date.getDate()}</div>
+                            {isToday && <div style={{ color: GREEN, fontSize: 9, fontWeight: 700, marginTop: 1 }}>TODAY</div>}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            {isEmpty
+                              ? <div style={{ color: TEXT3, fontSize: 13, paddingTop: 4 }}>Tap to plan your day</div>
+                              : acts.map(function(a, ai) {
+                                  var color = colorForActivity(a.label);
+                                  var emoji = emojiForActivity(a.label);
+                                  return (
+                                    <div key={ai} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: ai < acts.length-1 ? 8 : 0 }}>
+                                      <div style={{ width: 28, height: 28, borderRadius: 8, background: color+"18", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }} dangerouslySetInnerHTML={{ __html: emoji }} />
+                                      <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ color: TEXT, fontSize: 13, fontWeight: 700 }}>{a.label}</div>
+                                        {(a.miles || a.duration) && <div style={{ color: TEXT3, fontSize: 11, marginTop: 1 }}>{a.miles ? a.miles+" mi" : ""}{a.miles && a.duration ? " • " : ""}{a.duration}</div>}
+                                      </div>
+                                    </div>
+                                  );
+                                })
+                            }
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", paddingTop: 4 }}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={TEXT3} strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                          </div>
+                        </div>
+                        {!isEmpty && (
+                          <div style={{ display: "flex", gap: 8, marginTop: 12, paddingTop: 10, borderTop: "1px solid "+BORDER }}>
+                            <button onClick={function(e) { e.stopPropagation(); if (onToggleCompletion) onToggleCompletion(dateStr2, "completed"); }}
+                              style={{ flex: 1, padding: "8px 0", borderRadius: 10, border: "none", background: completion === "completed" ? GREEN : GREEN+"18", color: completion === "completed" ? "#fff" : GREEN, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                              Done
+                            </button>
+                            <button onClick={function(e) { e.stopPropagation(); if (onToggleCompletion) onToggleCompletion(dateStr2, "missed"); }}
+                              style={{ flex: 1, padding: "8px 0", borderRadius: 10, border: "none", background: completion === "missed" ? "#E05252" : "#E0525218", color: completion === "missed" ? "#fff" : "#E05252", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                              Missed
+                            </button>
+                          </div>
+                        )}
                       </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        {isEmpty
-                          ? <div style={{ color: TEXT3, fontSize: 13, paddingTop: 4 }}>Tap to plan your day</div>
-                          : acts.map(function(a, ai) {
-                              var color = colorForActivity(a.label);
-                              var emoji = emojiForActivity(a.label);
-                              return (
-                                <div key={ai} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: ai < acts.length-1 ? 8 : 0 }}>
-                                  <div style={{ width: 28, height: 28, borderRadius: 8, background: color+"18", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }} dangerouslySetInnerHTML={{ __html: emoji }} />
-                                  <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ color: TEXT, fontSize: 13, fontWeight: 700 }}>{a.label}</div>
-                                    {(a.miles || a.duration) && <div style={{ color: TEXT3, fontSize: 11, marginTop: 1 }}>{a.miles ? a.miles+" mi" : ""}{a.miles && a.duration ? " \u2022 " : ""}{a.duration}</div>}
-                                  </div>
-                                </div>
-                              );
-                            })
-                        }
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", paddingTop: 4 }}>
-                        {!isEmpty && <div style={{ background: GREEN+"18", borderRadius: 6, padding: "2px 8px", marginRight: 6 }}><span style={{ color: GREEN, fontSize: 10, fontWeight: 700 }}>{acts.length} planned</span></div>}
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={TEXT3} strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                    );
+                })()}
             </div>
 
 
@@ -8359,6 +8386,43 @@ if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.stat
   const [watchDays, setWatchDays] = useState(defaultWatchDays);
   const [raceCollapsed, setRaceCollapsed] = useState(false);
   const [myPlans, setMyPlans] = useState(function(){ try { var s=localStorage.getItem("mf_plans"); return s?JSON.parse(s):{}; } catch(e){return {};} }); // lifted from RaceScreen so HomeScreen can read it
+  const [completions, setCompletions] = useState({});
+
+  // Load completions from Supabase on mount
+  useEffect(function() {
+    if (!authUserId || !authToken) return;
+    fetch(SUPABASE_URL + "/rest/v1/plan_completions?client_id=eq." + authUserId + "&select=plan_date,status", {
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+    }).then(function(r) { return r.json(); }).then(function(rows) {
+      if (!Array.isArray(rows)) return;
+      var map = {};
+      rows.forEach(function(r) { map[r.plan_date] = r.status; });
+      setCompletions(map);
+    }).catch(function(){});
+  }, [authUserId, authToken]);
+
+  function handleToggleCompletion(dateStr, status) {
+    var current = completions[dateStr];
+    var newStatus = current === status ? null : status;
+    setCompletions(function(prev) {
+      var next = Object.assign({}, prev);
+      if (newStatus) { next[dateStr] = newStatus; } else { delete next[dateStr]; }
+      return next;
+    });
+    if (!authUserId || !authToken) return;
+    if (newStatus) {
+      fetch(SUPABASE_URL + "/rest/v1/plan_completions", {
+        method: "POST",
+        headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates,return=minimal" },
+        body: JSON.stringify({ client_id: authUserId, plan_date: dateStr, status: newStatus })
+      }).catch(function(){});
+    } else {
+      fetch(SUPABASE_URL + "/rest/v1/plan_completions?client_id=eq." + authUserId + "&plan_date=eq." + dateStr, {
+        method: "DELETE",
+        headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+      }).catch(function(){});
+    }
+  }
 
   // Map mock workout dates to actual day numbers in current month
   const WATCH_DAY_MAP = {
@@ -8506,7 +8570,7 @@ if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.stat
             var _k = weekKey(_mon) + "-" + i;
             return { day: dn, date: _d, acts: myPlans[_k] || [], isToday: _d.toDateString() === TODAY.toDateString() };
           });
-          return <HomeScreen isCoach={isCoach} goTo={goTo} setClient={setSelected} goToClientTab={goToClientTab} messages={messages} monthStats={monthStats} coachProgram={coachProgram} activityLogs={activityLogs} myPlans={myPlans} thisWeekPlanned={_planned} realClients={realClients} viewedCounts={viewedCounts} myProfile={myProfile} />;
+          return <HomeScreen isCoach={isCoach} goTo={goTo} setClient={setSelected} goToClientTab={goToClientTab} messages={messages} monthStats={monthStats} coachProgram={coachProgram} activityLogs={activityLogs} myPlans={myPlans} thisWeekPlanned={_planned} realClients={realClients} viewedCounts={viewedCounts} myProfile={myProfile} completions={completions} />;
         })()}
         {tab === "clients"       && <ClientsScreen isCoach={isCoach} selected={selected} setSelected={setSelected} clientDefaultTab={clientDefaultTab} setClientDefaultTab={setClientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages} onSend={handleSendMessage} coachProgram={coachProgram} setCoachProgram={handleProgramUpdate} activityLogs={activityLogs} onLogsChange={handleLogsChange} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} realClients={realClients} authUserId={authUserId} authToken={authToken} goTo={goTo} myProfile={myProfile} />}
         {tab === "directmessage" && (
@@ -8531,7 +8595,7 @@ if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.stat
         {tab === "watch"         && <AppleWatchScreen connected={watchConnected} onConnect={function() { setWatchConnected(true); }} onDisconnect={function() { setWatchConnected(false); setImportedIds({}); setWatchDays({}); }} importedIds={importedIds} onImport={handleImport} authUserId={authUserId} authToken={authToken} onLogsChange={function() { if (authUserId && authToken) { fetch(SUPABASE_URL + "/rest/v1/activity_logs?client_id=eq." + authUserId + "&order=logged_date.desc&limit=200", { headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken } }).then(function(r){return r.json();}).then(function(rows){ if (!Array.isArray(rows)) return; var built = {}; rows.forEach(function(row){ var parts = row.logged_date.split("-"); var mk = parseInt(parts[0]) + "-" + (parseInt(parts[1])-1); var day = parseInt(parts[2]); if (!built[mk]) built[mk]={}; if (!built[mk][day]) built[mk][day]=[]; built[mk][day].push({id:row.id,type:row.type,notes:row.notes||"",miles:row.miles?String(row.miles):"",duration:row.duration||"",calories:row.calories?String(row.calories):"",steps:row.steps?String(row.steps):"",pace:row.pace||"",source:row.source||"",fromDevice:row.source&&row.source!=="manual"}); }); setActivityLogs(built); }).catch(function(){}); } }} />}
         {tab === "activity"      && <ActivityScreen isCoach={isCoach} watchDays={watchDays} activityLogs={activityLogs} onLogsChange={handleLogsChange} realClients={realClients} myProfile={myProfile} />}
         {tab === "analytics"     && <AnalyticsScreen isCoach={isCoach} monthStats={monthStats} todaySteps={monthStats.todaySteps} last7Steps={monthStats.last7Steps} activityLogs={activityLogs} realClients={realClients} />}
-        {tab === "race"          && <RaceScreen activityLogs={activityLogs} raceCollapsed={raceCollapsed} setRaceCollapsed={setRaceCollapsed} plans={myPlans} setPlans={function(v) { var next = typeof v === "function" ? v(myPlans) : v; setMyPlans(next); try { localStorage.setItem("mf_plans", JSON.stringify(next)); } catch(e) {} }} />}
+        {tab === "race"          && <RaceScreen activityLogs={activityLogs} raceCollapsed={raceCollapsed} setRaceCollapsed={setRaceCollapsed} plans={myPlans} setPlans={function(v) { var next = typeof v === "function" ? v(myPlans) : v; setMyPlans(next); try { localStorage.setItem("mf_plans", JSON.stringify(next)); } catch(e) {} }} completions={completions} onToggleCompletion={handleToggleCompletion} />}
         {tab === "notifications" && <NotificationsScreen notifications={notifications} onRead={function(id) { setNotifications(function(p) { return p.map(function(n) { return n.id === id ? Object.assign({}, n, { read: true }) : n; }); }); }} onClearAll={function() { setNotifications(function(p) { return p.map(function(n) { return Object.assign({}, n, { read: true }); }); }); }} isCoach={isCoach} goTo={goTo} onNavigateToClient={function(clientId, defaultTab) {
     var client = CLIENTS.find(function(c) { return c.id === clientId; });
     if (client) { setSelected(client); setClientDefaultTab(defaultTab || "Messages"); goTo("clients"); }

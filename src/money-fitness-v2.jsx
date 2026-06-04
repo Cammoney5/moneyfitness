@@ -6565,8 +6565,17 @@ function colorForActivity(label) {
 }
 
 function emojiForActivity(label) {
-  var preset = ACTIVITY_PRESETS.find(function(p) { return p.label.toLowerCase() === (label || "").toLowerCase(); });
-  return preset ? preset.emoji : "&#x1F3CB;";
+  var l = (label || "").toLowerCase();
+  var preset = ACTIVITY_PRESETS.find(function(p) { return p.label.toLowerCase() === l; });
+  if (preset) return preset.emoji;
+  // Fuzzy match for program sessions like "Push+", "Pull+", "Legs+"
+  if (l.includes("run") || l.includes("jog")) return l.includes("tempo") ? ICON_LIGHTNING : ICON_RUN;
+  if (l.includes("swim")) return ICON_SWIM;
+  if (l.includes("bike") || l.includes("ride") || l.includes("cycling")) return ICON_BIKE;
+  if (l.includes("hiit")) return ICON_LIGHTNING;
+  if (l.includes("yoga") || l.includes("stretch") || l.includes("flex") || l.includes("mobility")) return ICON_BODY;
+  if (l.includes("rest")) return ICON_MOON;
+  return ICON_WORKOUT; // default to dumbbell for push/pull/legs/strength/etc
 }
 
 function useCountdown(targetDate) {

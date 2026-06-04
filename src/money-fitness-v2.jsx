@@ -7636,6 +7636,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
     })
     .then(function(r) { return r.json(); })
     .then(function(rows) {
+      console.log("[coach clients] profiles response:", rows, "authUserId:", authUserId);
       if (!Array.isArray(rows)) return;
       var baseClients = rows.map(function(r) {
         var initials = (r.name || "?").split(" ").map(function(w) { return w[0]; }).join("").toUpperCase().slice(0,2);

@@ -6804,26 +6804,27 @@ function DayModal({ date, activities, onSave, onClose, coachProgram }) {
                           })}
                         </div>
                         {prog[coachWk] && prog[coachWk].days && prog[coachWk].days.map(function(day, i) {
-                    return (
-                      <div key={"plan-sess-"+i} style={{ background: WHITE, borderRadius: 14, padding: "12px 14px", marginBottom: 8, border: "1.5px solid "+BORDER }}>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                          <div>
-                            <div style={{ color: TEXT, fontSize: 14, fontWeight: 800 }}>{(day.focus||"").toUpperCase()}</div>
-                            <div style={{ color: TEXT3, fontSize: 11, marginTop: 1 }}>{day.day} &bull; {day.exercises.length} exercises</div>
-                          </div>
-                          <button onClick={function() { addWorkoutSession(day); }} style={{ background: GREEN, border: "none", borderRadius: 10, padding: "7px 14px", color: WHITE, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Add</button>
-                        </div>
-                        {day.exercises.slice(0,3).map(function(ex, j) { return <div key={j} style={{ color: TEXT3, fontSize: 11 }}>&bull; {typeof ex === "string" ? ex : (ex.name || "")}</div>; })}
-                        {day.exercises.length > 3 && <div style={{ color: TEXT3, fontSize: 11 }}>+{day.exercises.length - 3} more</div>}
-                      </div>
-                    );
-                  })}
+                          return (
+                            <div key={"plan-sess-"+i} style={{ background: WHITE, borderRadius: 14, padding: "12px 14px", marginBottom: 8, border: "1.5px solid "+BORDER }}>
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                                <div>
+                                  <div style={{ color: TEXT, fontSize: 14, fontWeight: 800 }}>{(day.focus||"").toUpperCase()}</div>
+                                  <div style={{ color: TEXT3, fontSize: 11, marginTop: 1 }}>{day.day} &bull; {day.exercises.length} exercises</div>
+                                </div>
+                                <button onClick={function() { addWorkoutSession(day); }} style={{ background: GREEN, border: "none", borderRadius: 10, padding: "7px 14px", color: WHITE, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Add</button>
+                              </div>
+                              {day.exercises.slice(0,3).map(function(ex, j) { return <div key={j} style={{ color: TEXT3, fontSize: 11 }}>&bull; {typeof ex === "string" ? ex : (ex.name || "")}</div>; })}
+                              {day.exercises.length > 3 && <div style={{ color: TEXT3, fontSize: 11 }}>+{day.exercises.length - 3} more</div>}
+                            </div>
+                          );
+                        })}
                         <button onClick={function() { setAdding(false); }} style={{ width: "100%", padding: 11, borderRadius: 12, background: "none", border: "1.5px solid "+BORDER, color: TEXT2, fontSize: 13, cursor: "pointer", marginTop: 4 }}>Cancel</button>
                       </div>
                     );
-                  })()
-                }
-              </div>
+                  })()}
+                </div>
+              )}
+
 
               {addTab === "library" && (
                 <div>

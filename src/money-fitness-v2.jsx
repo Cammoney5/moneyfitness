@@ -8395,11 +8395,13 @@ if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.stat
     fetch(SUPABASE_URL + "/rest/v1/plan_completions?client_id=eq." + authUserId + "&select=plan_date,status", {
       headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
     }).then(function(r) { return r.json(); }).then(function(rows) {
-      if (!Array.isArray(rows)) return;
+      console.log("[completions] loaded rows:", rows);
+      if (!Array.isArray(rows)) { console.log("[completions] not an array:", rows); return; }
       var map = {};
       rows.forEach(function(r) { map[r.plan_date] = r.status; });
+      console.log("[completions] map:", map);
       setCompletions(map);
-    }).catch(function(){});
+    }).catch(function(e){ console.log("[completions] error:", e); });
   }, [authUserId, authToken]);
 
   function handleToggleCompletion(dateStr, status) {

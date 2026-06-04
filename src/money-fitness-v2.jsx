@@ -4666,11 +4666,7 @@ function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onI
   }
 
   useEffect(function() {
-    // mf_strava_connected is set by the top-level redirect handler on page load
     try {
-      if (localStorage.getItem("mf_strava_connected")) {
-        setStravaConnected(true);
-      }
       if (localStorage.getItem("mf_strava_error")) {
         setImportResult({ success: false, error: "Strava connection failed — please try again" });
         localStorage.removeItem("mf_strava_error");

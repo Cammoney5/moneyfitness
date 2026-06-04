@@ -7523,7 +7523,13 @@ function CoachInbox({ messages, handleSendMessage, realClients, viewedCounts, se
 }
 
 function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, authCoachId }) {
-  const [tab, setTab]           = useState("home");
+  const [tab, setTab] = useState(function() {
+    try {
+      var startTab = localStorage.getItem("mf_start_tab");
+      if (startTab) { localStorage.removeItem("mf_start_tab"); return startTab; }
+    } catch(e) {}
+    return "home";
+  });
   const [isCoach, setIsCoach]   = useState(initCoach !== undefined ? initCoach : true);
 
   // Register service worker and subscribe to push notifications
@@ -8540,6 +8546,7 @@ if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.stat
     var params = new URLSearchParams(window.location.search);
     if (params.get("strava") === "connected") {
       localStorage.setItem("mf_strava_connected", "1");
+      if (params.get("tab")) localStorage.setItem("mf_start_tab", params.get("tab"));
       window.history.replaceState({}, "", window.location.pathname);
     } else if (params.get("strava") === "error") {
       localStorage.setItem("mf_strava_error", "1");

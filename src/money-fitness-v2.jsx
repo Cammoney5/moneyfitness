@@ -7764,41 +7764,61 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
     setTimeout(tryLinkOneSignal, 3000);
   }, [authUserId, authToken]);
 
-  // Register service worker and subscribe to push notifications
+  // Register Firebase Messaging and get FCM token
   useEffect(function() {
     if (!authUserId || !authToken) return;
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-    navigator.serviceWorker.register('/sw.js').then(function(reg) {
-      return Notification.requestPermission().then(function(perm) {
+    if (!('serviceWorker' in navigator)) return;
+    async function initFCM() {
+      try {
+        const perm = await Notification.requestPermission();
         if (perm !== 'granted') return;
-        return reg.pushManager.getSubscription().then(function(existing) {
-          if (existing) return existing;
-          var key = (typeof VAPID_PUBLIC_KEY !== "undefined" ? VAPID_PUBLIC_KEY : null);
-          if (!key) return;
-          var padding = '='.repeat((4 - key.length % 4) % 4);
-          var raw = atob((key + padding).replace(/-/g, '+').replace(/_/g, '/'));
-          var buffer = new Uint8Array(raw.length);
-          for (var i = 0; i < raw.length; i++) buffer[i] = raw.charCodeAt(i);
-          return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: buffer });
+
+        const reg = await navigator.serviceWorker.register('/sw.js');
+        await new Promise(r => setTimeout(r, 1000)); // wait for sw to activate
+
+        const { initializeApp, getApps } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+        const { getMessaging, getToken } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js');
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyBZgSYx18WH3CIGN8FsNL-WBbVHlPy9emg",
+          authDomain: "moneyfitness-4c7df.firebaseapp.com",
+          projectId: "moneyfitness-4c7df",
+          storageBucket: "moneyfitness-4c7df.firebasestorage.app",
+          messagingSenderId: "195195441193",
+          appId: "1:195195441193:web:347d2810422043d565cc38"
+        };
+
+        const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+        const messaging = getMessaging(app);
+
+        const fcmToken = await getToken(messaging, {
+          vapidKey: "BCBodeFWXU7rqoTm_Qk9PWHa14C-DwyLqww5A0bG528U4aOITWFwX-LBqJcXJuK6Myf__4Ln4gqi-6-TCWxOvCs",
+          serviceWorkerRegistration: reg
         });
-      });
-    }).then(function(sub) {
-      if (!sub) return;
-      fetch(SUPABASE_URL + "/rest/v1/push_subscriptions", {
-        method: "POST",
-        headers: {
-          "apikey": SUPABASE_ANON_KEY,
-          "Authorization": "Bearer " + authToken,
-          "Content-Type": "application/json",
-          "Prefer": "resolution=merge-duplicates"
-        },
-        body: JSON.stringify({
-          user_id: authUserId,
-          subscription: sub,
-          updated_at: new Date().toISOString()
-        })
-      }).catch(function(e) { console.log("push sub save error", e); });
-    }).catch(function(e) { console.log("push registration error", e); });
+
+        if (!fcmToken) { console.log("[FCM] No token received"); return; }
+        console.log("[FCM] Token:", fcmToken.slice(0, 20) + "...");
+
+        await fetch(SUPABASE_URL + "/rest/v1/push_subscriptions", {
+          method: "POST",
+          headers: {
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": "Bearer " + authToken,
+            "Content-Type": "application/json",
+            "Prefer": "resolution=merge-duplicates,return=minimal"
+          },
+          body: JSON.stringify({
+            user_id: authUserId,
+            subscription: { fcm_token: fcmToken },
+            updated_at: new Date().toISOString()
+          })
+        });
+        console.log("[FCM] Token saved to Supabase");
+      } catch(e) {
+        console.log("[FCM] Error:", e);
+      }
+    }
+    initFCM();
   }, [authUserId, authToken]);
   const [realClients, setRealClients] = useState([]);
   const [myProfile, setMyProfile] = useState(function() {

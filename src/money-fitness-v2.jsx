@@ -233,6 +233,7 @@ const COACH_CODE  = "CMONEY5"; // Clients enter this on signup to link to this c
 const SUPABASE_URL = "https://ebphyejgauwgguwcbmgj.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVicGh5ZWpnYXV3Z2d1d2NibWdqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNjM3NDcsImV4cCI6MjA5NTczOTc0N30.oWMeatIKpuSLfHuxWLReqU9mgaZRQgTQyBtqISuPltY";
 const ONESIGNAL_APP_ID = "18d1d0a8-484d-48eb-a8f2-c577a7a5fd16";
+const VAPID_PUBLIC_KEY = "F13aHInf2a8ZZX3DqRfvdTy91EA2cUaeXoX0ONh6vS6RaNG7QGZkKK1G5alMbKMFXp71svsN-cAidq0wcn7ZIA";
 
 // Lightweight Supabase client (no SDK needed)
 const sb = {
@@ -7977,12 +7978,26 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
   }
 
   function sendPush(userId, title, body) {
-    if (!userId || !authToken) return;
-    fetch(SUPABASE_URL + "/functions/v1/send-push", {
-      method: "POST",
-      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json" },
-      body: JSON.stringify({ external_id: userId, title: title, body: body, url: "/" })
-    }).catch(function() {});
+    if (!userId) return;
+    // First look up the user's OneSignal subscription ID from Supabase
+    fetch(SUPABASE_URL + "/rest/v1/profiles?id=eq." + userId + "&select=onesignal_subscription_id", {
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + (authToken || SUPABASE_ANON_KEY) }
+    }).then(function(r) { return r.json(); }).then(function(rows) {
+      var subId = rows && rows[0] && rows[0].onesignal_subscription_id;
+      if (!subId) return;
+      // Send directly to OneSignal using subscription ID (no API key needed for this endpoint)
+      fetch("https://api.onesignal.com/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Basic " + SUPABASE_ANON_KEY },
+        body: JSON.stringify({
+          app_id: "18d1d0a8-484d-48eb-a8f2-c577a7a5fd16",
+          include_subscription_ids: [subId],
+          headings: { en: title },
+          contents: { en: body },
+          url: "https://moneyfitness.app"
+        })
+      }).catch(function(){});
+    }).catch(function(){});
   }
 
   // -- SHARED ACTIVITY LOGS -------------------------------------

@@ -7791,6 +7791,15 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
         const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
         const messaging = getMessaging(app);
 
+        const { onMessage } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js');
+        onMessage(messaging, (payload) => {
+          const title = payload.notification?.title || payload.data?.title || "MoneyFitness";
+          const body = payload.notification?.body || payload.data?.body || "";
+          if (Notification.permission === "granted") {
+            new Notification(title, { body, icon: "/mf-logo.png" });
+          }
+        });
+
         const fcmToken = await getToken(messaging, {
           vapidKey: "BCBodeFWXU7rqoTm_Qk9PWHa14C-DwyLqww5A0bG528U4aOITWFwX-LBqJcXJuK6Myf__4Ln4gqi-6-TCWxOvCs",
           serviceWorkerRegistration: reg

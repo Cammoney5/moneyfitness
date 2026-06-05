@@ -4620,7 +4620,7 @@ function ActivityScreen({ isCoach, watchDays, activityLogs, onLogsChange, realCl
     }
   }
   var profileInitials = myProfile ? (myProfile.name || "?").split(" ").map(function(w){return w[0];}).join("").toUpperCase().slice(0,2) : "MJ";
-  const myClient = myProfile ? Object.assign({}, CLIENTS[0], { name: myProfile.name || CLIENTS[0].name, avatar: profileInitials, color: myProfile.color || CLIENTS[0].color }) : { name: "...", avatar: "?", color: "#1B8C4E", workedOut: [], streak: 0 };
+  const myClient = myProfile ? { id: authUserId || "", name: myProfile.name || "...", avatar: profileInitials, color: myProfile.color || "#1B8C4E", workedOut: [], streak: 0, checkIns: [], goals: [] } : { id: "", name: "...", avatar: "?", color: "#1B8C4E", workedOut: [], streak: 0, checkIns: [], goals: [] };
 
   const [calViewYear,  setCalViewYear]  = React.useState(TODAY.getFullYear());
   const [calViewMonth, setCalViewMonth] = React.useState(TODAY.getMonth());
@@ -8824,7 +8824,7 @@ if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.stat
             {isCoach ? (
               <CoachInbox messages={messages} handleSendMessage={handleSendMessage} realClients={realClients} viewedCounts={viewedCounts} setViewedCounts={setViewedCounts} />
             ) : (
-              <MessagingInbox clientId={authCoachId || CLIENTS[0].id} clientName={COACH_NAME} clientColor={CLIENTS[0].color} isCoach={false} messages={messages[authCoachId || CLIENTS[0].id] || []} onSend={function(cid, msg) { handleSendMessage(authCoachId || CLIENTS[0].id, msg); }} onOpen={function() { var threadId = authCoachId || CLIENTS[0].id; setViewedCounts(function(prev) { return Object.assign({}, prev, { [threadId]: (messages[threadId] || []).length }); }); }} />
+              <MessagingInbox clientId={authCoachId || ""} clientName={COACH_NAME} clientColor={"#1B8C4E"} isCoach={false} messages={messages[authCoachId || ""] || []} onSend={function(cid, msg) { handleSendMessage(authCoachId || "", msg); }} onOpen={function() { var threadId = authCoachId || ""; setViewedCounts(function(prev) { return Object.assign({}, prev, { [threadId]: (messages[threadId] || []).length }); }); }} />
             )}
           </div>
         )}

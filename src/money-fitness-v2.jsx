@@ -233,7 +233,7 @@ const COACH_CODE  = "CMONEY5"; // Clients enter this on signup to link to this c
 const SUPABASE_URL = "https://ebphyejgauwgguwcbmgj.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVicGh5ZWpnYXV3Z2d1d2NibWdqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNjM3NDcsImV4cCI6MjA5NTczOTc0N30.oWMeatIKpuSLfHuxWLReqU9mgaZRQgTQyBtqISuPltY";
 const ONESIGNAL_APP_ID = "18d1d0a8-484d-48eb-a8f2-c577a7a5fd16";
-const VAPID_PUBLIC_KEY = "F13aHInf2a8ZZX3DqRfvdTy91EA2cUaeXoX0ONh6vS6RaNG7QGZkKK1G5alMbKMFXp71svsN-cAidq0wcn7ZIA";
+const VAPID_PUBLIC_KEY = "BPIDYZgs4SObjFGTEkQ99oOgebgyEqKnhHKyJI4P5iXNsAlun0HyLPDMfeUwRRrTXAVT5dVxmdfgSwrYQTqhiS8";
 
 // Lightweight Supabase client (no SDK needed)
 const sb = {

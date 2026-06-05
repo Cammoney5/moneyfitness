@@ -1,22 +1,26 @@
-importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
+// MoneyFitness Service Worker — handles Web Push notifications
 
-const CACHE_VERSION = 'v2';
+self.addEventListener('push', function(event) {
+  var data = {};
+  try { data = event.data ? event.data.json() : {}; } catch(e) { data = { title: 'MoneyFitness', body: event.data ? event.data.text() : 'New notification' }; }
 
-self.addEventListener('install', function(event) {
-  self.skipWaiting();
-});
+  var title = data.title || 'MoneyFitness';
+  var options = {
+    body: data.body || '',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    data: { url: data.url || 'https://moneyfitness.app' },
+    vibrate: [100, 50, 100],
+  };
 
-self.addEventListener('activate', function(event) {
-  event.waitUntil(
-    caches.keys().then(function(keys) {
-      return Promise.all(keys.filter(function(k) { return k !== CACHE_VERSION; }).map(function(k) { return caches.delete(k); }));
-    }).then(function() { return self.clients.claim(); })
-  );
+  event.waitUntil(self.registration.showNotification(title, options));
 });
 
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
-  event.waitUntil(
-    clients.openWindow(event.notification.data?.url || '/')
-  );
+  var url = event.notification.data && event.notification.data.url ? event.notification.data.url : 'https://moneyfitness.app';
+  event.waitUntil(clients.openWindow(url));
 });
+
+self.addEventListener('install', function() { self.skipWaiting(); });
+self.addEventListener('activate', function(event) { event.waitUntil(clients.claim()); });

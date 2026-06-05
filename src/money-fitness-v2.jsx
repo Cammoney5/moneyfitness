@@ -7723,22 +7723,45 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
   });
   const [isCoach, setIsCoach]   = useState(initCoach !== undefined ? initCoach : true);
 
-  // Link OneSignal external_id to Supabase userId on mount
+  // Link OneSignal external_id and save subscription ID to Supabase
   useEffect(function() {
-    if (!authUserId) return;
-    function tryLogin() {
-      if (window.OneSignal && window.OneSignal.login) {
-        window.OneSignal.login(authUserId).catch(function(){});
+    if (!authUserId || !authToken) return;
+    function tryLinkOneSignal() {
+      if (window.OneSignal) {
+        // Login with external_id
+        if (window.OneSignal.login) {
+          window.OneSignal.login(authUserId).catch(function(){});
+        }
+        // Save subscription ID to Supabase so we can target this user for push
+        try {
+          var subId = window.OneSignal.User && window.OneSignal.User.PushSubscription && window.OneSignal.User.PushSubscription.id;
+          if (subId) {
+            fetch(SUPABASE_URL + "/rest/v1/profiles?id=eq." + authUserId, {
+              method: "PATCH",
+              headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json" },
+              body: JSON.stringify({ onesignal_subscription_id: subId })
+            }).catch(function(){});
+          }
+        } catch(e) {}
       } else if (window.OneSignalDeferred) {
         window.OneSignalDeferred.push(async function(OneSignal) {
-          try { await OneSignal.login(authUserId); } catch(e) {}
+          try {
+            await OneSignal.login(authUserId);
+            var subId = OneSignal.User && OneSignal.User.PushSubscription && OneSignal.User.PushSubscription.id;
+            if (subId) {
+              fetch(SUPABASE_URL + "/rest/v1/profiles?id=eq." + authUserId, {
+                method: "PATCH",
+                headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json" },
+                body: JSON.stringify({ onesignal_subscription_id: subId })
+              }).catch(function(){});
+            }
+          } catch(e) {}
         });
       }
     }
-    tryLogin();
-    // Also try after a short delay in case OneSignal SDK hasn't loaded yet
-    setTimeout(tryLogin, 3000);
-  }, [authUserId]);
+    tryLinkOneSignal();
+    setTimeout(tryLinkOneSignal, 3000);
+  }, [authUserId, authToken]);
 
   // Register service worker and subscribe to push notifications
   useEffect(function() {

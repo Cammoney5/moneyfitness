@@ -7773,7 +7773,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
         const perm = await Notification.requestPermission();
         if (perm !== 'granted') return;
 
-        const reg = await navigator.serviceWorker.register('/sw.js');
+        const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
         await new Promise(r => setTimeout(r, 1000)); // wait for sw to activate
 
         const { initializeApp, getApps } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');

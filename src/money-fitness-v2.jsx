@@ -3863,7 +3863,7 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
         <div>
           <div style={{ color: TEXT3, fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>{greeting.toUpperCase()}</div>
           <div style={{ color: TEXT, fontSize: 22, fontWeight: 900, lineHeight: 1.2 }}>
-            {isCoach ? COACH_NAME : (myProfile ? myProfile.name : CLIENTS[0].name)}
+            {isCoach ? COACH_NAME : (myProfile ? myProfile.name : "...")}
           </div>
         </div>
         {!isCoach && (
@@ -4109,7 +4109,7 @@ function ClientsScreen({ isCoach, selected, setSelected, clientDefaultTab, setCl
     return <ClientDetail client={selected} onBack={function() { setSelected(null); setClientDefaultTab("Progress"); }} isCoach={isCoach} defaultTab={clientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages[selected.id] || []} onSend={onSend} coachProgram={coachProgram} setCoachProgram={setCoachProgram} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} activityLogs={activityLogs} authUserId={authUserId} authToken={authToken} onGoToMainTab={goTo} />;
   }
   if (!isCoach) {
-    var clientProfile = myProfile ? { id: authUserId, name: myProfile.name || "Client", email: myProfile.email || "", avatar: (myProfile.name||"?").split(" ").map(function(w){return w[0];}).join("").toUpperCase().slice(0,2), color: myProfile.color || "#1B8C4E", streak: 0, checkIns: [], goals: [], workedOut: [], isReal: true } : CLIENTS[0];
+    var clientProfile = myProfile ? { id: authUserId, name: myProfile.name || "Client", email: myProfile.email || "", avatar: (myProfile.name||"?").split(" ").map(function(w){return w[0];}).join("").toUpperCase().slice(0,2), color: myProfile.color || "#1B8C4E", streak: 0, checkIns: [], goals: [], workedOut: [], isReal: true } : { id: authUserId || "", name: "...", email: "", avatar: "?", color: "#1B8C4E", streak: 0, checkIns: [], goals: [], workedOut: [], isReal: true };
     return <ClientDetail client={clientProfile} onBack={null} isCoach={false} defaultTab={clientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages[clientProfile.id] || []} onSend={onSend} coachProgram={coachProgram} setCoachProgram={setCoachProgram} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} activityLogs={activityLogs} authUserId={authUserId} authToken={authToken} onGoToMainTab={goTo} />;
   }
   return (
@@ -4620,7 +4620,7 @@ function ActivityScreen({ isCoach, watchDays, activityLogs, onLogsChange, realCl
     }
   }
   var profileInitials = myProfile ? (myProfile.name || "?").split(" ").map(function(w){return w[0];}).join("").toUpperCase().slice(0,2) : "MJ";
-  const myClient = myProfile ? Object.assign({}, CLIENTS[0], { name: myProfile.name || CLIENTS[0].name, avatar: profileInitials, color: myProfile.color || CLIENTS[0].color }) : CLIENTS[0];
+  const myClient = myProfile ? Object.assign({}, CLIENTS[0], { name: myProfile.name || CLIENTS[0].name, avatar: profileInitials, color: myProfile.color || CLIENTS[0].color }) : { name: "...", avatar: "?", color: "#1B8C4E", workedOut: [], streak: 0 };
 
   const [calViewYear,  setCalViewYear]  = React.useState(TODAY.getFullYear());
   const [calViewMonth, setCalViewMonth] = React.useState(TODAY.getMonth());
@@ -6191,7 +6191,7 @@ function CoachCodeCard() {
 function SettingsMenu({ isCoach, goTo, tab, onLogout, onReplayTutorial, notifSettings, setNotifSettings, myProfile }) {
   const [open, setOpen]           = useState(false);
   const [view, setView]           = useState("menu");
-  const [name, setName]           = useState(isCoach ? COACH_NAME : (myProfile ? myProfile.name : CLIENTS[0].name));
+  const [name, setName]           = useState(isCoach ? COACH_NAME : (myProfile ? myProfile.name : "..."));
   const [birthday, setBirthday]   = useState(isCoach ? "1988-04-14" : (myProfile && myProfile.birthday ? myProfile.birthday : ""));
   const [email, setEmail]         = useState(isCoach ? "cameron@moneyfitness.com" : (myProfile ? myProfile.email : ""));
   useEffect(function() {
@@ -6254,7 +6254,7 @@ function SettingsMenu({ isCoach, goTo, tab, onLogout, onReplayTutorial, notifSet
           {view === "menu" && (
             <div>
               <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid "+SURFACE2 }}>
-                <div style={{ color: TEXT, fontSize: 13, fontWeight: 700 }}>{isCoach ? COACH_NAME : (myProfile ? myProfile.name : CLIENTS[0].name)}</div>
+                <div style={{ color: TEXT, fontSize: 13, fontWeight: 700 }}>{isCoach ? COACH_NAME : (myProfile ? myProfile.name : "...")}</div>
                 <div style={{ color: TEXT3, fontSize: 11, marginTop: 2 }}>{isCoach ? "Coach" : "Client"}</div>
               </div>
               {menuItems.map(function(item) {

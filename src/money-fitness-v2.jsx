@@ -7814,7 +7814,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
             "apikey": SUPABASE_ANON_KEY,
             "Authorization": "Bearer " + authToken,
             "Content-Type": "application/json",
-            "Prefer": "resolution=merge-duplicates,return=minimal"
+            "Prefer": "resolution=merge-duplicates"
           },
           body: JSON.stringify({
             user_id: authUserId,
@@ -8171,7 +8171,7 @@ if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.stat
     if (existingEntries.length > 0) {
       ops.push(fetch(SUPABASE_URL + "/rest/v1/activity_logs", {
         method: "POST",
-        headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates,return=minimal" },
+        headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates" },
         body: JSON.stringify(existingEntries)
       }).then(function(r) { if (!r.ok) r.text().then(function(t) { console.log("existing entry save error:", r.status, t); }); }));
     }
@@ -8694,7 +8694,7 @@ if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.stat
     if (newStatus) {
       fetch(SUPABASE_URL + "/rest/v1/plan_completions", {
         method: "POST",
-        headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates,return=minimal" },
+        headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates" },
         body: JSON.stringify({ client_id: authUserId, plan_date: dateStr, status: newStatus })
       }).catch(function(){});
     } else {

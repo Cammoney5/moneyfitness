@@ -10,18 +10,7 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/mf-logo.png" />
     <title>MoneyFitness</title>
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-    <script>
-      window.OneSignalDeferred = window.OneSignalDeferred || [];
-      OneSignalDeferred.push(async function(OneSignal) {
-        await OneSignal.init({
-          appId: "18d1d0a8-484d-48eb-a8f2-c577a7a5fd16",
-          serviceWorkerPath: "/sw.js",
-          notifyButton: { enable: false },
-          allowLocalhostAsSecureOrigin: true,
-        });
-      });
-    </script>
+
   </head>
   <body>
     <div id="root"></div>

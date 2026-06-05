@@ -8815,6 +8815,24 @@ if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.stat
   );
 }
 
+// Set OneSignal external ID on page load if we have a session
+(function() {
+  try {
+    var s = localStorage.getItem("mf_session");
+    if (s) {
+      var session = JSON.parse(s);
+      if (session && session.userId) {
+        window.__mf_user_id = session.userId;
+        if (window.OneSignalDeferred) {
+          window.OneSignalDeferred.push(async function(OneSignal) {
+            try { await OneSignal.login(session.userId); } catch(e) {}
+          });
+        }
+      }
+    }
+  } catch(e) {}
+})();
+
 // Handle Strava OAuth redirect — runs immediately on page load before any component mounts
 (function() {
   try {

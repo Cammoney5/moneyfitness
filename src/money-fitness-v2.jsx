@@ -7764,7 +7764,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
 
   // Load own profile (client only)
   useEffect(function() {
-    if (!authToken || !authUserId || initCoach) return;
+    if (!authToken || !authUserId) return;
     fetch(SUPABASE_URL + "/rest/v1/profiles?id=eq." + authUserId + "&select=*", {
       headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
     }).then(function(r) { return r.json(); }).then(function(rows) {

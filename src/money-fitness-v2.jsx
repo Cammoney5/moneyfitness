@@ -8457,10 +8457,10 @@ if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.stat
         }).catch(function() {});
       }).catch(function(e) { console.log("message save error", e); });
     }
-    // Notify coach when a client sends a message, check-in, or media
-    if (msg.from === "client") {
-      var client = CLIENTS.find(function(c) { return c.id === clientId; });
-      var clientName = client ? client.name : "A client";
+    // Notify coach when a client sends a message, check-in, or media (only show on coach's device)
+    if (msg.from === "client" && isCoach) {
+      var clientFromReal = realClients && realClients.find(function(c) { return c.id === clientId; });
+      var clientName = clientFromReal ? clientFromReal.name : "A client";
       var notifTitle, notifBody;
       if (msg.type === "checkin_response") {
         notifTitle = clientName + " submitted their weekly check-in";
@@ -8501,6 +8501,12 @@ if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.stat
         if (notifSettings.message) {
           addNotification({ id: Date.now(), type: "message", title: notifTitle, body: notifBody, time: "Just now", read: false, clientId: clientId });
         }
+      }
+    }
+    // Notify client when coach sends a message (only show on client's device)
+    if (msg.from === "coach" && !isCoach) {
+      if (notifSettings.message) {
+        addNotification({ id: Date.now(), type: "message", title: "New message from Coach Cameron", body: msg.text || "Sent you a message", time: "Just now", read: false, clientId: clientId });
       }
     }
   }

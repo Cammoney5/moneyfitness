@@ -7760,7 +7760,10 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
     }).catch(function(e) { console.log("push registration error", e); });
   }, [authUserId, authToken]);
   const [realClients, setRealClients] = useState([]);
-  const [myProfile, setMyProfile] = useState(null);
+  const [myProfile, setMyProfile] = useState(function() {
+    try { var s = localStorage.getItem("mf_session"); if (s) { var p = JSON.parse(s); if (p && p.profileName) return { name: p.profileName, email: p.email || "", color: p.color || "#1B8C4E" }; } } catch(e) {}
+    return null;
+  });
 
   // Load own profile (client only)
   useEffect(function() {
@@ -7768,7 +7771,10 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
     fetch(SUPABASE_URL + "/rest/v1/profiles?id=eq." + authUserId + "&select=*", {
       headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
     }).then(function(r) { return r.json(); }).then(function(rows) {
-      if (Array.isArray(rows) && rows.length > 0) setMyProfile(rows[0]);
+      if (Array.isArray(rows) && rows.length > 0) {
+        setMyProfile(rows[0]);
+        try { var s = localStorage.getItem("mf_session"); var sess = s ? JSON.parse(s) : {}; sess.profileName = rows[0].name; sess.email = rows[0].email; sess.color = rows[0].color; localStorage.setItem("mf_session", JSON.stringify(sess)); } catch(e) {}
+      }
     }).catch(function() {});
   }, [authUserId, authToken]);
 
@@ -8835,6 +8841,34 @@ export default function App() {
   const [authCoachId, setAuthCoachId] = useState(stored ? stored.coachId : null);
   const [authRefreshToken, setAuthRefreshToken] = useState(stored ? (stored.refreshToken || null) : null);
   const wrapStyle = { width: "100%", maxWidth: 430, margin: "0 auto", height: "100vh", display: "flex", flexDirection: "column", background: BG, overflow: "hidden", fontFamily: "system-ui,sans-serif" };
+
+  // Refresh token immediately on load if we have a refresh token (handles case where app was closed and token expired)
+  useEffect(function() {
+    if (!authRefreshToken) return;
+    async function refreshNow() {
+      try {
+        var r = await fetch(SUPABASE_URL + "/auth/v1/token?grant_type=refresh_token", {
+          method: "POST",
+          headers: { "apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh_token: authRefreshToken })
+        });
+        var data = await r.json();
+        if (data.access_token) {
+          setAuthToken(data.access_token);
+          var newRefresh = data.refresh_token || authRefreshToken;
+          setAuthRefreshToken(newRefresh);
+          try {
+            var s = localStorage.getItem("mf_session");
+            var session = s ? JSON.parse(s) : {};
+            session.token = data.access_token;
+            session.refreshToken = newRefresh;
+            localStorage.setItem("mf_session", JSON.stringify(session));
+          } catch(e) {}
+        }
+      } catch(e) {}
+    }
+    refreshNow();
+  }, []);
 
   // Auto-refresh Supabase token every 50 minutes to prevent expiry-induced fallback to mock data
   useEffect(function() {

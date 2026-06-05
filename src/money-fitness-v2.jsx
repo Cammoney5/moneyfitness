@@ -7808,13 +7808,19 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
         if (!fcmToken) { console.log("[FCM] No token received"); return; }
         console.log("[FCM] Token:", fcmToken.slice(0, 20) + "...");
 
+        await fetch(SUPABASE_URL + "/rest/v1/push_subscriptions?user_id=eq." + authUserId, {
+          method: "DELETE",
+          headers: {
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": "Bearer " + authToken,
+          }
+        });
         await fetch(SUPABASE_URL + "/rest/v1/push_subscriptions", {
           method: "POST",
           headers: {
             "apikey": SUPABASE_ANON_KEY,
             "Authorization": "Bearer " + authToken,
             "Content-Type": "application/json",
-            "Prefer": "resolution=merge-duplicates"
           },
           body: JSON.stringify({
             user_id: authUserId,

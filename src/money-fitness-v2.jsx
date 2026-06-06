@@ -8205,7 +8205,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
     if (!authUserId || !authToken) return;
 
     function doReload() {
-      fetch(SUPABASE_URL + "/rest/v1/activity_logs?client_id=eq." + authUserId + "&order=logged_date.desc&limit=200", {
+      fetch(SUPABASE_URL + "/rest/v1/activity_logs?client_id=eq." + authUserId + "&order=logged_date.desc&limit=2000", {
         headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
       }).then(function(r2) { return r2.json(); }).then(function(rows) {
         if (!Array.isArray(rows)) return;

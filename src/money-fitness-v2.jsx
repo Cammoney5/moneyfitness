@@ -7852,7 +7852,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
         try { var s = localStorage.getItem("mf_session"); var sess = s ? JSON.parse(s) : {}; sess.profileName = rows[0].name; sess.email = rows[0].email; sess.color = rows[0].color; localStorage.setItem("mf_session", JSON.stringify(sess)); } catch(e) {}
       }
     }).catch(function() {});
-  }, [authUserId, authToken]);
+  }, [authUserId, authToken, refreshTick]);
 
   // Load real clients from Supabase (coach only)
   useEffect(function() {
@@ -7935,6 +7935,19 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
   });
   const [messages, setMessages] = useState({});
   const [viewedCounts, setViewedCounts] = useState({});
+
+  // Refresh data when app comes back into focus (e.g. switching from background on iPhone)
+  const [refreshTick, setRefreshTick] = React.useState(0);
+  useEffect(function() {
+    function handleVisibility() {
+      if (document.visibilityState === "visible") {
+        setRefreshTick(function(t) { return t + 1; });
+        fetchMessages();
+      }
+    }
+    document.addEventListener("visibilitychange", handleVisibility);
+    return function() { document.removeEventListener("visibilitychange", handleVisibility); };
+  }, []);
 
   // Load messages from Supabase + poll every 5 seconds
   function fetchMessages() {

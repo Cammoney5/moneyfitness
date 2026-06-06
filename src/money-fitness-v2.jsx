@@ -4169,15 +4169,40 @@ function LibraryScreen({ isCoach, favorites, toggleFavorite }) {
   const [modal, setModal]       = useState(null);
   const [editing, setEditing]   = useState(null);
   const [editUrl, setEditUrl]   = useState("");
-  const [lib, setLib]           = useState(function() {
-    try { var s = localStorage.getItem("mf_exercise_lib"); if (s) return JSON.parse(s); } catch(e) {}
-    return VIDEO_LIBRARY;
-  });
+  const [lib, setLib]           = useState(VIDEO_LIBRARY);
   const [showFavs, setShowFavs] = useState(false);
-  const [libCats, setLibCats]   = useState(function() {
-    try { var s = localStorage.getItem("mf_lib_cats"); if (s) return JSON.parse(s); } catch(e) {}
-    return DEFAULT_LIB_CATS;
-  });
+  const [libCats, setLibCats]   = useState(DEFAULT_LIB_CATS);
+  const [libLoaded, setLibLoaded] = useState(false);
+
+  // Load library from Supabase
+  useEffect(function() {
+    if (!authToken) return;
+    fetch(SUPABASE_URL + "/rest/v1/exercise_library?select=*&order=name.asc", {
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+    }).then(function(r) { return r.json(); }).then(function(rows) {
+      if (Array.isArray(rows) && rows.length > 0) {
+        setLib(rows);
+        setLibLoaded(true);
+      } else if (Array.isArray(rows) && rows.length === 0) {
+        // First time - seed with default library
+        if (isCoach) {
+          var body = VIDEO_LIBRARY.map(function(v) { return { id: v.id, name: v.name, cat: v.cat, cats: [v.cat], url: v.url || "", cues: v.cues || [] }; });
+          fetch(SUPABASE_URL + "/rest/v1/exercise_library", {
+            method: "POST",
+            headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates" },
+            body: JSON.stringify(body)
+          });
+        }
+        setLibLoaded(true);
+      }
+    }).catch(function() { setLibLoaded(true); });
+
+    fetch(SUPABASE_URL + "/rest/v1/lib_cats?select=cats&limit=1", {
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+    }).then(function(r) { return r.json(); }).then(function(rows) {
+      if (Array.isArray(rows) && rows.length > 0 && rows[0].cats) setLibCats(rows[0].cats);
+    }).catch(function() {});
+  }, [authToken]);
   const [showAddEx, setShowAddEx] = useState(false);
   const [showAddTag, setShowAddTag] = useState(false);
   const [newExName, setNewExName] = useState("");
@@ -4185,28 +4210,51 @@ function LibraryScreen({ isCoach, favorites, toggleFavorite }) {
   const [newExUrl, setNewExUrl]   = useState("");
   const [newTagName, setNewTagName] = useState("");
 
-  // Persist library to localStorage
+  // Save library changes to Supabase (coach only)
   useEffect(function() {
-    try { localStorage.setItem("mf_exercise_lib", JSON.stringify(lib)); } catch(e) {}
+    if (!authToken || !isCoach || !libLoaded) return;
+    // debounce
+    var t = setTimeout(function() {
+      lib.forEach(function(v) {
+        fetch(SUPABASE_URL + "/rest/v1/exercise_library?id=eq." + v.id, {
+          method: "PATCH",
+          headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json" },
+          body: JSON.stringify({ name: v.name, cat: v.cat, cats: v.cats || [v.cat], url: v.url || "", cues: v.cues || [], updated_at: new Date().toISOString() })
+        });
+      });
+    }, 1000);
+    return function() { clearTimeout(t); };
   }, [lib]);
-  useEffect(function() {
-    try { localStorage.setItem("mf_lib_cats", JSON.stringify(libCats)); } catch(e) {}
-  }, [libCats]);
 
   function addExercise() {
     if (!newExName.trim()) return;
-    var newEx = { id: "custom-" + Date.now(), name: newExName.trim(), cat: newExCat, url: newExUrl.trim() };
+    var newEx = { id: "custom-" + Date.now(), name: newExName.trim(), cat: newExCat, cats: [newExCat], url: newExUrl.trim(), cues: [] };
     setLib(function(prev) { return prev.concat([newEx]); });
+    fetch(SUPABASE_URL + "/rest/v1/exercise_library", {
+      method: "POST",
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json" },
+      body: JSON.stringify({ id: newEx.id, name: newEx.name, cat: newEx.cat, cats: newEx.cats, url: newEx.url, cues: [] })
+    });
     setNewExName(""); setNewExUrl(""); setShowAddEx(false);
   }
   function addTag() {
     var t = newTagName.trim();
     if (!t || libCats.indexOf(t) !== -1) return;
-    setLibCats(function(prev) { return prev.concat([t]); });
+    var newCats = libCats.concat([t]);
+    setLibCats(newCats);
+    fetch(SUPABASE_URL + "/rest/v1/lib_cats", {
+      method: "POST",
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates" },
+      body: JSON.stringify({ id: 1, cats: newCats })
+    });
     setNewTagName(""); setShowAddTag(false);
   }
   function removeExercise(id) {
     setLib(function(prev) { return prev.filter(function(v) { return v.id !== id; }); });
+    fetch(SUPABASE_URL + "/rest/v1/exercise_library?id=eq." + id, {
+      method: "DELETE",
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+    });
   }
 
   const favIds = Object.keys(favorites || {}).filter(function(k) { return favorites[k]; });

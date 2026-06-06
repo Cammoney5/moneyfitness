@@ -7939,7 +7939,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
   const [viewedCounts, setViewedCounts] = useState({});
 
   // Refresh data when app comes back into focus (e.g. switching from background on iPhone)
-  const [refreshTick, setRefreshTick] = React.useState(0);
+  const [refreshTick, setRefreshTick] = useState(0);
   useEffect(function() {
     function handleVisibility() {
       if (document.visibilityState === "visible") {

@@ -5884,7 +5884,8 @@ function AuthFlow({ screen, setScreen, onAuth }) {
       await sb.insertProfile(token, profile);
 
       // 4. Done
-      onAuth(role === "coach", name.trim(), token, userId, coachId, null);
+      const COACH_USER_ID = "0c0722af-1b21-48f5-8b70-45f573cac8ca";
+      onAuth(userId === COACH_USER_ID && role === "coach", name.trim(), token, userId, coachId, null);
     } catch(err) {
       setAuthError("Something went wrong — please try again");
     }
@@ -5914,7 +5915,8 @@ function AuthFlow({ screen, setScreen, onAuth }) {
       var profile = await sb.getProfile(token, userId);
       if (!profile) { setAuthError("Account not found — please sign up first"); setLoading(false); return; }
 
-      onAuth(profile.role === "coach", profile.name, token, userId, profile.coach_id, refreshToken);
+      const COACH_USER_ID = "0c0722af-1b21-48f5-8b70-45f573cac8ca";
+      onAuth(userId === COACH_USER_ID || profile.role === "coach", profile.name, token, userId, profile.coach_id, refreshToken);
     } catch(err) {
       setAuthError("Something went wrong — please try again");
     }

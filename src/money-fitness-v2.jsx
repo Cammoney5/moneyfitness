@@ -4373,6 +4373,26 @@ function LibraryScreen({ isCoach, favorites, toggleFavorite }) {
                     </div>
                   </div>
                   <div style={{ marginBottom: 12 }}>
+                    <div style={{ color: TEXT2, fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Category Tags</div>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {libCats.filter(function(c) { return c !== "All"; }).map(function(c) {
+                        var cats = Array.isArray(v.cats) ? v.cats : (v.cat ? [v.cat] : []);
+                        var active = cats.includes(c);
+                        return (
+                          <button key={c} onClick={function() {
+                            setLib(lib.map(function(x) {
+                              if (x.id !== v.id) return x;
+                              var cur = Array.isArray(x.cats) ? x.cats.slice() : (x.cat ? [x.cat] : []);
+                              if (cur.includes(c)) { cur = cur.filter(function(t) { return t !== c; }); }
+                              else { cur.push(c); }
+                              return Object.assign({}, x, { cats: cur, cat: cur[0] || x.cat });
+                            }));
+                          }} style={{ padding: "6px 14px", borderRadius: 99, background: active ? ORANGE : SURFACE, border: "1.5px solid "+(active ? ORANGE : BORDER), color: active ? "#fff" : TEXT2, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{c}</button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: 12 }}>
                     <div style={{ color: TEXT2, fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Key Cues</div>
                     {(v.cues || []).map(function(cue, ci) {
                       return (

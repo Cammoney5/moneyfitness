@@ -5387,7 +5387,7 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
 
   ["total","run","workout","bike","swim","maintenance","other"].forEach(function(type) {
     var weekCounts = [];
-    var thisWeekStart = new Date(now2); thisWeekStart.setDate(now2.getDate() - now2.getDay()); thisWeekStart.setHours(0,0,0,0);
+    var thisWeekStart = new Date(now2); var _dow = now2.getDay(); thisWeekStart.setDate(now2.getDate() - (_dow === 0 ? 6 : _dow - 1)); thisWeekStart.setHours(0,0,0,0);
     for (var w = 11; w >= 0; w--) {
       var weekStart2 = new Date(thisWeekStart); weekStart2.setDate(thisWeekStart.getDate() - w*7);
       var weekEnd2 = new Date(weekStart2); weekEnd2.setDate(weekStart2.getDate() + 6); weekEnd2.setHours(23,59,59,999);

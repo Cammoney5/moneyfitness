@@ -7717,6 +7717,7 @@ function CoachInbox({ messages, handleSendMessage, realClients, viewedCounts, se
 }
 
 function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, authCoachId }) {
+  const [refreshTick, setRefreshTick] = useState(0);
   const [tab, setTab] = useState(function() {
     try {
       var startTab = localStorage.getItem("mf_start_tab");
@@ -7938,8 +7939,7 @@ function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, au
   const [messages, setMessages] = useState({});
   const [viewedCounts, setViewedCounts] = useState({});
 
-  // Refresh data when app comes back into focus (e.g. switching from background on iPhone)
-  const [refreshTick, setRefreshTick] = useState(0);
+  // Refresh data when app comes back into focus
   useEffect(function() {
     function handleVisibility() {
       if (document.visibilityState === "visible") {

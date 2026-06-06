@@ -6005,7 +6005,7 @@ function AuthFlow({ screen, setScreen, onAuth }) {
         </div>
 
         <div style={{ textAlign: "center", marginTop: 16 }}>
-          <span onClick={function(){ setScreen("coach-signup"); setRole("coach"); }} style={{ color: "rgba(255,255,255,0.25)", fontSize: 12, cursor: "pointer" }}>Coach sign up →</span>
+          <span style={{ display: "none" }}>Coach sign up →</span>
         </div>
       </div>
     );

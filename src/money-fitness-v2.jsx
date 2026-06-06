@@ -4169,15 +4169,29 @@ function LibraryScreen({ isCoach, favorites, toggleFavorite }) {
   const [modal, setModal]       = useState(null);
   const [editing, setEditing]   = useState(null);
   const [editUrl, setEditUrl]   = useState("");
-  const [lib, setLib]           = useState(VIDEO_LIBRARY);
+  const [lib, setLib]           = useState(function() {
+    try { var s = localStorage.getItem("mf_exercise_lib"); if (s) return JSON.parse(s); } catch(e) {}
+    return VIDEO_LIBRARY;
+  });
   const [showFavs, setShowFavs] = useState(false);
-  const [libCats, setLibCats]   = useState(DEFAULT_LIB_CATS);
+  const [libCats, setLibCats]   = useState(function() {
+    try { var s = localStorage.getItem("mf_lib_cats"); if (s) return JSON.parse(s); } catch(e) {}
+    return DEFAULT_LIB_CATS;
+  });
   const [showAddEx, setShowAddEx] = useState(false);
   const [showAddTag, setShowAddTag] = useState(false);
   const [newExName, setNewExName] = useState("");
   const [newExCat, setNewExCat]   = useState("Chest");
   const [newExUrl, setNewExUrl]   = useState("");
   const [newTagName, setNewTagName] = useState("");
+
+  // Persist library to localStorage
+  useEffect(function() {
+    try { localStorage.setItem("mf_exercise_lib", JSON.stringify(lib)); } catch(e) {}
+  }, [lib]);
+  useEffect(function() {
+    try { localStorage.setItem("mf_lib_cats", JSON.stringify(libCats)); } catch(e) {}
+  }, [libCats]);
 
   function addExercise() {
     if (!newExName.trim()) return;

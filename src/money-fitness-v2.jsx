@@ -482,9 +482,10 @@ function AddActivityForm({ onAdd, onCancel }) {
 }
 
 
-function WorkoutLogModal({ day, activities, accentColor, onSave, onClose, readOnly }) {
+function WorkoutLogModal({ day, activities, accentColor, onSave, onClose, readOnly, viewMonth, viewYear }) {
   const c = accentColor || ORANGE;
-  const monthShort = TODAY.toLocaleString("default", { month: "short" });
+  const _modalDate = new Date(viewYear !== undefined ? viewYear : TODAY.getFullYear(), viewMonth !== undefined ? viewMonth : TODAY.getMonth(), day);
+  const monthShort = _modalDate.toLocaleString("default", { month: "short" });
   const [list, setList]       = useState(activities ? activities.slice() : []);
   const [adding, setAdding]   = useState(list.length === 0 && !readOnly);
 
@@ -695,7 +696,7 @@ function CalHeatmap({ workedOut, color, isEditable, watchDays, sharedLogs, onLog
   return (
     <div>
       {modalDay && (
-        <WorkoutLogModal day={modalDay} activities={logs[modalDay] || []} accentColor={c} onSave={handleSave} onClose={function() { setModalDay(null); }} readOnly={!isEditable} />
+        <WorkoutLogModal day={modalDay} activities={logs[modalDay] || []} accentColor={c} onSave={handleSave} onClose={function() { setModalDay(null); }} readOnly={!isEditable} viewMonth={viewMonth} viewYear={viewYear} />
       )}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
         <button onClick={prevMonth} style={{ width: 34, height: 34, borderRadius: 10, background: SURFACE, border: "1.5px solid "+BORDER, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: TEXT2, fontWeight: 700 }}>

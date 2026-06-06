@@ -5597,7 +5597,7 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
               return (
                 <button key={key} onClick={function() { setActiveType(key); }}
                   style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 99, background: active ? t.color : CARD, border: "1.5px solid "+(active ? t.color : BORDER), cursor: "pointer", flexShrink: 0, transition: "all 0.2s" }}>
-                  <div style={{ fontSize: 14, lineHeight: 1 }} dangerouslySetInnerHTML={{ __html: TREND_ICONS[key] || "" }} />
+                  <div style={{ fontSize: 14, lineHeight: 1, color: active ? "#fff" : TEXT }} dangerouslySetInnerHTML={{ __html: TREND_ICONS[key] || "" }} />
                   <span style={{ color: active ? "#fff" : TEXT2, fontSize: 12, fontWeight: active ? 700 : 500 }}>{t.label}</span>
                 </button>
               );

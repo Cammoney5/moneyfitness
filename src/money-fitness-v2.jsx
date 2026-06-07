@@ -9027,7 +9027,7 @@ if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.stat
   } catch(e) {}
 })();
 
-// Handle Strava OAuth redirect — runs immediately on page load before any component mounts
+// Handle Strava OAuth redirect and password reset — runs immediately on page load
 (function() {
   try {
     var params = new URLSearchParams(window.location.search);
@@ -9038,6 +9038,16 @@ if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.stat
     } else if (params.get("strava") === "error") {
       localStorage.setItem("mf_strava_error", "1");
       window.history.replaceState({}, "", window.location.pathname);
+    }
+    // Handle Supabase password reset link (token in URL hash)
+    var hash = window.location.hash;
+    if (hash && hash.includes("type=recovery")) {
+      var hashParams = new URLSearchParams(hash.replace("#", ""));
+      var accessToken = hashParams.get("access_token");
+      if (accessToken) {
+        localStorage.setItem("mf_reset_token", accessToken);
+        window.history.replaceState({}, "", window.location.pathname);
+      }
     }
   } catch(e) {}
 })();
@@ -9052,6 +9062,10 @@ export default function App() {
   const [authUserId, setAuthUserId] = useState(stored ? stored.userId : null);
   const [authCoachId, setAuthCoachId] = useState(stored ? stored.coachId : null);
   const [authRefreshToken, setAuthRefreshToken] = useState(stored ? (stored.refreshToken || null) : null);
+  const [resetToken, setResetToken] = useState(function() { try { var t = localStorage.getItem("mf_reset_token"); if (t) { localStorage.removeItem("mf_reset_token"); return t; } } catch(e) {} return null; });
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetDone, setResetDone] = useState(false);
+  const [resetError, setResetError] = useState("");
   const wrapStyle = { width: "100%", maxWidth: 430, margin: "0 auto", height: "100vh", display: "flex", flexDirection: "column", background: BG, overflow: "hidden", fontFamily: "system-ui,sans-serif" };
 
   // Refresh token immediately on load if we have a refresh token (handles case where app was closed and token expired)
@@ -9120,6 +9134,40 @@ export default function App() {
     setAuthUserId(null);
     setAuthCoachId(null);
     setAuthRefreshToken(null);
+  }
+
+  if (resetToken) {
+    return (
+      <div style={wrapStyle}>
+        <style>{GLOBAL_STYLES}</style>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 28px" }}>
+          <div style={{ color: "#1B8C4E", fontSize: 28, fontWeight: 900, marginBottom: 8 }}>MoneyFitness</div>
+          <div style={{ color: "#0A1A0F", fontSize: 22, fontWeight: 800, marginBottom: 24 }}>{resetDone ? "Password Updated!" : "Set New Password"}</div>
+          {resetDone ? (
+            <div style={{ textAlign: "center" }}>
+              <div style={{ color: "#555", fontSize: 14, marginBottom: 24 }}>Your password has been updated. You can now log in.</div>
+              <button onClick={function() { setResetToken(null); }} style={{ background: "#1B8C4E", color: "#fff", border: "none", borderRadius: 12, padding: "14px 32px", fontSize: 16, fontWeight: 700, cursor: "pointer" }}>Go to Login</button>
+            </div>
+          ) : (
+            <div style={{ width: "100%" }}>
+              <input type="password" value={resetPassword} onChange={function(e) { setResetPassword(e.target.value); }} placeholder="New password" style={{ width: "100%", padding: "14px 16px", borderRadius: 12, border: "1.5px solid #ddd", fontSize: 16, marginBottom: 12, boxSizing: "border-box", outline: "none" }} />
+              {resetError && <div style={{ color: "#E05252", fontSize: 13, marginBottom: 12 }}>{resetError}</div>}
+              <button onClick={async function() {
+                if (resetPassword.length < 6) { setResetError("Password must be at least 6 characters"); return; }
+                setResetError("");
+                var r = await fetch(SUPABASE_URL + "/auth/v1/user", {
+                  method: "PUT",
+                  headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + resetToken, "Content-Type": "application/json" },
+                  body: JSON.stringify({ password: resetPassword })
+                });
+                if (r.ok) { setResetDone(true); }
+                else { var d = await r.json(); setResetError(d.message || "Failed to update password"); }
+              }} style={{ width: "100%", background: "#1B8C4E", color: "#fff", border: "none", borderRadius: 12, padding: "14px", fontSize: 16, fontWeight: 700, cursor: "pointer" }}>Update Password</button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
   }
 
   if (!authed) {

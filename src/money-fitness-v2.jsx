@@ -4491,7 +4491,36 @@ function LibraryScreen({ isCoach, favorites, toggleFavorite, authToken, authUser
                       }} style={{ flex: 1, padding: "8px", borderRadius: 8, background: ORANGE, border: "none", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Save Cues</button>
                     </div>
                   </div>
-                  <div style={{ color: TEXT2, fontSize: 12, fontWeight: 600, marginBottom: 8 }}>YouTube URL</div>
+                  <div style={{ color: TEXT2, fontSize: 12, fontWeight: 600, marginBottom: 8 }}>Video</div>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                    <label style={{ flex: 1, padding: 11, borderRadius: 10, background: "#1B8C4E", border: "none", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
+                      Upload Video
+                      <input type="file" accept="video/*" style={{ display: "none" }} onChange={async function(e) {
+                        var file = e.target.files && e.target.files[0];
+                        if (!file) return;
+                        var uploadBtn = e.target.parentElement;
+                        uploadBtn.textContent = "Uploading...";
+                        var fd = new FormData();
+                        fd.append("file", file);
+                        try {
+                          var res = await fetch(SUPABASE_URL + "/functions/v1/upload-video", { method: "POST", body: fd });
+                          var data = await res.json();
+                          if (data.playbackUrl) {
+                            setEditUrl(data.playbackUrl);
+                            setLib(lib.map(function(x) { return x.id === v.id ? Object.assign({}, x, { url: data.playbackUrl }) : x; }));
+                            uploadBtn.textContent = "Upload Video";
+                          } else {
+                            alert("Upload failed: " + (data.error || "unknown error"));
+                            uploadBtn.textContent = "Upload Video";
+                          }
+                        } catch(err) {
+                          alert("Upload error: " + err);
+                          uploadBtn.textContent = "Upload Video";
+                        }
+                      }} />
+                    </label>
+                  </div>
+                  <div style={{ color: TEXT2, fontSize: 11, marginBottom: 6 }}>Or paste a YouTube URL:</div>
                   <input value={editUrl} onChange={function(e) { setEditUrl(e.target.value); }} placeholder="https://www.youtube.com/watch?v=..." style={{ width: "100%", background: CARD, border: "1.5px solid "+BORDER, borderRadius: 10, padding: "10px 12px", color: TEXT, fontSize: 12, outline: "none", boxSizing: "border-box", marginBottom: 10 }} />
                   <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                     <button onClick={function() { saveUrl(v.id); }} style={{ flex: 1, padding: 11, borderRadius: 10, background: ORANGE, border: "none", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Save URL</button>

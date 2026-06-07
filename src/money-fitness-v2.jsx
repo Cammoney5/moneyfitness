@@ -3966,7 +3966,7 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
         <div>
           {/* Client card 1 -- Program */}
           <div style={{ position: "relative", overflow: "hidden", marginBottom: 3 }}>
-            <img src="https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=600&q=80" alt="" style={{ width: "100%", height: 340, objectFit: "cover", display: "block" }} />
+            <img src="/home-program-bg.jpg" alt="" style={{ width: "100%", height: 340, objectFit: "cover", display: "block" }} />
             <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(10,26,15,0.2) 0%, rgba(10,26,15,0.85) 55%, #0A1A0F 100%)" }} />
             <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "24px 20px 28px" }}>
               <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 700, letterSpacing: 2, marginBottom: 8 }}>THIS WEEK</div>

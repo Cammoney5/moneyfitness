@@ -1,8 +1,8 @@
 // upload-video: Proxies video uploads to Cloudflare Stream
 // Deploy: supabase functions deploy upload-video --project-ref ebphyejgauwgguwcbmgj --no-verify-jwt
 
-const CF_ACCOUNT_ID = "dc718cc831d7ff667499424986c81a61";
-const CF_API_TOKEN = "cfut_QbOZUeJ7tOAxf56ZPU74PpayyLRX2E9CKWYUfkXkd6920b14";
+const CF_ACCOUNT_ID = Deno.env.get("CF_ACCOUNT_ID") || "";
+const CF_API_TOKEN = Deno.env.get("CF_API_TOKEN") || "";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

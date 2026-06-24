@@ -2900,8 +2900,8 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
                           onBlur={function(e){ var w=e.target.value; if(w&&authUserId&&authToken){var today=new Date().toISOString().split("T")[0];fetch(SUPABASE_URL+"/rest/v1/workout_history",{method:"POST",headers:{"apikey":SUPABASE_ANON_KEY,"Authorization":"Bearer "+authToken,"Content-Type":"application/json"},body:JSON.stringify({client_id:authUserId,exercise_name:ex.name,weight:w,logged_date:today})}).catch(function(){});} }}
                           style={{width:52,background:"#F0F5F2",border:"1.5px solid #E8E4DE",borderRadius:8,padding:"4px 6px",fontSize:11,fontWeight:600,color:"#0A1A0F",textAlign:"center",outline:"none",flexShrink:0}}
                         />
-                        <button onClick={function(e){e.stopPropagation();loadExHist(ex.name);}} style={{background:"#F0F5F2",border:"1.5px solid #D0E6D8",borderRadius:"50%",width:30,height:30,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0,flexShrink:0,WebkitTapHighlightColor:"transparent"}}>
-                          <span style={{color:"#1B8C4E",fontSize:12,fontWeight:800,lineHeight:1}}>i</span>
+                        <button onClick={function(e){e.stopPropagation();loadExHist(ex.name);}} style={{background:"#F0F5F2",border:"1.5px solid #D0E6D8",borderRadius:"50%",width:22,height:22,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0,flexShrink:0,WebkitTapHighlightColor:"transparent"}}>
+                          <span style={{color:"#1B8C4E",fontSize:10,fontWeight:800,lineHeight:1}}>i</span>
                         </button>
                         {vid&&<button onClick={function(e){e.stopPropagation();setVideoModal({video:vid,name:ex.name});}} style={{background:dc+"18",border:"none",borderRadius:7,padding:"4px 8px",color:dc,fontSize:10,fontWeight:700,cursor:"pointer",flexShrink:0}}>▶</button>}
                       </div>

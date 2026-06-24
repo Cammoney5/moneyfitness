@@ -2627,14 +2627,13 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
       var fsaved = savedSessions.some(function(s){return s.id==="saved-"+fw+"-"+fd+"-"+fday.focus;});
       return (
         <div style={{position:"fixed",inset:0,background:"#F0F5F2",zIndex:500,display:"flex",flexDirection:"column",overflowY:"auto"}}>
-          {/* Header — white card style */}
-          <div style={{background:"#fff",borderBottom:"1px solid #E8E4DE",padding:"14px 16px",display:"flex",alignItems:"center",position:"sticky",top:0,zIndex:10,flexShrink:0}}>
-            <button onClick={function(){setFullscreenDay(null);}} style={{background:"#F0F5F2",border:"1.5px solid #E8E4DE",color:"#0A1A0F",borderRadius:10,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0A1A0F" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+          <div style={{background:fc,padding:"14px 18px 12px",display:"flex",alignItems:"center",position:"sticky",top:0,zIndex:10,flexShrink:0}}>
+            <button onClick={function(){setFullscreenDay(null);}} style={{background:"rgba(255,255,255,0.2)",border:"none",color:"#fff",borderRadius:10,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
             <div style={{flex:1,textAlign:"center"}}>
-              <div style={{color:"#0A1A0F",fontSize:20,fontWeight:900}}>{(fday.focus||"").toUpperCase()}</div>
-              <div style={{color:"#7AAB8A",fontSize:11,marginTop:1}}>{fday.exercises.length} exercises</div>
+              <div style={{color:"#fff",fontSize:20,fontWeight:900}}>{(fday.focus||"").toUpperCase()}</div>
+              <div style={{color:"rgba(255,255,255,0.65)",fontSize:12,marginTop:2}}>{fday.exercises.length} exercises</div>
             </div>
             <button onClick={function(){fsaved?setSavedSessions(function(p){return p.filter(function(s){return s.id!=="saved-"+fw+"-"+fd+"-"+fday.focus;});}):saveSession(fw,fd,fday);}}
               style={{width:36,height:36,borderRadius:10,background:fsaved?fc+"18":"#F0F5F2",border:"1.5px solid "+(fsaved?fc+"55":"#D0E6D8"),display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
@@ -4137,7 +4136,7 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
                 YOUR<br/>PROGRAM
               </div>
               <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, marginBottom: 16 }}>
-                {plannedCount > 0 ? plannedCount + " activities planned this week" : sessionCount + " sessions from your coach"}
+                {plannedCount > 0 ? plannedCount + " activities planned this week" : "Go to My Plan to schedule your week, or jump into your lifting program to get started."}
               </div>
 
               {/* Show My Plan days if any are planned, otherwise fall back to coach program chips */}
@@ -4190,13 +4189,11 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
               )}
 
               <div style={{ display: "flex", gap: 10 }}>
-                {plannedCount > 0 && (
-                  <button onClick={function() { goTo("race"); }} style={{ background: "#1B8C4E", border: "none", color: "#fff", padding: "12px 24px", borderRadius: 99, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>
-                    View My Plan
-                  </button>
-                )}
-                <button onClick={function() { goToClientTab("Program"); }} style={{ background: plannedCount > 0 ? "rgba(255,255,255,0.15)" : "#1B8C4E", border: plannedCount > 0 ? "1px solid rgba(255,255,255,0.3)" : "none", color: "#fff", padding: "12px 24px", borderRadius: 99, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>
-                  {plannedCount > 0 ? "View Lifting Program" : "Start Training"}
+                <button onClick={function() { goTo("race"); }} style={{ background: "#1B8C4E", border: "none", color: "#fff", padding: "12px 24px", borderRadius: 99, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>
+                  View My Plan
+                </button>
+                <button onClick={function() { goToClientTab("Program"); }} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "#fff", padding: "12px 24px", borderRadius: 99, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>
+                  View Lifting Program
                 </button>
               </div>
             </div>

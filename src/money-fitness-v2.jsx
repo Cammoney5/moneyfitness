@@ -2636,8 +2636,37 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
   const [savedSessions, setSavedSessions] = useState([]);
   const [customWorkouts, setCustomWorkouts] = useState([]);
 
+  // Load saved weights from Supabase on mount
+  useEffect(function() {
+    if (!authUserId || !authToken) return;
+    fetch(SUPABASE_URL + "/rest/v1/workout_logs?client_id=eq." + authUserId + "&select=log_key,weight", {
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+    }).then(function(r) { return r.json(); }).then(function(rows) {
+      if (!Array.isArray(rows) || rows.length === 0) return;
+      var built = {};
+      rows.forEach(function(row) { if (row.weight) built[row.log_key] = row.weight; });
+      setExLogs(function(prev) { return Object.assign({}, built, prev); });
+    }).catch(function(){});
+  }, [authUserId, authToken]);
+
   function logWeight(key, weight) {
     setExLogs(function(prev) { return Object.assign({}, prev, { [key]: weight }); });
+  }
+  function saveWeightLog(key, weight) {
+    if (!authUserId || !authToken || !weight) return;
+    fetch(SUPABASE_URL + "/rest/v1/workout_logs", {
+      method: "POST",
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates" },
+      body: JSON.stringify({ client_id: authUserId, log_key: key, weight: weight, updated_at: new Date().toISOString() })
+    }).then(function(r) {
+      if (r.status === 409) {
+        fetch(SUPABASE_URL + "/rest/v1/workout_logs?client_id=eq." + authUserId + "&log_key=eq." + encodeURIComponent(key), {
+          method: "PATCH",
+          headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json" },
+          body: JSON.stringify({ weight: weight, updated_at: new Date().toISOString() })
+        }).catch(function(){});
+      }
+    }).catch(function(){});
   }
   function saveSession(wkIdx, dayIdx, day) {
     var id = "saved-"+wkIdx+"-"+dayIdx+"-"+day.focus;
@@ -2736,7 +2765,7 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
                         <input type="number" placeholder="lbs"
                           value={exLogs[fw+"-"+fd+"-"+p.origIdx]||""}
                           onChange={function(e){logWeight(fw+"-"+fd+"-"+p.origIdx,e.target.value);}}
-                          onBlur={function(e){var w=e.target.value;if(w&&authUserId&&authToken){var today=new Date().toISOString().split("T")[0];fetch(SUPABASE_URL+"/rest/v1/workout_history",{method:"POST",headers:{"apikey":SUPABASE_ANON_KEY,"Authorization":"Bearer "+authToken,"Content-Type":"application/json"},body:JSON.stringify({client_id:authUserId,exercise_name:p.name,weight:w,logged_date:today})}).catch(function(){});}}}
+                          onBlur={function(e){var w=e.target.value;if(w&&authUserId&&authToken){ saveWeightLog(fw+"-"+fd+"-"+p.origIdx,w); var today=new Date().toISOString().split("T")[0];fetch(SUPABASE_URL+"/rest/v1/workout_history",{method:"POST",headers:{"apikey":SUPABASE_ANON_KEY,"Authorization":"Bearer "+authToken,"Content-Type":"application/json"},body:JSON.stringify({client_id:authUserId,exercise_name:p.name,weight:w,logged_date:today})}).catch(function(){});}}}
                           style={{width:52,background:"#F0F5F2",border:"1.5px solid #E8E4DE",borderRadius:8,padding:"4px 6px",fontSize:11,fontWeight:600,color:"#0A1A0F",textAlign:"center",outline:"none",flexShrink:0}}
                         />
                         <button onClick={function(e){e.stopPropagation();loadExHist(p.name);}} style={{background:"none",border:"1px solid #0A1A0F",borderRadius:"50%",width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0,flexShrink:0}}>
@@ -2976,7 +3005,7 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
                           placeholder="lbs"
                           value={exLogs[activeWk+"-"+origIdx+"-"+ex.origIdx]||""}
                           onChange={function(e){logWeight(activeWk+"-"+origIdx+"-"+ex.origIdx, e.target.value);}}
-                          onBlur={function(e){ var w=e.target.value; if(w&&authUserId&&authToken){var today=new Date().toISOString().split("T")[0];fetch(SUPABASE_URL+"/rest/v1/workout_history",{method:"POST",headers:{"apikey":SUPABASE_ANON_KEY,"Authorization":"Bearer "+authToken,"Content-Type":"application/json"},body:JSON.stringify({client_id:authUserId,exercise_name:ex.name,weight:w,logged_date:today})}).catch(function(){});} }}
+                          onBlur={function(e){ var w=e.target.value; if(w&&authUserId&&authToken){ var _k=activeWk+"-"+origIdx+"-"+ex.origIdx; saveWeightLog(_k,w); var today=new Date().toISOString().split("T")[0];fetch(SUPABASE_URL+"/rest/v1/workout_history",{method:"POST",headers:{"apikey":SUPABASE_ANON_KEY,"Authorization":"Bearer "+authToken,"Content-Type":"application/json"},body:JSON.stringify({client_id:authUserId,exercise_name:ex.name,weight:w,logged_date:today})}).catch(function(){}); } }}
                           style={{width:52,background:"#F0F5F2",border:"1.5px solid #E8E4DE",borderRadius:8,padding:"4px 6px",fontSize:11,fontWeight:600,color:"#0A1A0F",textAlign:"center",outline:"none",flexShrink:0}}
                         />
                         <button onClick={function(e){e.stopPropagation();loadExHist(ex.name);}} style={{background:"#F0F5F2",border:"1.5px solid #D0E6D8",borderRadius:"50%",width:22,height:22,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0,flexShrink:0,WebkitTapHighlightColor:"transparent"}}>

@@ -3626,7 +3626,7 @@ function CoachWorkoutLibrary({ color, library, onRemove, onLoadIntoProgram }) {
   );
 }
 
-function CoachProgramTabView({ program, color, onUpdate, lib, libCats, authToken, setLib, realClients }) {
+function CoachProgramTabView({ program, color, onUpdate, lib, libCats, authToken, setLib, realClients, currentProgramWeek, saveCurrentProgramWeek }) {
   const [editing, setEditing]         = useState(false);
   const [coachSection, setCoachSection] = useState("program");
   const [coachLibrary, setCoachLibrary] = useState([]);
@@ -3803,11 +3803,21 @@ function CoachProgramTabView({ program, color, onUpdate, lib, libCats, authToken
             <div style={{display:"flex",gap:6,flex:1}}>
               {program.map(function(w,i){
                 var on=coachWk===i;
+                var isCurrent=currentProgramWeek===(i+1);
                 return (
-                  <button key={"cwk"+i} onClick={function(){setCoachWk(i);}}
-                    style={{flex:1,padding:"9px 0",borderRadius:12,border:"1.5px solid "+(on?c:BORDER),background:on?c+"15":"transparent",color:on?c:TEXT3,fontSize:12,fontWeight:on?700:500,cursor:"pointer"}}>
-                    Week {w.week}
-                  </button>
+                  <div key={"cwk"+i} style={{flex:1,position:"relative"}}>
+                    <button onClick={function(){setCoachWk(i);}}
+                      style={{width:"100%",padding:"9px 0",borderRadius:12,border:"2px solid "+(isCurrent?"#F4A623":on?c:BORDER),background:on?c+"15":"transparent",color:on?c:TEXT3,fontSize:12,fontWeight:(on||isCurrent)?700:500,cursor:"pointer"}}>
+                      Week {w.week}
+                      {isCurrent&&<span style={{display:"block",fontSize:8,color:"#F4A623",fontWeight:700,letterSpacing:0.5,marginTop:1}}>CURRENT</span>}
+                    </button>
+                    {saveCurrentProgramWeek&&(
+                      <button onClick={function(e){e.stopPropagation();saveCurrentProgramWeek(i+1);}}
+                        style={{position:"absolute",top:-6,right:-4,width:16,height:16,borderRadius:"50%",background:isCurrent?"#F4A623":BORDER,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:isCurrent?"#fff":TEXT3,fontWeight:700,lineHeight:1}}>
+                        {isCurrent?"★":"☆"}
+                      </button>
+                    )}
+                  </div>
                 );
               })}
             </div>
@@ -4043,7 +4053,7 @@ function ClientDetail({ client, onBack, isCoach, defaultTab, favorites, watchDay
             <ProgramWithCustom program={coachProgram} color={c} favorites={favorites} initialDayIndex={programDayIndex} onDayIndexUsed={function() { if (setProgramDayIndex) setProgramDayIndex(null); }} myPlans={myPlans} authUserId={authUserId} authToken={authToken} onGoToMainTab={onGoToMainTab} lib={lib} libCats={libCats} currentProgramWeek={currentProgramWeek} saveCurrentProgramWeek={saveCurrentProgramWeek} isCoachView={isCoach} />
           )}
           {isCoach && (
-            <CoachProgramTabView program={coachProgram} color={c} onUpdate={setCoachProgram} lib={lib} libCats={libCats} authToken={authToken} setLib={setLib} realClients={realClients} />
+            <CoachProgramTabView program={coachProgram} color={c} onUpdate={setCoachProgram} lib={lib} libCats={libCats} authToken={authToken} setLib={setLib} realClients={realClients} currentProgramWeek={currentProgramWeek} saveCurrentProgramWeek={saveCurrentProgramWeek} />
           )}
         </div>
       )}

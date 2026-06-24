@@ -7704,6 +7704,21 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
         return next;
       });
     }
+    // Sync to Supabase
+    if (authUserId && authToken) {
+      if (!list || list.length === 0) {
+        fetch(SUPABASE_URL + "/rest/v1/client_plans?client_id=eq." + authUserId + "&plan_key=eq." + encodeURIComponent(key), {
+          method: "DELETE",
+          headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+        }).catch(function(){});
+      } else {
+        fetch(SUPABASE_URL + "/rest/v1/client_plans", {
+          method: "POST",
+          headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json", "Prefer": "resolution=merge-duplicates" },
+          body: JSON.stringify({ client_id: authUserId, plan_key: key, activities: list, updated_at: new Date().toISOString() })
+        }).catch(function(){});
+      }
+    }
   }
 
   function addWorkoutToDay(dayIndex, workout) {

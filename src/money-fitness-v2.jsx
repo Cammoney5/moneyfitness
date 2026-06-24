@@ -156,8 +156,21 @@ const VIDEO_MAP = {
   "leg curl": "leg-curl", "leg press": "leg-press", "calf raises": "calf-raises",
 };
 
-function findVideo(name) {
-  const lower = name.toLowerCase();
+var _globalLib = [];
+function findVideo(name, lib) {
+  const lower = name.toLowerCase().replace(/\s*\d+x\d+.*$/, "").trim();
+  const searchLib = lib || _globalLib;
+  // Search live library first
+  if (searchLib && searchLib.length > 0) {
+    for (let i = 0; i < searchLib.length; i++) {
+      if (searchLib[i].url && searchLib[i].name && searchLib[i].name.toLowerCase() === lower) return searchLib[i];
+    }
+    // Fuzzy match
+    for (let i = 0; i < searchLib.length; i++) {
+      if (searchLib[i].url && searchLib[i].name && lower.indexOf(searchLib[i].name.toLowerCase()) !== -1) return searchLib[i];
+    }
+  }
+  // Fall back to hardcoded VIDEO_LIBRARY
   const keys = Object.keys(VIDEO_MAP);
   for (let k = 0; k < keys.length; k++) {
     if (lower.indexOf(keys[k]) !== -1) {
@@ -175,6 +188,16 @@ function getYTId(url) {
   const parts = url.split(/v=|youtu\.be\/|embed\//);
   if (parts.length < 2) return null;
   return parts[1].slice(0, 11);
+}
+
+function isCFStream(url) {
+  return url && (url.includes("cloudflarestream.com") || url.includes("customer-"));
+}
+
+function getCFEmbedUrl(url) {
+  if (!url) return null;
+  // Convert watch URL to iframe embed URL
+  return url.replace("/watch", "/iframe");
 }
 
 // Default program template -- coach can edit this and it flows to all clients
@@ -790,12 +813,27 @@ function CalHeatmap({ workedOut, color, isEditable, watchDays, sharedLogs, onLog
 }
 
 
-function YouTubeLite({ ytId, title }) {
+function YouTubeLite({ ytId, title, cfUrl }) {
   const [activated, setActivated] = useState(false);
+
+  if (cfUrl) {
+    return (
+      <div style={{ position: "relative", paddingBottom: "100%", background: "#000" }}>
+        <iframe
+          src={getCFEmbedUrl(cfUrl)}
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }}
+          allowFullScreen
+          allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+          title={title}
+        />
+      </div>
+    );
+  }
+
   var thumb = "https://i.ytimg.com/vi/" + ytId + "/hqdefault.jpg";
 
   return (
-    <div style={{ position: "relative", paddingBottom: "56.25%", background: "#000", cursor: "pointer" }}
+    <div style={{ position: "relative", paddingBottom: "100%", background: "#000", cursor: "pointer" }}
       onClick={function() { setActivated(true); }}>
       {!activated ? (
         <div style={{ position: "absolute", inset: 0 }}>
@@ -833,6 +871,7 @@ function YouTubeLite({ ytId, title }) {
 
 function VideoModal({ video, exName, onClose }) {
   const ytId = video ? getYTId(video.url) : null;
+  const cfUrl = video && isCFStream(video.url) ? video.url : null;
   const [dragY, setDragY] = React.useState(0);
   const dragStart = React.useRef(null);
 
@@ -851,14 +890,14 @@ function VideoModal({ video, exName, onClose }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(26,23,20,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 600, padding: "0" }} onClick={onClose}>
-      <div style={{ background: CARD, borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 430, maxHeight: "90vh", overflow: "auto", paddingBottom: 32, transform: "translateY("+dragY+"px)", transition: dragY === 0 ? "transform 0.3s" : "none" }}
+      <div style={{ background: CARD, borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 430, maxHeight: "92vh", overflow: "auto", paddingBottom: 32, transform: "translateY("+dragY+"px)", transition: dragY === 0 ? "transform 0.3s" : "none" }}
         onClick={function(e) { e.stopPropagation(); }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}>
         <div style={{ width: 36, height: 4, background: BORDER, borderRadius: 99, margin: "12px auto 16px", cursor: "grab" }} />
-        {ytId ? (
-          <YouTubeLite ytId={ytId} title={exName} />
+        {(ytId || cfUrl) ? (
+          <YouTubeLite ytId={ytId} title={exName} cfUrl={cfUrl} />
         ) : (
           <div style={{ height: 160, background: SURFACE, margin: "0 16px", borderRadius: 12, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
             <div style={{ color: TEXT2, fontSize: 13 }}>No video added yet</div>
@@ -886,9 +925,9 @@ function VideoModal({ video, exName, onClose }) {
               })}
             </div>
           )}
-          {video && video.url && (
+          {video && video.url && !isCFStream(video.url) && !getYTId(video.url) === false && (
             <a href={video.url} target="_blank" rel="noopener noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "12px", background: ORANGE_BG, borderRadius: 12, color: "#1B8C4E", fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
-              Watch on YouTube ->
+              Watch on YouTube →
             </a>
           )}
         </div>
@@ -914,7 +953,7 @@ function setCircuitLabel(ex, label) {
   return label ? "[C:" + label + "] " + base : base;
 }
 
-function ExerciseRow({ ex, color, isClient, onTapVideo, logKey, savedData, onSave, defaultOpen, weightOnly }) {
+function ExerciseRow({ ex, color, isClient, onTapVideo, logKey, savedData, onSave, defaultOpen, weightOnly, authUserId, authToken }) {
   const c = color || ORANGE;
   const parsed  = parseExercise(ex);
   const hasVid  = !!findVideo(parsed.name);
@@ -923,6 +962,28 @@ function ExerciseRow({ ex, color, isClient, onTapVideo, logKey, savedData, onSav
   const [reps, setReps]     = useState(savedData ? savedData.reps   : parsed.reps);
   const [weight, setWeight] = useState(savedData ? savedData.weight : "");
   const [saved, setSaved]   = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [history, setHistory] = useState(null);
+
+  function loadHistory() {
+    if (!authUserId || !authToken) return;
+    var exName = encodeURIComponent(parsed.name);
+    fetch(SUPABASE_URL + "/rest/v1/workout_history?client_id=eq." + authUserId + "&exercise_name=eq." + exName + "&order=logged_date.desc&limit=8", {
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+    }).then(function(r) { return r.json(); }).then(function(rows) {
+      setHistory(Array.isArray(rows) ? rows : []);
+    }).catch(function() { setHistory([]); });
+  }
+
+  function saveToHistory(w) {
+    if (!authUserId || !authToken || !w) return;
+    var today = new Date().toISOString().split("T")[0];
+    fetch(SUPABASE_URL + "/rest/v1/workout_history", {
+      method: "POST",
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json" },
+      body: JSON.stringify({ client_id: authUserId, exercise_name: parsed.name, weight: w, logged_date: today })
+    }).catch(function(){});
+  }
 
   // Display from savedData so switching weeks shows correct persisted values
   const dispSets   = savedData ? savedData.sets   : parsed.sets;
@@ -931,6 +992,7 @@ function ExerciseRow({ ex, color, isClient, onTapVideo, logKey, savedData, onSav
 
   function handleSave() {
     onSave(logKey, { sets: sets, reps: reps, weight: weight });
+    if (weight) saveToHistory(weight);
     setSaved(true);
     setOpen(false);
     setTimeout(function() { setSaved(false); }, 2000);
@@ -951,6 +1013,45 @@ function ExerciseRow({ ex, color, isClient, onTapVideo, logKey, savedData, onSav
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <span style={{ color: TEXT, fontSize: 13, fontWeight: 600 }}>{parsed.name}</span>
             {saved && <span style={{ background: GREEN_BG, color: "#1B8C4E", fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 6 }}>SAVED</span>}
+            {isClient && authUserId && (
+              <button onClick={function(e) { e.stopPropagation(); loadHistory(); setShowHistory(true); }}
+                style={{ background: "none", border: "1px solid "+BORDER, borderRadius: "50%", width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0, flexShrink: 0 }}>
+                <span style={{ color: TEXT3, fontSize: 10, fontWeight: 700, lineHeight: 1 }}>i</span>
+              </button>
+            )}
+            {showHistory && (
+              <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 999, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+                onClick={function() { setShowHistory(false); }}>
+                <div style={{ background: "#fff", borderRadius: "20px 20px 0 0", padding: "20px 20px 40px", width: "100%", maxWidth: 480 }}
+                  onClick={function(e) { e.stopPropagation(); }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                    <div>
+                      <div style={{ color: TEXT, fontSize: 16, fontWeight: 800 }}>{parsed.name}</div>
+                      <div style={{ color: TEXT3, fontSize: 11, marginTop: 2 }}>Weight History</div>
+                    </div>
+                    <button onClick={function() { setShowHistory(false); }} style={{ background: SURFACE, border: "none", borderRadius: 10, width: 32, height: 32, cursor: "pointer", fontSize: 18, color: TEXT3 }}>×</button>
+                  </div>
+                  {history === null ? (
+                    <div style={{ color: TEXT3, fontSize: 13, textAlign: "center", padding: "20px 0" }}>Loading...</div>
+                  ) : history.length === 0 ? (
+                    <div style={{ color: TEXT3, fontSize: 13, textAlign: "center", padding: "20px 0" }}>No history yet — log a weight to get started!</div>
+                  ) : (
+                    <div>
+                      {history.map(function(h, i) {
+                        var d = new Date(h.logged_date + "T12:00:00");
+                        var dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+                        return (
+                          <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: i < history.length-1 ? "1px solid "+SURFACE2 : "none" }}>
+                            <span style={{ color: TEXT3, fontSize: 13 }}>{dateStr}</span>
+                            <span style={{ color: TEXT, fontSize: 15, fontWeight: 700 }}>{h.weight} lbs</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
           <div style={{ display: "flex", gap: 8, marginTop: 3, alignItems: "center" }}>
             {dispSets   && <span style={{ color: TEXT3, fontSize: 11 }}>{dispSets} sets</span>}
@@ -962,7 +1063,7 @@ function ExerciseRow({ ex, color, isClient, onTapVideo, logKey, savedData, onSav
                   type="number"
                   value={weight}
                   onChange={function(e) { setWeight(e.target.value); }}
-                  onBlur={function() { if (onSave) onSave(logKey, { sets: sets, reps: reps, weight: weight }); setSaved(!!weight); }}
+                  onBlur={function() { if (onSave) onSave(logKey, { sets: sets, reps: reps, weight: weight }); if (weight) saveToHistory(weight); setSaved(!!weight); }}
                   placeholder="lbs"
                   style={{ width: 52, background: SURFACE, border: "1.5px solid "+BORDER, borderRadius: 8, padding: "4px 6px", color: TEXT, fontSize: 12, fontWeight: 700, outline: "none", textAlign: "center" }}
                 />
@@ -1033,7 +1134,7 @@ function ExerciseRow({ ex, color, isClient, onTapVideo, logKey, savedData, onSav
 }
 
 // -- COACH PROGRAM EDITOR -----------------------------------------
-function CoachProgramEditor({ program, onSave, onClose }) {
+function CoachProgramEditor({ program, onSave, onClose, lib, libCats, authToken, setLib, realClients }) {
   // Deep clone program for editing
   const [draft, setDraft] = useState(
     JSON.parse(JSON.stringify(program))
@@ -1041,6 +1142,8 @@ function CoachProgramEditor({ program, onSave, onClose }) {
   const [activeWk, setActiveWk] = useState(0);
   const [showPicker, setShowPicker] = useState(null); // "wkIdx-dayIdx"
   const [saved, setSaved] = useState(false);
+  const [showNotifyPrompt, setShowNotifyPrompt] = useState(false);
+  const [circuitPickerFor, setCircuitPickerFor] = useState(null);
 
   function updateFocus(wkIdx, dayIdx, val) {
     setDraft(function(prev) {
@@ -1101,8 +1204,21 @@ function CoachProgramEditor({ program, onSave, onClose }) {
 
   function handleSave() {
     onSave(draft);
-    setSaved(true);
-    setTimeout(function() { setSaved(false); onClose(); }, 1200);
+    setShowNotifyPrompt(true);
+  }
+
+  function sendNotifyToClients() {
+    if (realClients && realClients.length > 0 && authToken) {
+      realClients.forEach(function(client) {
+        fetch(SUPABASE_URL + "/functions/v1/send-push", {
+          method: "POST",
+          headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: client.id, title: "Program Updated", body: "Your coach has updated your training program.", url: "/" })
+        }).catch(function() {});
+      });
+    }
+    setShowNotifyPrompt(false);
+    onClose();
   }
 
   const inputS = { background: SURFACE, border: "1.5px solid "+BORDER, borderRadius: 9, padding: "8px 10px", color: TEXT, fontSize: 12, outline: "none", boxSizing: "border-box" };
@@ -1126,10 +1242,26 @@ function CoachProgramEditor({ program, onSave, onClose }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, background: BG, zIndex: 400, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+      {showNotifyPrompt && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 24px" }}>
+          <div style={{ background: CARD, borderRadius: 20, padding: "28px 24px", maxWidth: 340, width: "100%", boxShadow: "0 8px 32px rgba(0,0,0,0.2)" }}>
+            <div style={{ fontSize: 22, marginBottom: 8, textAlign: "center" }}>🔔</div>
+            <div style={{ color: TEXT, fontSize: 17, fontWeight: 800, textAlign: "center", marginBottom: 8 }}>Notify Clients?</div>
+            <div style={{ color: TEXT3, fontSize: 13, textAlign: "center", lineHeight: 1.5, marginBottom: 24 }}>Send a push notification letting your clients know their program has been updated.</div>
+            <button onClick={sendNotifyToClients} style={{ width: "100%", padding: "13px", borderRadius: 12, background: ORANGE, border: "none", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 10 }}>Yes, Notify Clients</button>
+            <button onClick={function() { setShowNotifyPrompt(false); onClose(); }} style={{ width: "100%", padding: "13px", borderRadius: 12, background: SURFACE, border: "1.5px solid "+BORDER, color: TEXT2, fontSize: 15, fontWeight: 600, cursor: "pointer" }}>No, Skip</button>
+          </div>
+        </div>
+      )}
       {showPicker && (
         <ExercisePicker
           color={ORANGE}
           favorites={{}}
+          lib={lib}
+          libCats={libCats}
+          setLib={setLib}
+          authToken={authToken}          lib={lib}
+          libCats={libCats}
           onAdd={function(name) {
             const parts = showPicker.split("-");
             addExercise(parseInt(parts[0]), parseInt(parts[1]), name);
@@ -1280,35 +1412,32 @@ function CoachProgramEditor({ program, onSave, onClose }) {
                           style={Object.assign({}, inputS, { flex: 1, fontSize: 12, fontWeight: 600 })}
                           placeholder="Exercise name"
                         />
-                        <button
-                          onClick={function() {
-                            var label = getCircuitLabel(ex);
-                            var newLabel = label ? null : "Circuit";
-                            // Find neighbours to group with
-                            setDraft(function(prev) {
-                              var next = JSON.parse(JSON.stringify(prev));
-                              var exs = next[activeWk].days[dayIdx].exercises;
-                              if (newLabel) {
-                                // Group with adjacent circuit items or start new
-                                var prevLabel = exIdx > 0 ? getCircuitLabel(exs[exIdx-1]) : null;
-                                var nextLabel = exIdx < exs.length-1 ? getCircuitLabel(exs[exIdx+1]) : null;
-                                var existingLabels = exs.map(getCircuitLabel).filter(Boolean);
-                                var uniqueLabels = existingLabels.filter(function(l,i,a){return a.indexOf(l)===i;});
-                                var defaultLabels = ["Circuit A","Circuit B","Circuit C","Circuit D"];
-                                var usedDefaults = defaultLabels.filter(function(l){return uniqueLabels.indexOf(l)!==-1;});
-                                var nextDefault = defaultLabels.find(function(l){return usedDefaults.indexOf(l)===-1;}) || "Circuit";
-                                var useLabel = prevLabel || nextLabel || nextDefault;
-                                exs[exIdx] = setCircuitLabel(exs[exIdx], useLabel);
-                              } else {
-                                exs[exIdx] = stripCircuit(exs[exIdx]);
-                              }
-                              return next;
-                            });
-                          }}
-                          title={getCircuitLabel(ex) ? "Remove from circuit" : "Add to circuit"}
-                          style={{ background: getCircuitLabel(ex) ? "#9B6FD4" : SURFACE, border: "1.5px solid "+(getCircuitLabel(ex) ? "#9B6FD4" : BORDER), color: getCircuitLabel(ex) ? "#fff" : TEXT3, borderRadius: 7, padding: "3px 7px", fontSize: 10, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
-                          ⚡
-                        </button>
+                        {(function() {
+                          var curLabel = getCircuitLabel(ex);
+                          var allExs = draft[activeWk].days[dayIdx].exercises;
+                          var uniqueCircuits = allExs.map(getCircuitLabel).filter(Boolean).filter(function(l,i,a){return a.indexOf(l)===i;});
+                          var pickerKey = activeWk+"-"+dayIdx+"-"+exIdx;
+                          var showDropdown = circuitPickerFor === pickerKey;
+                          if (curLabel) {
+                            return <button onClick={function() { setDraft(function(prev) { var next = JSON.parse(JSON.stringify(prev)); next[activeWk].days[dayIdx].exercises[exIdx] = stripCircuit(next[activeWk].days[dayIdx].exercises[exIdx]); return next; }); }} title="Remove from circuit" style={{ background:"#9B6FD4", border:"1.5px solid #9B6FD4", color:"#fff", borderRadius:7, padding:"3px 7px", fontSize:10, fontWeight:700, cursor:"pointer", flexShrink:0 }}>⚡</button>;
+                          }
+                          if (uniqueCircuits.length === 0) {
+                            return <button onClick={function() { setDraft(function(prev) { var next = JSON.parse(JSON.stringify(prev)); next[activeWk].days[dayIdx].exercises[exIdx] = setCircuitLabel(next[activeWk].days[dayIdx].exercises[exIdx], "Circuit A"); return next; }); }} title="Add to circuit" style={{ background:SURFACE, border:"1.5px solid "+BORDER, color:TEXT3, borderRadius:7, padding:"3px 7px", fontSize:10, fontWeight:700, cursor:"pointer", flexShrink:0 }}>⚡</button>;
+                          }
+                          return (
+                            <div style={{ position:"relative", flexShrink:0 }}>
+                              <button onClick={function() { setCircuitPickerFor(showDropdown ? null : pickerKey); }} title="Add to circuit" style={{ background:SURFACE, border:"1.5px solid "+BORDER, color:TEXT3, borderRadius:7, padding:"3px 7px", fontSize:10, fontWeight:700, cursor:"pointer" }}>⚡</button>
+                              {showDropdown && (
+                                <div style={{ position:"absolute", right:0, top:"110%", background:CARD, border:"1.5px solid "+BORDER, borderRadius:10, zIndex:200, minWidth:140, boxShadow:"0 4px 16px rgba(0,0,0,0.12)", overflow:"hidden" }}>
+                                  {uniqueCircuits.map(function(lbl) {
+                                    return <button key={lbl} onClick={function() { setDraft(function(prev) { var next = JSON.parse(JSON.stringify(prev)); next[activeWk].days[dayIdx].exercises[exIdx] = setCircuitLabel(next[activeWk].days[dayIdx].exercises[exIdx], lbl); return next; }); setCircuitPickerFor(null); }} style={{ display:"block", width:"100%", padding:"9px 14px", background:"none", border:"none", borderBottom:"1px solid "+BORDER, color:TEXT, fontSize:12, fontWeight:600, cursor:"pointer", textAlign:"left" }}>⚡ {lbl}</button>;
+                                  })}
+                                  <button onClick={function() { var defaultLabels=["Circuit A","Circuit B","Circuit C","Circuit D","Circuit E"]; var nextLabel=defaultLabels.find(function(l){return uniqueCircuits.indexOf(l)===-1;})||"Circuit"; setDraft(function(prev){var next=JSON.parse(JSON.stringify(prev));next[activeWk].days[dayIdx].exercises[exIdx]=setCircuitLabel(next[activeWk].days[dayIdx].exercises[exIdx],nextLabel);return next;}); setCircuitPickerFor(null); }} style={{ display:"block", width:"100%", padding:"9px 14px", background:"none", border:"none", color:"#9B6FD4", fontSize:12, fontWeight:700, cursor:"pointer", textAlign:"left" }}>+ New circuit</button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                         <button onClick={function() { removeExercise(activeWk, dayIdx, exIdx); }} style={{ background: "none", border: "none", color: "#E05252", fontSize: 14, cursor: "pointer", padding: "2px 4px", flexShrink: 0 }}>x</button>
                       </div>
                       <div style={{ display: "flex", gap: 6, paddingLeft: 24 }}>
@@ -1371,7 +1500,9 @@ function CoachProgramEditor({ program, onSave, onClose }) {
   );
 }
 
-function ProgramView({ program, color, isClient, initialDayIndex, onDayIndexUsed, onSaveSession, savedIds, weightOnly }) {
+function ProgramView({ program, color, isClient, initialDayIndex, onDayIndexUsed, onSaveSession, savedIds, weightOnly, lib, libCats, authUserId, authToken }) {
+  lib = lib || [];
+  libCats = libCats || [];
   const [wk, setWk]             = useState(0);
   const [modal, setModal]       = useState(null);
   const [exLogs, setExLogs]     = useState({});
@@ -1569,7 +1700,7 @@ function ProgramView({ program, color, isClient, initialDayIndex, onDayIndexUsed
                         savedData={exLogs[logKey] || null}
                         onSave={handleSave}
                         weightOnly={weightOnly}
-                      />
+                       authUserId={authUserId} authToken={authToken} />
                     </div>
                   );
                 })}
@@ -1583,7 +1714,7 @@ function ProgramView({ program, color, isClient, initialDayIndex, onDayIndexUsed
                 var key = fwk+"-"+fdayIdx+"-added-"+ai;
                 return (
                   <div key={key} style={{ background: fc2+"0A", border: "1.5px solid "+fc2+"44", borderRadius: 12, marginBottom: 8 }}>
-                    <ExerciseRow ex={addedEx} color={fc2} isClient={isClient} onTapVideo={function(name){setModal({video:findVideo(name),name:name});}} logKey={key} savedData={exLogs[key]||null} onSave={handleSave} weightOnly={weightOnly} />
+                    <ExerciseRow ex={addedEx} color={fc2} isClient={isClient} onTapVideo={function(name){setModal({video:findVideo(name),name:name});}} logKey={key} savedData={exLogs[key]||null} onSave={handleSave} weightOnly={weightOnly}  authUserId={authUserId} authToken={authToken} />
                   </div>
                 );
               })}
@@ -1608,6 +1739,8 @@ function ProgramView({ program, color, isClient, initialDayIndex, onDayIndexUsed
         <ExercisePicker
           color={c}
           favorites={favorites}
+          lib={lib}
+          libCats={libCats}
           onAdd={function(name) {
             const parts = showPicker.split("-");
             addExercise(parseInt(parts[0]), parseInt(parts[1]), name);
@@ -1798,7 +1931,7 @@ function ProgramView({ program, color, isClient, initialDayIndex, onDayIndexUsed
                         </div>
                       )}
                       <div style={{ flex:1 }}>
-                        <ExerciseRow ex={ex} color={c} isClient={isClient} onTapVideo={tapVideo} logKey={logKey} savedData={exLogs[logKey]||null} onSave={handleSave} weightOnly={weightOnly} />
+                        <ExerciseRow ex={ex} color={c} isClient={isClient} onTapVideo={tapVideo} logKey={logKey} savedData={exLogs[logKey]||null} onSave={handleSave} weightOnly={weightOnly}  authUserId={authUserId} authToken={authToken} />
                       </div>
                       {isClient && !weightOnly && (
                         <button onClick={function(){ removeExercise(wk,origDayIdx,origIdx); }} style={{ background:"none", border:"none", color:"#E05252", fontSize:16, cursor:"pointer", padding:"4px 6px", flexShrink:0, lineHeight:1 }}>x</button>
@@ -1857,7 +1990,7 @@ function ProgramView({ program, color, isClient, initialDayIndex, onDayIndexUsed
                       savedData={exLogs[key] || null}
                       onSave={handleSave}
                       defaultOpen={isClient && !(exLogs[key])}
-                    />
+                     authUserId={authUserId} authToken={authToken} />
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0, paddingRight: 4 }}>
                     <span style={{ background: c+"20", color: c, fontSize: 9, padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>New</span>
@@ -1913,15 +2046,19 @@ const PICKER_EXERCISES = [
 ];
 const PICKER_CATS = ["All","Favorites","Chest","Back","Legs","Shoulders","Arms"];
 
-function ExercisePicker({ color, onAdd, onClose, favorites }) {
+function ExercisePicker({ color, onAdd, onClose, favorites, lib, libCats, setLib, authToken }) {
   const c = color || ORANGE;
   const [search, setSearch] = useState("");
   const [cat, setCat]       = useState("All");
   const [customMode, setCustomMode] = useState(false);
   const [customName, setCustomName] = useState("");
-  const filtered = PICKER_EXERCISES.filter(function(e) {
+  const libLoaded = lib && lib.length > 0;
+  const exercises = libLoaded ? lib : PICKER_EXERCISES;
+  const filtered = exercises.filter(function(e) {
     if (cat === "Favorites") return !!(favorites && favorites[e.name]);
-    return (cat === "All" || e.cat === cat) &&
+    var allCats = Array.isArray(e.cats) ? e.cats : (e.cat ? [e.cat] : []);
+    if (e.cat && !allCats.includes(e.cat)) allCats = allCats.concat([e.cat]);
+    return (cat === "All" || allCats.includes(cat)) &&
       (search === "" || e.name.toLowerCase().indexOf(search.toLowerCase()) !== -1);
   });
   return (
@@ -1941,7 +2078,7 @@ function ExercisePicker({ color, onAdd, onClose, favorites }) {
           )}
         </div>
         <div style={{ padding: "0 16px 10px", display: "flex", gap: 6, flexShrink: 0, overflowX: "auto" }}>
-          {PICKER_CATS.map(function(ct) {
+          {(libCats && libCats.length > 0 ? ["All","Favorites",...libCats.filter(function(c){return c!=="All";})] : PICKER_CATS).map(function(ct) {
             const active = cat === ct;
             const isFavTab = ct === "Favorites";
             const favCount = favorites ? Object.values(favorites).filter(Boolean).length : 0;
@@ -1953,14 +2090,19 @@ function ExercisePicker({ color, onAdd, onClose, favorites }) {
           })}
         </div>
         <div style={{ flex: 1, overflowY: "auto", padding: "0 16px" }}>
-          {cat === "Favorites" && filtered.length === 0 && (
+          {!libLoaded && (
+            <div style={{ textAlign: "center", padding: "40px 20px", color: TEXT3 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: TEXT2 }}>Loading exercises...</div>
+            </div>
+          )}
+          {libLoaded && cat === "Favorites" && filtered.length === 0 && (
             <div style={{ textAlign: "center", padding: "40px 20px", color: TEXT3 }}>
               <div style={{ marginBottom: 10 }}><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#D0D0D0" strokeWidth="1.5"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg></div>
               <div style={{ fontSize: 14, fontWeight: 600, color: TEXT2, marginBottom: 6 }}>No favorites yet</div>
               <div style={{ fontSize: 12 }}>Go to the Exercise Library and tap * on exercises to save them here</div>
             </div>
           )}
-          {filtered.map(function(ex) {
+          {libLoaded && filtered.map(function(ex) {
             const isFav = !!(favorites && favorites[ex.name]);
             return (
               <div key={ex.name} onClick={function() { onAdd(ex.name); }} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: CARD, border: "1.5px solid "+(isFav ? "#F5C51866" : BORDER), borderRadius: 13, marginBottom: 8, cursor: "pointer" }}
@@ -1989,7 +2131,21 @@ function ExercisePicker({ color, onAdd, onClose, favorites }) {
               <div style={{ color: TEXT2, fontSize: 12, fontWeight: 600, marginBottom: 8 }}>CUSTOM EXERCISE NAME</div>
               <div style={{ display: "flex", gap: 8 }}>
                 <input value={customName} onChange={function(e) { setCustomName(e.target.value); }} placeholder="e.g. Cable Fly..." style={{ flex: 1, background: SURFACE, border: "1.5px solid "+BORDER, borderRadius: 10, padding: "10px 12px", color: TEXT, fontSize: 13, outline: "none" }} />
-                <button onClick={function() { if (customName.trim()) { onAdd(customName.trim()); setCustomMode(false); setCustomName(""); } }} style={{ padding: "10px 16px", borderRadius: 10, background: c, border: "none", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Add</button>
+                <button onClick={function() {
+                  if (!customName.trim()) return;
+                  var name = customName.trim();
+                  onAdd(name);
+                  if (setLib && authToken) {
+                    var newEx = { id: "custom-" + Date.now(), name: name, cat: "Custom", cats: ["Custom"], url: "", cues: [] };
+                    setLib(function(prev) { return prev.concat([newEx]); });
+                    fetch(SUPABASE_URL + "/rest/v1/exercise_library", {
+                      method: "POST",
+                      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json" },
+                      body: JSON.stringify({ id: newEx.id, name: newEx.name, cat: newEx.cat, cats: newEx.cats, url: "", cues: [] })
+                    });
+                  }
+                  setCustomMode(false); setCustomName("");
+                }} style={{ padding: "10px 16px", borderRadius: 10, background: c, border: "none", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Add</button>
               </div>
               <button onClick={function() { setCustomMode(false); }} style={{ marginTop: 8, background: "none", border: "none", color: TEXT3, fontSize: 12, cursor: "pointer" }}>Cancel</button>
             </div>
@@ -2087,7 +2243,7 @@ function WorkoutFullscreenModal({ workout, color, onClose }) {
   );
 }
 
-function MyWorkouts({ color, favorites, importedWorkouts, customWorkouts, setCustomWorkouts }) {
+function MyWorkouts({ color, favorites, importedWorkouts, customWorkouts, setCustomWorkouts, lib, libCats }) {
   const c = color || ORANGE;
   const workouts = customWorkouts || [];
   const [building, setBuilding]     = useState(false);
@@ -2238,7 +2394,7 @@ function MyWorkouts({ color, favorites, importedWorkouts, customWorkouts, setCus
   }
 
   if (showPicker) {
-    return <ExercisePicker color={c} onAdd={addExercise} onClose={function() { setShowPicker(false); }} favorites={favorites} />;
+    return <ExercisePicker color={c} onAdd={addExercise} onClose={function() { setShowPicker(false); }} favorites={favorites} lib={lib} libCats={libCats} />;
   }
 
   return (
@@ -2250,7 +2406,7 @@ function MyWorkouts({ color, favorites, importedWorkouts, customWorkouts, setCus
         var groups = buildGroups(w.exercises);
         var isEditing = editingId === w.id && building;
         return (
-          <div key={w.id} style={{ background: "#fff", borderRadius: 20, overflow: "hidden", marginBottom: 12, border: "1.5px solid "+dc+"66", boxShadow: "0 4px 20px "+dc+"22" }}>
+          <div key={w.id} style={{ background: "#fff", borderRadius: 20, overflow: "hidden", marginBottom: 12, border: "2.5px solid #1a1a1a", boxShadow: "0 4px 20px "+dc+"22" }}>
             {/* Accent bar */}
             <div style={{ height: 3, background: dc, width: "100%" }} />
             {/* Header */}
@@ -2312,7 +2468,7 @@ function MyWorkouts({ color, favorites, importedWorkouts, customWorkouts, setCus
 
       {/* Builder */}
       {building ? (
-        <div style={{ background: "#fff", border: "1.5px solid "+c+"66", borderRadius: 20, overflow: "hidden", marginBottom: 12 }}>
+        <div style={{ background: "#fff", border: "2.5px solid #1a1a1a", borderRadius: 20, overflow: "hidden", marginBottom: 12 }}>
           <div style={{ height: 3, background: c, width: "100%" }} />
           <div style={{ padding: "16px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
@@ -2409,7 +2565,7 @@ function MyWorkouts({ color, favorites, importedWorkouts, customWorkouts, setCus
     </div>
   );
 }
-function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIndexUsed, myPlans, authUserId, authToken, onGoToMainTab }) {
+function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIndexUsed, myPlans, authUserId, authToken, onGoToMainTab, lib, libCats }) {
   const c = color || ORANGE;
   const [activeWk, setActiveWk] = useState(0);
   const [videoModal, setVideoModal] = useState(null);
@@ -2565,7 +2721,7 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
       </div>
 
       {section === "mine" && (
-        <MyWorkouts color={c} favorites={favorites} importedWorkouts={savedSessions} customWorkouts={customWorkouts} setCustomWorkouts={setCustomWorkouts} />
+        <MyWorkouts color={c} favorites={favorites} importedWorkouts={savedSessions} customWorkouts={customWorkouts} setCustomWorkouts={setCustomWorkouts} lib={lib} libCats={libCats} />
       )}
 
       {section === "goals" && (
@@ -3354,7 +3510,7 @@ function CoachWorkoutLibrary({ color, library, onRemove, onLoadIntoProgram }) {
   );
 }
 
-function CoachProgramTabView({ program, color, onUpdate }) {
+function CoachProgramTabView({ program, color, onUpdate, lib, libCats, authToken, setLib, realClients }) {
   const [editing, setEditing]         = useState(false);
   const [coachSection, setCoachSection] = useState("program");
   const [coachLibrary, setCoachLibrary] = useState([]);
@@ -3508,6 +3664,11 @@ function CoachProgramTabView({ program, color, onUpdate }) {
           program={program}
           onSave={function(updated) { onUpdate(updated); }}
           onClose={function() { setEditing(false); }}
+          lib={lib}
+          libCats={libCats}
+          authToken={authToken}
+          setLib={setLib}
+          realClients={realClients}
         />
       )}
       <div style={{display:"flex",background:"#F0F5F2",borderRadius:12,padding:3,marginBottom:14,gap:3}}>
@@ -3576,7 +3737,7 @@ function CoachProgramTabView({ program, color, onUpdate }) {
             return (
               <div key={"cdc"+dayIdx} style={{
                 background:"#fff", borderRadius:20, overflow:"hidden", marginBottom:12,
-                border:"1.5px solid "+dc+"66",
+                border:"2.5px solid #1a1a1a",
                 boxShadow:"0 4px 20px "+dc+"22"
               }}>
                 <div style={{height:3,background:dc,width:"100%"}} />
@@ -3725,7 +3886,9 @@ function CoachProgramTabView({ program, color, onUpdate }) {
   );
 }
 
-function ClientDetail({ client, onBack, isCoach, defaultTab, favorites, watchDays, messages, onSend, coachProgram, setCoachProgram, programDayIndex, setProgramDayIndex, myPlans, activityLogs, authUserId, authToken, onGoToMainTab }) {
+function ClientDetail({ client, onBack, isCoach, defaultTab, favorites, watchDays, messages, onSend, coachProgram, setCoachProgram, programDayIndex, setProgramDayIndex, myPlans, activityLogs, authUserId, authToken, onGoToMainTab, lib, libCats, setLib, realClients }) {
+  lib = lib || [];
+  libCats = libCats || [];
   const tabs = isCoach ? ["Progress","Program","My Plan","Calendar","Messages"] : [];
   const [tab, setTab] = useState(defaultTab || "Progress");
   const [currentGoal, setCurrentGoal] = useState(client.goal);
@@ -3761,10 +3924,10 @@ function ClientDetail({ client, onBack, isCoach, defaultTab, favorites, watchDay
       {tab === "Program" && (
         <div>
           {!isCoach && (
-            <ProgramWithCustom program={coachProgram} color={c} favorites={favorites} initialDayIndex={programDayIndex} onDayIndexUsed={function() { if (setProgramDayIndex) setProgramDayIndex(null); }} myPlans={myPlans} authUserId={authUserId} authToken={authToken} onGoToMainTab={onGoToMainTab} />
+            <ProgramWithCustom program={coachProgram} color={c} favorites={favorites} initialDayIndex={programDayIndex} onDayIndexUsed={function() { if (setProgramDayIndex) setProgramDayIndex(null); }} myPlans={myPlans} authUserId={authUserId} authToken={authToken} onGoToMainTab={onGoToMainTab} lib={lib} libCats={libCats} />
           )}
           {isCoach && (
-            <CoachProgramTabView program={coachProgram} color={c} onUpdate={setCoachProgram} />
+            <CoachProgramTabView program={coachProgram} color={c} onUpdate={setCoachProgram} lib={lib} libCats={libCats} authToken={authToken} setLib={setLib} realClients={realClients} />
           )}
         </div>
       )}
@@ -4033,7 +4196,7 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
                   </button>
                 )}
                 <button onClick={function() { goToClientTab("Program"); }} style={{ background: plannedCount > 0 ? "rgba(255,255,255,0.15)" : "#1B8C4E", border: plannedCount > 0 ? "1px solid rgba(255,255,255,0.3)" : "none", color: "#fff", padding: "12px 24px", borderRadius: 99, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>
-                  {plannedCount > 0 ? "Coach Program" : "Start Training"}
+                  {plannedCount > 0 ? "View Lifting Program" : "Start Training"}
                 </button>
               </div>
             </div>
@@ -4105,14 +4268,14 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
   );
 }
 
-function ClientsScreen({ isCoach, selected, setSelected, clientDefaultTab, setClientDefaultTab, favorites, watchDays, messages, onSend, coachProgram, setCoachProgram, activityLogs, onLogsChange, programDayIndex, setProgramDayIndex, myPlans, realClients, authUserId, authToken, goTo, myProfile }) {
+function ClientsScreen({ isCoach, selected, setSelected, clientDefaultTab, setClientDefaultTab, favorites, watchDays, messages, onSend, coachProgram, setCoachProgram, activityLogs, onLogsChange, programDayIndex, setProgramDayIndex, myPlans, realClients, authUserId, authToken, goTo, myProfile, lib, libCats, setLib }) {
   var displayClients = (realClients && realClients.length > 0) ? realClients : [];
   if (selected) {
-    return <ClientDetail client={selected} onBack={function() { setSelected(null); setClientDefaultTab("Progress"); }} isCoach={isCoach} defaultTab={clientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages[selected.id] || []} onSend={onSend} coachProgram={coachProgram} setCoachProgram={setCoachProgram} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} activityLogs={activityLogs} authUserId={authUserId} authToken={authToken} onGoToMainTab={goTo} />;
+    return <ClientDetail client={selected} onBack={function() { setSelected(null); setClientDefaultTab("Progress"); }} isCoach={isCoach} defaultTab={clientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages[selected.id] || []} onSend={onSend} coachProgram={coachProgram} setCoachProgram={setCoachProgram} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} activityLogs={activityLogs} authUserId={authUserId} authToken={authToken} onGoToMainTab={goTo} lib={lib} libCats={libCats} setLib={setLib} realClients={realClients} />;
   }
   if (!isCoach) {
     var clientProfile = myProfile ? { id: authUserId, name: myProfile.name || "Client", email: myProfile.email || "", avatar: (myProfile.name||"?").split(" ").map(function(w){return w[0];}).join("").toUpperCase().slice(0,2), color: myProfile.color || "#1B8C4E", streak: 0, checkIns: [], goals: [], workedOut: [], isReal: true } : { id: authUserId || "", name: "...", email: "", avatar: "?", color: "#1B8C4E", streak: 0, checkIns: [], goals: [], workedOut: [], isReal: true };
-    return <ClientDetail client={clientProfile} onBack={null} isCoach={false} defaultTab={clientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages[clientProfile.id] || []} onSend={onSend} coachProgram={coachProgram} setCoachProgram={setCoachProgram} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} activityLogs={activityLogs} authUserId={authUserId} authToken={authToken} onGoToMainTab={goTo} />;
+    return <ClientDetail client={clientProfile} onBack={null} isCoach={false} defaultTab={clientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages[clientProfile.id] || []} onSend={onSend} coachProgram={coachProgram} setCoachProgram={setCoachProgram} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} activityLogs={activityLogs} authUserId={authUserId} authToken={authToken} onGoToMainTab={goTo} lib={lib} libCats={libCats} setLib={setLib} realClients={realClients} />;
   }
   return (
     <div>
@@ -4164,15 +4327,25 @@ function ClientsScreen({ isCoach, selected, setSelected, clientDefaultTab, setCl
 
 const DEFAULT_LIB_CATS = ["All","Chest","Back","Legs","Shoulders","Arms","Core","Cardio"];
 
-function LibraryScreen({ isCoach, favorites, toggleFavorite, authToken, authUserId }) {
+function LibraryScreen({ isCoach, favorites, toggleFavorite, authToken, authUserId, lib, setLib, libCats, setLibCats }) {
+  const [historyModal, setHistoryModal] = React.useState(null); // { name, rows }
+  function loadExHistory(exName) {
+    setHistoryModal({ name: exName, rows: null });
+    if (!authUserId || !authToken) { setHistoryModal({ name: exName, rows: [] }); return; }
+    var exEnc = encodeURIComponent(exName);
+    fetch(SUPABASE_URL + "/rest/v1/workout_history?client_id=eq." + authUserId + "&exercise_name=eq." + exEnc + "&order=logged_date.desc&limit=8", {
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+    }).then(function(r) { return r.json(); }).then(function(rows) {
+      setHistoryModal({ name: exName, rows: Array.isArray(rows) ? rows : [] });
+    }).catch(function() { setHistoryModal({ name: exName, rows: [] }); });
+  }
   const [search, setSearch]     = useState("");
-  const [cat, setCat]           = useState("All");
+  const [cats, setCats]         = useState(["All"]);
+  const cat = cats.includes("All") ? "All" : cats[0]; // backwards compat
   const [modal, setModal]       = useState(null);
   const [editing, setEditing]   = useState(null);
   const [editUrl, setEditUrl]   = useState("");
-  const [lib, setLib]           = useState(VIDEO_LIBRARY);
   const [showFavs, setShowFavs] = useState(false);
-  const [libCats, setLibCats]   = useState(DEFAULT_LIB_CATS);
   const [libLoaded, setLibLoaded] = useState(false);
 
   // Load library from Supabase
@@ -4262,7 +4435,7 @@ function LibraryScreen({ isCoach, favorites, toggleFavorite, authToken, authUser
 
   const filtered = lib.filter(function(v) {
     if (showFavs) return !!(favorites && favorites[v.name]);
-    return (cat === "All" || v.cat === cat) && (search === "" || v.name.toLowerCase().indexOf(search.toLowerCase()) !== -1);
+    var vCats = Array.isArray(v.cats) ? v.cats : (v.cat ? [v.cat] : []); if (v.cat && !vCats.includes(v.cat)) vCats = vCats.concat([v.cat]); var activeFilters = cats.filter(function(c){return c!=="All";}); return (cats.includes("All") || activeFilters.every(function(c){return vCats.includes(c);})) && (search === "" || v.name.toLowerCase().indexOf(search.toLowerCase()) !== -1);
   });
 
   const linked = lib.filter(function(v) { return !!v.url; }).length;
@@ -4311,7 +4484,7 @@ function LibraryScreen({ isCoach, favorites, toggleFavorite, authToken, authUser
         </div>
       )}
 {favIds.length > 0 && (
-        <div onClick={function() { setShowFavs(!showFavs); setCat("All"); setSearch(""); }}
+        <div onClick={function() { setShowFavs(!showFavs); setCats(["All"]); setSearch(""); }}
           style={{ background: showFavs ? "#FFF8E1" : CARD, border: "1.5px solid "+(showFavs ? "#F5C518" : BORDER), borderRadius: 14, padding: "12px 16px", marginBottom: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="#F5C518" stroke="#F5C518" strokeWidth="1.5"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
           <div style={{ flex: 1 }}>
@@ -4375,10 +4548,21 @@ function LibraryScreen({ isCoach, favorites, toggleFavorite, authToken, authUser
           </div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
             {libCats.map(function(c) {
-              const active = cat === c;
+              const active = cats.includes(c) || (c === "All" && cats.includes("All"));
               const cColor = { "All":ORANGE,"Chest":"#1B8C4E","Back":BLUE,"Legs":PURPLE,"Shoulders":"#1B8C4E","Arms":GOLD,"Core":ORANGE,"Cardio":RED }[c] || ORANGE;
               return (
-                <button key={c} onClick={function() { setCat(c); }}
+                <button key={c} onClick={function() {
+                  if (c === "All") { setCats(["All"]); return; }
+                  setCats(function(prev) {
+                    var without = prev.filter(function(x){return x!=="All";});
+                    if (without.includes(c)) {
+                      var next = without.filter(function(x){return x!==c;});
+                      return next.length === 0 ? ["All"] : next;
+                    } else {
+                      return without.concat([c]);
+                    }
+                  });
+                }}
                   style={{ padding: "7px 14px", borderRadius: 99, background: active ? cColor : SURFACE, border: "1.5px solid "+(active ? cColor : BORDER), color: active ? "#fff" : TEXT2, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                   {c}
                 </button>
@@ -4408,7 +4592,15 @@ function LibraryScreen({ isCoach, favorites, toggleFavorite, authToken, authUser
                   if (isCoach) { setEditing(isOpen ? null : v.id); setEditUrl(v.url); }
                   else if (v.url) { setModal(v); }
                 }}>
-                  <div style={{ color: TEXT, fontSize: 14, fontWeight: 700 }}>{v.name}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ color: TEXT, fontSize: 14, fontWeight: 700 }}>{v.name}</span>
+                    {!isCoach && authUserId && (
+                      <button onClick={function(e) { e.stopPropagation(); loadExHistory(v.name); }}
+                        style={{ background: "none", border: "1px solid "+BORDER, borderRadius: "50%", width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0, flexShrink: 0 }}>
+                        <span style={{ color: TEXT3, fontSize: 10, fontWeight: 700, lineHeight: 1 }}>i</span>
+                      </button>
+                    )}
+                  </div>
                   <div style={{ color: TEXT3, fontSize: 11, marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
                     <span style={{ background: SURFACE, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 600 }}>{v.cat}</span>
                   </div>
@@ -4537,6 +4729,41 @@ function LibraryScreen({ isCoach, favorites, toggleFavorite, authToken, authUser
 {!showFavs && !isCoach && (
         <div style={{ textAlign: "center", color: TEXT3, fontSize: 12, marginTop: 16, paddingBottom: 8 }}>
           Tap * on any exercise to save it to favorites
+        </div>
+      )}
+
+      {/* Workout History Modal */}
+      {historyModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 999, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+          onClick={function() { setHistoryModal(null); }}>
+          <div style={{ background: "#fff", borderRadius: "20px 20px 0 0", padding: "20px 20px 40px", width: "100%", maxWidth: 480 }}
+            onClick={function(e) { e.stopPropagation(); }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div>
+                <div style={{ color: TEXT, fontSize: 16, fontWeight: 800 }}>{historyModal.name}</div>
+                <div style={{ color: TEXT3, fontSize: 11, marginTop: 2 }}>Weight History</div>
+              </div>
+              <button onClick={function() { setHistoryModal(null); }} style={{ background: SURFACE, border: "none", borderRadius: 10, width: 32, height: 32, cursor: "pointer", fontSize: 18, color: TEXT3 }}>×</button>
+            </div>
+            {historyModal.rows === null ? (
+              <div style={{ color: TEXT3, fontSize: 13, textAlign: "center", padding: "20px 0" }}>Loading...</div>
+            ) : historyModal.rows.length === 0 ? (
+              <div style={{ color: TEXT3, fontSize: 13, textAlign: "center", padding: "20px 0" }}>No history yet — log a weight in your program to get started!</div>
+            ) : (
+              <div>
+                {historyModal.rows.map(function(h, i) {
+                  var d = new Date(h.logged_date + "T12:00:00");
+                  var dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+                  return (
+                    <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: i < historyModal.rows.length-1 ? "1px solid "+SURFACE2 : "none" }}>
+                      <span style={{ color: TEXT3, fontSize: 13 }}>{dateStr}</span>
+                      <span style={{ color: TEXT, fontSize: 15, fontWeight: 700 }}>{h.weight} lbs</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -4954,6 +5181,7 @@ function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onI
         })() : null;
         return {
           client_id: authUserId,
+          strava_id: String(a.id),
           logged_date: dateStr,
           type: type,
           notes: a.name || "",
@@ -4966,18 +5194,23 @@ function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onI
         };
       });
 
-      // Step 4: Save to Supabase in batches of 50
+      // Step 4: Save to Supabase in batches of 50, skipping duplicates by strava_id
       var batchSize = 50;
+      var totalInserted = 0;
       for (var i = 0; i < rows.length; i += batchSize) {
         var batch = rows.slice(i, i + batchSize);
-        await fetch(SUPABASE_URL + "/rest/v1/activity_logs", {
+        var res = await fetch(SUPABASE_URL + "/rest/v1/activity_logs", {
           method: "POST",
-          headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json", "Prefer": "return=minimal" },
+          headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json", "Prefer": "resolution=ignore-duplicates,return=representation" },
           body: JSON.stringify(batch)
         });
+        if (res.ok) {
+          var inserted = await res.json();
+          totalInserted += Array.isArray(inserted) ? inserted.length : 0;
+        }
       }
 
-      setImportResult({ success: true, count: rows.length });
+      setImportResult({ success: true, count: totalInserted, total: rows.length });
       if (onLogsChange) onLogsChange();
     } catch(e) {
       setImportResult({ success: false, error: "Import failed: " + e.message });
@@ -5023,12 +5256,18 @@ function AppleWatchScreen({ connected, onConnect, onDisconnect, importedIds, onI
         {stravaConnected ? (
           <div>
             <button onClick={importStravaActivities} disabled={importing}
-              style={{ width: "100%", padding: 13, borderRadius: 12, background: "#fff", border: "none", color: "#FC4C02", fontSize: 14, fontWeight: 800, cursor: importing ? "default" : "pointer", marginBottom: 8, opacity: importing ? 0.7 : 1 }}>
-              {importing ? "Importing…" : "Import Past 200 Activities"}
+              style={{ width: "100%", padding: 13, borderRadius: 12, background: importing ? "rgba(255,255,255,0.5)" : "#fff", border: "none", color: "#FC4C02", fontSize: 14, fontWeight: 800, cursor: importing ? "not-allowed" : "pointer", marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              {importing ? (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FC4C02" strokeWidth="2.5" strokeLinecap="round" style={{ animation: "spin 1s linear infinite" }}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                  Importing… please wait
+                </>
+              ) : "Import Past 200 Activities"}
             </button>
+            <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
             {importResult && (
               <div style={{ background: importResult.success ? "rgba(255,255,255,0.15)" : "rgba(255,0,0,0.2)", borderRadius: 10, padding: "8px 12px", marginBottom: 8, color: "#fff", fontSize: 12, textAlign: "center" }}>
-                {importResult.success ? "✓ Imported " + importResult.count + " activities from Strava!" : "⚠ " + importResult.error}
+                {importResult.success ? "✓ " + importResult.count + " new activities imported" + (importResult.total > importResult.count ? " · " + (importResult.total - importResult.count) + " already existed" : "") : "⚠ " + importResult.error}
               </div>
             )}
             <button onClick={disconnectStrava} style={{ width: "100%", padding: 10, borderRadius: 12, background: "rgba(255,255,255,0.1)", border: "1.5px solid rgba(255,255,255,0.2)", color: "rgba(255,255,255,0.7)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
@@ -7830,6 +8069,26 @@ function CoachInbox({ messages, handleSendMessage, realClients, viewedCounts, se
 
 function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, authCoachId }) {
   const [refreshTick, setRefreshTick] = useState(0);
+  const [lib, setLib] = useState([]);
+  const [libCats, setLibCats] = useState(["All","Chest","Back","Legs","Shoulders","Arms","Core","Cardio"]);
+
+  // Keep global lib in sync for findVideo
+  useEffect(function() { _globalLib = lib; }, [lib]);
+
+  // Load exercise library from Supabase on startup
+  useEffect(function() {
+    if (!authToken) return;
+    fetch(SUPABASE_URL + "/rest/v1/exercise_library?select=*&order=name.asc", {
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+    }).then(function(r) { return r.json(); }).then(function(rows) {
+      if (Array.isArray(rows) && rows.length > 0) setLib(rows);
+    }).catch(function() {});
+    fetch(SUPABASE_URL + "/rest/v1/lib_cats?select=cats&limit=1", {
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+    }).then(function(r) { return r.json(); }).then(function(rows) {
+      if (Array.isArray(rows) && rows.length > 0 && rows[0].cats) setLibCats(rows[0].cats);
+    }).catch(function() {});
+  }, [authToken]);
   const [tab, setTab] = useState(function() {
     try {
       var startTab = localStorage.getItem("mf_start_tab");
@@ -8986,7 +9245,7 @@ if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.stat
           });
           return <HomeScreen isCoach={isCoach} goTo={goTo} setClient={setSelected} goToClientTab={goToClientTab} messages={messages} monthStats={monthStats} coachProgram={coachProgram} activityLogs={activityLogs} myPlans={myPlans} thisWeekPlanned={_planned} realClients={realClients} viewedCounts={viewedCounts} myProfile={myProfile} completions={completions} />;
         })()}
-        {tab === "clients"       && <ClientsScreen isCoach={isCoach} selected={selected} setSelected={setSelected} clientDefaultTab={clientDefaultTab} setClientDefaultTab={setClientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages} onSend={handleSendMessage} coachProgram={coachProgram} setCoachProgram={handleProgramUpdate} activityLogs={activityLogs} onLogsChange={handleLogsChange} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} realClients={realClients} authUserId={authUserId} authToken={authToken} goTo={goTo} myProfile={myProfile} />}
+        {tab === "clients"       && <ClientsScreen isCoach={isCoach} selected={selected} setSelected={setSelected} clientDefaultTab={clientDefaultTab} setClientDefaultTab={setClientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages} onSend={handleSendMessage} coachProgram={coachProgram} setCoachProgram={handleProgramUpdate} activityLogs={activityLogs} onLogsChange={handleLogsChange} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} realClients={realClients} authUserId={authUserId} authToken={authToken} goTo={goTo} myProfile={myProfile} lib={lib} libCats={libCats} setLib={setLib} />}
         {tab === "directmessage" && (
           <div style={{ padding: "0 0 24px" }}>
             <div style={{ padding: "12px 16px 10px", display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid "+BORDER, background: CARD }}>
@@ -9005,7 +9264,7 @@ if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.stat
             )}
           </div>
         )}
-        {tab === "library"       && <LibraryScreen isCoach={isCoach} favorites={favorites} toggleFavorite={toggleFavorite} authToken={authToken} authUserId={authUserId} />}
+        {tab === "library"       && <LibraryScreen isCoach={isCoach} favorites={favorites} toggleFavorite={toggleFavorite} authToken={authToken} authUserId={authUserId} lib={lib} setLib={setLib} libCats={libCats} setLibCats={setLibCats} />}
         {tab === "watch"         && <AppleWatchScreen connected={watchConnected} onConnect={function() { setWatchConnected(true); }} onDisconnect={function() { setWatchConnected(false); setImportedIds({}); setWatchDays({}); }} importedIds={importedIds} onImport={handleImport} authUserId={authUserId} authToken={authToken} onLogsChange={function() { if (authUserId && authToken) { fetch(SUPABASE_URL + "/rest/v1/activity_logs?client_id=eq." + authUserId + "&order=logged_date.desc&limit=200", { headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken } }).then(function(r){return r.json();}).then(function(rows){ if (!Array.isArray(rows)) return; var built = {}; rows.forEach(function(row){ var parts = row.logged_date.split("-"); var mk = parseInt(parts[0]) + "-" + (parseInt(parts[1])-1); var day = parseInt(parts[2]); if (!built[mk]) built[mk]={}; if (!built[mk][day]) built[mk][day]=[]; built[mk][day].push({id:row.id,type:row.type,notes:row.notes||"",miles:row.miles?String(row.miles):"",duration:row.duration||"",calories:row.calories?String(row.calories):"",steps:row.steps?String(row.steps):"",pace:row.pace||"",source:row.source||"",fromDevice:row.source&&row.source!=="manual"}); }); setActivityLogs(built); }).catch(function(){}); } }} />}
         {tab === "activity"      && <ActivityScreen isCoach={isCoach} watchDays={watchDays} activityLogs={activityLogs} onLogsChange={handleLogsChange} realClients={realClients} myProfile={myProfile} authToken={authToken} authUserId={authUserId} />}
         {tab === "analytics"     && <AnalyticsScreen isCoach={isCoach} monthStats={monthStats} todaySteps={monthStats.todaySteps} last7Steps={monthStats.last7Steps} activityLogs={activityLogs} realClients={realClients} />}

@@ -93,6 +93,12 @@ const SVG_ICONS = {
 
 
 const BG       = "#FFFFFF";
+if (typeof document !== "undefined" && !document.getElementById("mf-noscroll-style")) {
+  var _ns = document.createElement("style");
+  _ns.id = "mf-noscroll-style";
+  _ns.textContent = ".mf-hscroll::-webkit-scrollbar { display: none; } .mf-hscroll { -ms-overflow-style: none; scrollbar-width: none; }";
+  document.head.appendChild(_ns);
+}
 if (typeof document !== "undefined" && !document.getElementById("mf-spin-style")) { var _ss = document.createElement("style"); _ss.id = "mf-spin-style"; _ss.textContent = "@keyframes mfspin { to { transform: rotate(360deg); } }"; document.head.appendChild(_ss); }
 const CARD     = "#FFFFFF";
 const SURFACE  = "#F0F5F2";
@@ -2078,7 +2084,7 @@ function ExercisePicker({ color, onAdd, onClose, favorites, lib, libCats, setLib
             </div>
           )}
         </div>
-        <div style={{ padding: "0 16px 10px", display: "flex", gap: 6, flexShrink: 0, overflowX: "auto" }}>
+        <div className="mf-hscroll" style={{ padding: "0 16px 10px", display: "flex", gap: 6, flexShrink: 0, overflowX: "auto" }}>
           {(libCats && libCats.length > 0 ? ["All","Favorites",...libCats.filter(function(c){return c!=="All";})] : PICKER_CATS).map(function(ct) {
             const active = cat === ct;
             const isFavTab = ct === "Favorites";
@@ -4241,7 +4247,7 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
 
               {/* Show My Plan days if any are planned, otherwise fall back to coach program chips */}
               {plannedCount > 0 ? (
-                <div style={{ display: "flex", gap: 6, marginBottom: 20, overflowX: "auto" }}>
+                <div className="mf-hscroll" style={{ display: "flex", gap: 6, marginBottom: 20, overflowX: "auto" }}>
                   {_twp.map(function(d, i) {
                     if (!d.acts.length) return null;
                     var isToday = d.isToday;
@@ -5943,7 +5949,7 @@ function AnalyticsScreen({ isCoach, monthStats, todaySteps, last7Steps, activity
       {!isCoach && (
         <div>
           <div style={{ color: TEXT3, fontSize: 11, fontWeight: 700, letterSpacing: 1.5, marginBottom: 12 }}>ACTIVITY TRENDS</div>
-          <div style={{ display: "flex", gap: 8, marginBottom: 14, overflowX: "auto", paddingBottom: 2 }}>
+          <div className="mf-hscroll" style={{ display: "flex", gap: 8, marginBottom: 14, overflowX: "auto", paddingBottom: 2 }}>
             {Object.keys(TREND_DATA).filter(function(key) { return !!loggedTypes[key]; }).map(function(key) {
               const t = TREND_DATA[key];
               const active = validActiveType === key;
@@ -7526,6 +7532,8 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
         var r = JSON.parse(localStorage.getItem("mf_race")||"{}");
         if (r.raceDateStr) setRaceDateStr(r.raceDateStr);
         if (r.raceName) setRaceName(r.raceName);
+        if (r.raceDistKey) setRaceDistKey(r.raceDistKey);
+        if (r.goalTime) { setGoalTime(r.goalTime); setPaceInput(r.goalTime); }
       } catch(e) {}
     }
     window.addEventListener("mf_race_loaded", onRaceLoaded);
@@ -7673,9 +7681,9 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
                     <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 5 }}>GOAL TIME</div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       {[
-                        { label: "HRS", max: 23, val: parseInt((goalTime||"00:00:00").split(":")[0]) || 0, set: function(v) { var p = (goalTime||"00:00:00").split(":"); while(p.length<3) p.push("00"); p[0] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.goalTime=s; localStorage.setItem("mf_race",JSON.stringify(r)); } catch(ex){} } },
-                        { label: "MIN", max: 59, val: parseInt((goalTime||"00:00:00").split(":")[1]) || 0, set: function(v) { var p = (goalTime||"00:00:00").split(":"); while(p.length<3) p.push("00"); p[1] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.goalTime=s; localStorage.setItem("mf_race",JSON.stringify(r)); } catch(ex){} } },
-                        { label: "SEC", max: 59, val: parseInt((goalTime||"00:00:00").split(":")[2]) || 0, set: function(v) { var p = (goalTime||"00:00:00").split(":"); while(p.length<3) p.push("00"); p[2] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.goalTime=s; localStorage.setItem("mf_race",JSON.stringify(r)); } catch(ex){} } },
+                        { label: "HRS", max: 23, val: parseInt((goalTime||"00:00:00").split(":")[0]) || 0, set: function(v) { var p = (goalTime||"00:00:00").split(":"); while(p.length<3) p.push("00"); p[0] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.goalTime=s; localStorage.setItem("mf_race",JSON.stringify(r)); saveRaceToSupabase(r); } catch(ex){} } },
+                        { label: "MIN", max: 59, val: parseInt((goalTime||"00:00:00").split(":")[1]) || 0, set: function(v) { var p = (goalTime||"00:00:00").split(":"); while(p.length<3) p.push("00"); p[1] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.goalTime=s; localStorage.setItem("mf_race",JSON.stringify(r)); saveRaceToSupabase(r); } catch(ex){} } },
+                        { label: "SEC", max: 59, val: parseInt((goalTime||"00:00:00").split(":")[2]) || 0, set: function(v) { var p = (goalTime||"00:00:00").split(":"); while(p.length<3) p.push("00"); p[2] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.goalTime=s; localStorage.setItem("mf_race",JSON.stringify(r)); saveRaceToSupabase(r); } catch(ex){} } },
                       ].map(function(seg, si) {
                         return (
                           <div key={seg.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>

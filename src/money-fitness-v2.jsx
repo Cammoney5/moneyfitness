@@ -1151,6 +1151,31 @@ function CoachProgramEditor({ program, onSave, onClose, lib, libCats, authToken,
   const [saved, setSaved] = useState(false);
   const [showNotifyPrompt, setShowNotifyPrompt] = useState(false);
   const [circuitPickerFor, setCircuitPickerFor] = useState(null);
+  const [fieldColors, setFieldColors] = useState(function(){
+    var init = {};
+    (program||[]).forEach(function(wk){ (wk.days||[]).forEach(function(day){ if(day.fieldColors) Object.assign(init, day.fieldColors); }); });
+    return init;
+  });
+  var FIELD_COLOR_CYCLE = [null, "#E05252", "#1B8C4E", "#2563B0", "#E0A020", "#9B6FD4"];
+  function cycleFieldColor(wkIdx, dayIdx2, exIdx2, field) {
+    var key = wkIdx+"-"+dayIdx2+"-"+exIdx2+"-"+field;
+    setFieldColors(function(prev) {
+      var cur = prev[key] || null;
+      var idx = FIELD_COLOR_CYCLE.indexOf(cur);
+      var next = FIELD_COLOR_CYCLE[(idx + 1) % FIELD_COLOR_CYCLE.length];
+      var updated = Object.assign({}, prev);
+      if (next === null) { delete updated[key]; } else { updated[key] = next; }
+      setDraft(function(d) {
+        var dn = JSON.parse(JSON.stringify(d));
+        if (!dn[wkIdx] || !dn[wkIdx].days[dayIdx2]) return d;
+        if (!dn[wkIdx].days[dayIdx2].fieldColors) dn[wkIdx].days[dayIdx2].fieldColors = {};
+        if (next === null) { delete dn[wkIdx].days[dayIdx2].fieldColors[key]; }
+        else { dn[wkIdx].days[dayIdx2].fieldColors[key] = next; }
+        return dn;
+      });
+      return updated;
+    });
+  }
 
   function updateFocus(wkIdx, dayIdx, val) {
     setDraft(function(prev) {
@@ -1449,29 +1474,45 @@ function CoachProgramEditor({ program, onSave, onClose, lib, libCats, authToken,
                       </div>
                       <div style={{ display: "flex", gap: 6, paddingLeft: 24 }}>
                         <div style={{ flex: 1 }}>
-                          <div style={{ color: TEXT3, fontSize: 9, fontWeight: 700, letterSpacing: 0.5, marginBottom: 3 }}>SETS</div>
+                          <div style={{ color: fieldColors[activeWk+"-"+dayIdx+"-"+exIdx+"-s"]||TEXT3, fontSize: 9, fontWeight: 700, letterSpacing: 0.5, marginBottom: 3, cursor: "pointer" }} onClick={function(){ cycleFieldColor(activeWk, dayIdx, exIdx, "s"); }}>SETS ✦</div>
                           <input
                             type="number"
                             value={parsed.sets || ""}
                             onChange={function(e) {
                               var cur = parseExercise(ex);
-                              updateExercise(activeWk, dayIdx, exIdx, parsed.name + " " + (e.target.value || "3") + "x" + (cur.reps || "10"));
+                              var timeStr = cur.time ? " @"+cur.time : "";
+                              updateExercise(activeWk, dayIdx, exIdx, parsed.name + " " + (e.target.value || "3") + "x" + (cur.reps || "10") + timeStr);
                             }}
                             placeholder="3"
-                            style={Object.assign({}, inputS, { textAlign: "center", fontSize: 13, fontWeight: 700, padding: "6px 4px" })}
+                            style={Object.assign({}, inputS, { textAlign: "center", fontSize: 13, fontWeight: 700, padding: "6px 4px", color: fieldColors[activeWk+"-"+dayIdx+"-"+exIdx+"-s"] || undefined })}
                           />
                         </div>
                         <div style={{ flex: 1 }}>
-                          <div style={{ color: TEXT3, fontSize: 9, fontWeight: 700, letterSpacing: 0.5, marginBottom: 3 }}>REPS</div>
+                          <div style={{ color: fieldColors[activeWk+"-"+dayIdx+"-"+exIdx+"-r"]||TEXT3, fontSize: 9, fontWeight: 700, letterSpacing: 0.5, marginBottom: 3, cursor: "pointer" }} onClick={function(){ cycleFieldColor(activeWk, dayIdx, exIdx, "r"); }}>REPS ✦</div>
                           <input
                             type="number"
                             value={parsed.reps || ""}
                             onChange={function(e) {
                               var cur = parseExercise(ex);
-                              updateExercise(activeWk, dayIdx, exIdx, parsed.name + " " + (cur.sets || "3") + "x" + (e.target.value || "10"));
+                              var timeStr = cur.time ? " @"+cur.time : "";
+                              updateExercise(activeWk, dayIdx, exIdx, parsed.name + " " + (cur.sets || "3") + "x" + (e.target.value || "10") + timeStr);
                             }}
                             placeholder="10"
-                            style={Object.assign({}, inputS, { textAlign: "center", fontSize: 13, fontWeight: 700, padding: "6px 4px" })}
+                            style={Object.assign({}, inputS, { textAlign: "center", fontSize: 13, fontWeight: 700, padding: "6px 4px", color: fieldColors[activeWk+"-"+dayIdx+"-"+exIdx+"-r"] || undefined })}
+                          />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ color: fieldColors[activeWk+"-"+dayIdx+"-"+exIdx+"-t"]||TEXT3, fontSize: 9, fontWeight: 700, letterSpacing: 0.5, marginBottom: 3, cursor: "pointer" }} onClick={function(){ cycleFieldColor(activeWk, dayIdx, exIdx, "t"); }}>TIME ✦</div>
+                          <input
+                            type="text"
+                            value={parsed.time || ""}
+                            onChange={function(e) {
+                              var cur = parseExercise(ex);
+                              var timeStr = e.target.value ? " @"+e.target.value : "";
+                              updateExercise(activeWk, dayIdx, exIdx, cur.name + " " + (cur.sets || "3") + "x" + (cur.reps || "10") + timeStr);
+                            }}
+                            placeholder="30s"
+                            style={Object.assign({}, inputS, { textAlign: "center", fontSize: 13, fontWeight: 700, padding: "6px 4px", color: fieldColors[activeWk+"-"+dayIdx+"-"+exIdx+"-t"] || undefined })}
                           />
                         </div>
                       </div>
@@ -2679,7 +2720,16 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
                       <div style={{display:"flex",alignItems:"center",gap:8}}>
                         <div style={{width:28,height:28,borderRadius:8,background:isC?cc+"40":"#F0F5F2",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:isC?cc:"#7AAB8A",fontFamily:"monospace",flexShrink:0}}>{p.origIdx+1}</div>
                         <div style={{color:"#0A1A0F",fontSize:14,fontWeight:500,flex:1}}>{p.name}</div>
-                        {p.sets&&p.reps&&<div style={{fontSize:11,fontWeight:600,color:"#7AAB8A",background:"#F0F5F2",padding:"4px 8px",borderRadius:8,fontFamily:"monospace",flexShrink:0}}>{p.sets}×{p.reps}</div>}
+                        {p.sets&&(p.reps||p.time)&&(function(){
+                          var _fc=fday.fieldColors||{};
+                          var _fk=fw+"-"+fd+"-"+p.origIdx;
+                          var _sc=_fc[_fk+"-s"],_rc=_fc[_fk+"-r"],_tc=_fc[_fk+"-t"];
+                          var _rStr=p.time&&(!p.reps||p.reps==="0")?p.time:(p.reps+(p.time?" @"+p.time:""));
+                          if(!_sc&&!_rc&&!_tc) return <div style={{fontSize:11,fontWeight:600,color:"#7AAB8A",background:"#F0F5F2",padding:"4px 8px",borderRadius:8,fontFamily:"monospace",flexShrink:0}}>{p.sets}×{_rStr}</div>;
+                          return <div style={{fontSize:11,fontWeight:700,background:"#F0F5F2",padding:"4px 8px",borderRadius:8,fontFamily:"monospace",flexShrink:0,display:"flex",alignItems:"center",gap:1}}>
+                            <span style={{color:_sc||"#7AAB8A"}}>{p.sets}</span><span style={{color:"#7AAB8A"}}>×</span><span style={{color:_rc||_tc||"#7AAB8A"}}>{_rStr}</span>
+                          </div>;
+                        })()}
                         <input type="number" placeholder="lbs"
                           value={exLogs[fw+"-"+fd+"-"+p.origIdx]||""}
                           onChange={function(e){logWeight(fw+"-"+fd+"-"+p.origIdx,e.target.value);}}
@@ -2908,7 +2958,16 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
                       <div style={{display:"flex",alignItems:"center",gap:8}}>
                         <div style={{width:28,height:28,borderRadius:8,background:isCircuit?cc+"18":"#F0F5F2",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:isCircuit?cc:"#7AAB8A",fontFamily:"monospace",flexShrink:0}}>{ex.origIdx+1}</div>
                         <div style={{color:"#0A1A0F",fontSize:14,fontWeight:500,flex:1}}>{ex.name}</div>
-                        {ex.sets&&ex.reps&&<div style={{fontSize:11,fontWeight:600,color:"#7AAB8A",background:"#F0F5F2",padding:"4px 8px",borderRadius:8,fontFamily:"monospace",flexShrink:0}}>{ex.sets}×{ex.reps}</div>}
+                        {ex.sets&&(ex.reps||ex.time)&&(function(){
+                          var _fc=day.fieldColors||{};
+                          var _fk=activeWk+"-"+origIdx+"-"+ex.origIdx;
+                          var _sc=_fc[_fk+"-s"],_rc=_fc[_fk+"-r"],_tc=_fc[_fk+"-t"];
+                          var _rStr=ex.time&&(!ex.reps||ex.reps==="0")?ex.time:(ex.reps+(ex.time?" @"+ex.time:""));
+                          if(!_sc&&!_rc&&!_tc) return <div style={{fontSize:11,fontWeight:600,color:"#7AAB8A",background:"#F0F5F2",padding:"4px 8px",borderRadius:8,fontFamily:"monospace",flexShrink:0}}>{ex.sets}×{_rStr}</div>;
+                          return <div style={{fontSize:11,fontWeight:700,background:"#F0F5F2",padding:"4px 8px",borderRadius:8,fontFamily:"monospace",flexShrink:0,display:"flex",alignItems:"center",gap:1}}>
+                            <span style={{color:_sc||"#7AAB8A"}}>{ex.sets}</span><span style={{color:"#7AAB8A"}}>×</span><span style={{color:_rc||_tc||"#7AAB8A"}}>{_rStr}</span>
+                          </div>;
+                        })()}
                         <input
                           type="number"
                           placeholder="lbs"
@@ -3912,7 +3971,16 @@ function CoachProgramTabView({ program, color, onUpdate, lib, libCats, authToken
                           <div style={{display:"flex",alignItems:"center",gap:8}}>
                             <div style={{width:28,height:28,borderRadius:8,background:isCircuit?cc+"35":"#F0F5F2",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:isCircuit?cc:"#7AAB8A",fontFamily:"monospace",flexShrink:0}}>{ex.origIdx+1}</div>
                             <div style={{color:"#0A1A0F",fontSize:14,fontWeight:500,flex:1}}>{ex.name}</div>
-                            {ex.sets&&ex.reps&&<div style={{fontSize:11,fontWeight:600,color:"#7AAB8A",background:"#F0F5F2",padding:"4px 8px",borderRadius:8,fontFamily:"monospace",flexShrink:0}}>{ex.sets}×{ex.reps}</div>}
+                            {ex.sets&&(ex.reps||ex.time)&&(function(){
+                              var _fc=day.fieldColors||{};
+                              var _fk=coachWk+"-"+dayIdx+"-"+ex.origIdx;
+                              var _sc=_fc[_fk+"-s"],_rc=_fc[_fk+"-r"],_tc=_fc[_fk+"-t"];
+                              var _rStr=ex.time&&(!ex.reps||ex.reps==="0")?ex.time:(ex.reps+(ex.time?" @"+ex.time:""));
+                              if(!_sc&&!_rc&&!_tc) return <div style={{fontSize:11,fontWeight:600,color:"#7AAB8A",background:"#F0F5F2",padding:"4px 8px",borderRadius:8,fontFamily:"monospace",flexShrink:0}}>{ex.sets}×{_rStr}</div>;
+                              return <div style={{fontSize:11,fontWeight:700,background:"#F0F5F2",padding:"4px 8px",borderRadius:8,fontFamily:"monospace",flexShrink:0,display:"flex",alignItems:"center",gap:1}}>
+                                <span style={{color:_sc||"#7AAB8A"}}>{ex.sets}</span><span style={{color:"#7AAB8A"}}>×</span><span style={{color:_rc||_tc||"#7AAB8A"}}>{_rStr}</span>
+                              </div>;
+                            })()}
                             <input
                               type="number"
                               placeholder="lbs"

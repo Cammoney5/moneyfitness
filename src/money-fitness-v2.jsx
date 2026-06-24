@@ -9152,6 +9152,21 @@ if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.stat
   const [watchDays, setWatchDays] = useState(defaultWatchDays);
   const [raceCollapsed, setRaceCollapsed] = useState(false);
   const [myPlans, setMyPlans] = useState(function(){ try { var s=localStorage.getItem("mf_plans"); return s?JSON.parse(s):{}; } catch(e){return {};} }); // lifted from RaceScreen so HomeScreen can read it
+
+  // Load client plans from Supabase on startup
+  useEffect(function() {
+    if (!authToken || !authUserId || isCoach) return;
+    fetch(SUPABASE_URL + "/rest/v1/client_plans?client_id=eq." + authUserId + "&select=plan_key,activities", {
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+    }).then(function(r) { return r.json(); }).then(function(rows) {
+      if (!Array.isArray(rows) || rows.length === 0) return;
+      var built = {};
+      rows.forEach(function(row) { if (row.activities && row.activities.length > 0) built[row.plan_key] = row.activities; });
+      if (Object.keys(built).length > 0) {
+        setMyPlans(function(prev) { return Object.assign({}, built, prev); });
+      }
+    }).catch(function(){});
+  }, [authUserId, authToken]);
   const [completions, setCompletions] = useState({});
 
   // Load completions from Supabase on mount

@@ -7506,10 +7506,31 @@ function WorkoutsSection({ weekDates, onAddToDay }) {
   );
 }
 
-function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setPlans, completions, onToggleCompletion, coachProgram }) {
+function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setPlans, completions, onToggleCompletion, coachProgram, authUserId, authToken }) {
   var [activeTab,    setActiveTab]    = useState("plan");
   var [raceDateStr,  setRaceDateStr]  = useState(function(){ try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); return r.raceDateStr||""; } catch(e){return "";} });
   var [raceName,     setRaceName]     = useState(function(){ try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); return r.raceName||""; } catch(e){return "";} });
+
+  function saveRaceToSupabase(raceObj) {
+    if (!authUserId || !authToken) return;
+    fetch(SUPABASE_URL + "/rest/v1/profiles?id=eq." + authUserId, {
+      method: "PATCH",
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json" },
+      body: JSON.stringify({ race_settings: raceObj })
+    }).catch(function(){});
+  }
+
+  useEffect(function() {
+    function onRaceLoaded() {
+      try {
+        var r = JSON.parse(localStorage.getItem("mf_race")||"{}");
+        if (r.raceDateStr) setRaceDateStr(r.raceDateStr);
+        if (r.raceName) setRaceName(r.raceName);
+      } catch(e) {}
+    }
+    window.addEventListener("mf_race_loaded", onRaceLoaded);
+    return function() { window.removeEventListener("mf_race_loaded", onRaceLoaded); };
+  }, []);
   var [goalTime,     setGoalTime]     = useState(function(){ try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); return r.goalTime||""; } catch(e){return "";} });  var [raceDistKey,  setRaceDistKey]  = useState(function(){ try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); return r.raceDistKey||"full"; } catch(e){return "full";} });
   var [paceInput,    setPaceInput]    = useState("");
   var [showSetup,    setShowSetup]    = useState(false);
@@ -7639,7 +7660,7 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
               {!raceCollapsed && showSetup && (
                 <div style={{ background: "rgba(0,0,0,0.3)", borderRadius: 14, padding: 14, marginBottom: 14, border: "1px solid rgba(255,255,255,0.1)" }}>
                   {[
-                    { label: "RACE NAME", value: raceName, set: function(v) { setRaceName(v); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.raceName=v; localStorage.setItem("mf_race",JSON.stringify(r)); } catch(e){} }, placeholder: "Race name" },
+                    { label: "RACE NAME", value: raceName, set: function(v) { setRaceName(v); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.raceName=v; localStorage.setItem("mf_race",JSON.stringify(r)); saveRaceToSupabase(r); } catch(e){} }, placeholder: "Race name" },
                   ].map(function(f) {
                     return (
                       <div key={f.label} style={{ marginBottom: 10 }}>
@@ -7671,7 +7692,7 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
                   </div>
                   <div style={{ marginBottom: 10 }}>
                     <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 5 }}>RACE DATE</div>
-                    <input type="date" value={raceDateStr} onChange={function(e) { setRaceDateStr(e.target.value); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.raceDateStr=e.target.value; localStorage.setItem("mf_race",JSON.stringify(r)); } catch(ex){} }} style={{ width: "100%", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, padding: "10px 12px", color: WHITE, fontSize: 14, fontWeight: 600, outline: "none", boxSizing: "border-box", colorScheme: "dark" }} />
+                    <input type="date" value={raceDateStr} onChange={function(e) { setRaceDateStr(e.target.value); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.raceDateStr=e.target.value; localStorage.setItem("mf_race",JSON.stringify(r)); saveRaceToSupabase(r); } catch(ex){} }} style={{ width: "100%", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, padding: "10px 12px", color: WHITE, fontSize: 14, fontWeight: 600, outline: "none", boxSizing: "border-box", colorScheme: "dark" }} />
                   </div>
                   <div>
                     <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>RACE DISTANCE</div>
@@ -7679,7 +7700,7 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
                       {[["5k","5K"],["10k","10K"],["half","Half"],["full","Marathon"],["ultra","50K"]].map(function(kv) {
                         var active = raceDistKey === kv[0];
                         return (
-                          <button key={kv[0]} onClick={function() { setRaceDistKey(kv[0]); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.raceDistKey=kv[0]; localStorage.setItem("mf_race",JSON.stringify(r)); } catch(ex){} }} style={{ flex: 1, padding: "7px 2px", borderRadius: 8, background: active ? WHITE : "rgba(255,255,255,0.08)", border: "1px solid "+(active ? WHITE : "rgba(255,255,255,0.15)"), color: active ? DKGREEN : WHITE, fontSize: 10, fontWeight: active ? 800 : 500, cursor: "pointer" }}>{kv[1]}</button>
+                          <button key={kv[0]} onClick={function() { setRaceDistKey(kv[0]); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.raceDistKey=kv[0]; localStorage.setItem("mf_race",JSON.stringify(r)); saveRaceToSupabase(r); } catch(ex){} }} style={{ flex: 1, padding: "7px 2px", borderRadius: 8, background: active ? WHITE : "rgba(255,255,255,0.08)", border: "1px solid "+(active ? WHITE : "rgba(255,255,255,0.15)"), color: active ? DKGREEN : WHITE, fontSize: 10, fontWeight: active ? 800 : 500, cursor: "pointer" }}>{kv[1]}</button>
                         );
                       })}
                     </div>
@@ -9153,6 +9174,20 @@ if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.stat
   const [raceCollapsed, setRaceCollapsed] = useState(false);
   const [myPlans, setMyPlans] = useState(function(){ try { var s=localStorage.getItem("mf_plans"); return s?JSON.parse(s):{}; } catch(e){return {};} }); // lifted from RaceScreen so HomeScreen can read it
 
+  // Load race settings from Supabase on startup
+  useEffect(function() {
+    if (!authToken || !authUserId || isCoach) return;
+    fetch(SUPABASE_URL + "/rest/v1/profiles?id=eq." + authUserId + "&select=race_settings", {
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+    }).then(function(r) { return r.json(); }).then(function(rows) {
+      if (!Array.isArray(rows) || !rows[0] || !rows[0].race_settings) return;
+      var rs = rows[0].race_settings;
+      try { localStorage.setItem("mf_race", JSON.stringify(rs)); } catch(e) {}
+      // Force RaceScreen to re-read localStorage by dispatching storage event
+      window.dispatchEvent(new Event("mf_race_loaded"));
+    }).catch(function(){});
+  }, [authUserId, authToken]);
+
   // Load client plans from Supabase on startup
   useEffect(function() {
     if (!authToken || !authUserId || isCoach) return;
@@ -9387,7 +9422,7 @@ if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.stat
         {tab === "watch"         && <AppleWatchScreen connected={watchConnected} onConnect={function() { setWatchConnected(true); }} onDisconnect={function() { setWatchConnected(false); setImportedIds({}); setWatchDays({}); }} importedIds={importedIds} onImport={handleImport} authUserId={authUserId} authToken={authToken} onLogsChange={function() { if (authUserId && authToken) { fetch(SUPABASE_URL + "/rest/v1/activity_logs?client_id=eq." + authUserId + "&order=logged_date.desc&limit=200", { headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken } }).then(function(r){return r.json();}).then(function(rows){ if (!Array.isArray(rows)) return; var built = {}; rows.forEach(function(row){ var parts = row.logged_date.split("-"); var mk = parseInt(parts[0]) + "-" + (parseInt(parts[1])-1); var day = parseInt(parts[2]); if (!built[mk]) built[mk]={}; if (!built[mk][day]) built[mk][day]=[]; built[mk][day].push({id:row.id,type:row.type,notes:row.notes||"",miles:row.miles?String(row.miles):"",duration:row.duration||"",calories:row.calories?String(row.calories):"",steps:row.steps?String(row.steps):"",pace:row.pace||"",source:row.source||"",fromDevice:row.source&&row.source!=="manual"}); }); setActivityLogs(built); }).catch(function(){}); } }} />}
         {tab === "activity"      && <ActivityScreen isCoach={isCoach} watchDays={watchDays} activityLogs={activityLogs} onLogsChange={handleLogsChange} realClients={realClients} myProfile={myProfile} authToken={authToken} authUserId={authUserId} />}
         {tab === "analytics"     && <AnalyticsScreen isCoach={isCoach} monthStats={monthStats} todaySteps={monthStats.todaySteps} last7Steps={monthStats.last7Steps} activityLogs={activityLogs} realClients={realClients} />}
-        {tab === "race"          && <RaceScreen activityLogs={activityLogs} raceCollapsed={raceCollapsed} setRaceCollapsed={setRaceCollapsed} plans={myPlans} setPlans={function(v) { var next = typeof v === "function" ? v(myPlans) : v; setMyPlans(next); try { localStorage.setItem("mf_plans", JSON.stringify(next)); } catch(e) {} }} completions={completions} onToggleCompletion={handleToggleCompletion} coachProgram={coachProgram} />}
+        {tab === "race"          && <RaceScreen activityLogs={activityLogs} raceCollapsed={raceCollapsed} setRaceCollapsed={setRaceCollapsed} plans={myPlans} setPlans={function(v) { var next = typeof v === "function" ? v(myPlans) : v; setMyPlans(next); try { localStorage.setItem("mf_plans", JSON.stringify(next)); } catch(e) {} }} completions={completions} onToggleCompletion={handleToggleCompletion} coachProgram={coachProgram} authUserId={authUserId} authToken={authToken} />}
         {tab === "notifications" && <NotificationsScreen notifications={notifications} onRead={function(id) { setNotifications(function(p) { return p.map(function(n) { return n.id === id ? Object.assign({}, n, { read: true }) : n; }); }); }} onClearAll={function() { setNotifications(function(p) { return p.map(function(n) { return Object.assign({}, n, { read: true }); }); }); }} isCoach={isCoach} goTo={goTo} onNavigateToClient={function(clientId, defaultTab) {
     var client = CLIENTS.find(function(c) { return c.id === clientId; });
     if (client) { setSelected(client); setClientDefaultTab(defaultTab || "Messages"); goTo("clients"); }

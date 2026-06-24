@@ -2668,16 +2668,20 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
                 var items=grp.items.map(function(p){
                   var vid=findVideo(p.name);
                   return (
-                    <div key={"fex-"+p.origIdx} style={{background:"#fff",borderRadius:14,border:"1.5px solid #E8E4DE",padding:"12px 14px",marginBottom:isC?0:8}}>
+                    <div key={"fex-"+p.origIdx} style={{background:isC?cc+"15":"#fff",borderRadius:isC?0:14,border:isC?"none":"1.5px solid #E8E4DE",borderBottom:isC?"1px solid "+cc+"30":"none",padding:"12px 14px",marginBottom:isC?0:8}}>
                       <div style={{display:"flex",alignItems:"center",gap:8}}>
-                        <div style={{width:28,height:28,borderRadius:8,background:isC?cc+"18":"#F0F5F2",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:isC?cc:"#7AAB8A",fontFamily:"monospace",flexShrink:0}}>{p.origIdx+1}</div>
+                        <div style={{width:28,height:28,borderRadius:8,background:isC?cc+"40":"#F0F5F2",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:isC?cc:"#7AAB8A",fontFamily:"monospace",flexShrink:0}}>{p.origIdx+1}</div>
                         <div style={{color:"#0A1A0F",fontSize:14,fontWeight:500,flex:1}}>{p.name}</div>
                         {p.sets&&p.reps&&<div style={{fontSize:11,fontWeight:600,color:"#7AAB8A",background:"#F0F5F2",padding:"4px 8px",borderRadius:8,fontFamily:"monospace",flexShrink:0}}>{p.sets}×{p.reps}</div>}
                         <input type="number" placeholder="lbs"
                           value={exLogs[fw+"-"+fd+"-"+p.origIdx]||""}
                           onChange={function(e){logWeight(fw+"-"+fd+"-"+p.origIdx,e.target.value);}}
+                          onBlur={function(e){var w=e.target.value;if(w&&authUserId&&authToken){var today=new Date().toISOString().split("T")[0];fetch(SUPABASE_URL+"/rest/v1/workout_history",{method:"POST",headers:{"apikey":SUPABASE_ANON_KEY,"Authorization":"Bearer "+authToken,"Content-Type":"application/json"},body:JSON.stringify({client_id:authUserId,exercise_name:p.name,weight:w,logged_date:today})}).catch(function(){});}}}
                           style={{width:52,background:"#F0F5F2",border:"1.5px solid #E8E4DE",borderRadius:8,padding:"4px 6px",fontSize:11,fontWeight:600,color:"#0A1A0F",textAlign:"center",outline:"none",flexShrink:0}}
                         />
+                        <button onClick={function(e){e.stopPropagation();loadExHist(p.name);}} style={{background:"none",border:"1px solid #E8E4DE",borderRadius:"50%",width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0,flexShrink:0}}>
+                          <span style={{color:"#7AAB8A",fontSize:10,fontWeight:700,lineHeight:1}}>i</span>
+                        </button>
                         {vid&&<button onClick={function(){setVideoModal({video:vid,name:p.name});}} style={{background:fc+"18",border:"none",borderRadius:7,padding:"4px 8px",color:fc,fontSize:10,fontWeight:700,cursor:"pointer",flexShrink:0}}>▶</button>}
                       </div>
                     </div>
@@ -2685,11 +2689,12 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
                 });
                 if(isC){return(
                   <div key={"fgrp"+gi} style={{border:"1.5px solid "+cc+"55",borderRadius:14,marginBottom:8,overflow:"hidden"}}>
-                    <div style={{background:cc+"18",borderBottom:"1.5px solid "+cc+"33",padding:"7px 14px",display:"flex",alignItems:"center",gap:6}}>
-                      <span style={{color:cc,fontSize:10,fontWeight:800,letterSpacing:1}}>⚡ {grp.circuitLabel.toUpperCase()}</span>
-                      <span style={{color:cc+"99",fontSize:10,marginLeft:"auto"}}>{grp.items.length} exercises</span>
+                    <div style={{background:cc,padding:"7px 14px",display:"flex",alignItems:"center",gap:6}}>
+                      <span style={{color:"#FFD600",fontSize:11}}>⚡</span>
+                      <span style={{color:"#fff",fontSize:11,fontWeight:800,letterSpacing:1}}>{grp.circuitLabel.toUpperCase()}</span>
+                      <span style={{color:"rgba(255,255,255,0.6)",fontSize:10,marginLeft:"auto"}}>{grp.items.length} exercises</span>
                     </div>
-                    <div style={{padding:"4px 8px 4px"}}>{items}</div>
+                    <div>{items}</div>
                   </div>
                 );}
                 return <div key={"fgrp"+gi}>{items}</div>;

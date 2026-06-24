@@ -1050,8 +1050,16 @@ function ExerciseRow({ ex, color, isClient, onTapVideo, logKey, savedData, onSav
                         return (
                           <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: i < history.length-1 ? "1px solid "+SURFACE2 : "none" }}>
                             <span style={{ color: TEXT3, fontSize: 13 }}>{dateStr}</span>
-                            <div style={{display:"flex",alignItems:"center",gap:10}}>
+                            <div style={{display:"flex",alignItems:"center",gap:8}}>
                               <span style={{ color: TEXT, fontSize: 15, fontWeight: 700 }}>{h.weight} lbs</span>
+                              <span style={{ color: TEXT3, fontSize: 12 }}>×</span>
+                              <input
+                                type="number"
+                                defaultValue={h.reps_done||""}
+                                placeholder="reps"
+                                onBlur={function(e){ var v=e.target.value; fetch(SUPABASE_URL+"/rest/v1/workout_history?id=eq."+h.id,{method:"PATCH",headers:{"apikey":SUPABASE_ANON_KEY,"Authorization":"Bearer "+authToken,"Content-Type":"application/json"},body:JSON.stringify({reps_done:v})}).catch(function(){}); }}
+                                style={{width:42,background:"#F0F5F2",border:"1px solid #E8E4DE",borderRadius:6,padding:"3px 4px",fontSize:12,fontWeight:600,color:TEXT,textAlign:"center",outline:"none"}}
+                              />
                               <button onClick={function(){ fetch(SUPABASE_URL+"/rest/v1/workout_history?id=eq."+h.id,{method:"DELETE",headers:{"apikey":SUPABASE_ANON_KEY,"Authorization":"Bearer "+authToken}}).then(function(){setHistory(function(prev){return prev.filter(function(_,j){return j!==i;});});}).catch(function(){}); }} style={{background:"none",border:"none",color:"#E05252",fontSize:14,cursor:"pointer",padding:"2px 4px",lineHeight:1}}>×</button>
                             </div>
                           </div>
@@ -3065,6 +3073,11 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
                   <span style={{color:TEXT3,fontSize:13}}>{dateStr}</span>
                   <div style={{display:"flex",alignItems:"center",gap:10}}>
                     <span style={{color:TEXT,fontSize:15,fontWeight:700}}>{h.weight} lbs</span>
+                    <span style={{color:TEXT3,fontSize:12}}>×</span>
+                    <input type="number" defaultValue={h.reps_done||""} placeholder="reps"
+                      onBlur={function(e){ var v=e.target.value; fetch(SUPABASE_URL+"/rest/v1/workout_history?id=eq."+h.id,{method:"PATCH",headers:{"apikey":SUPABASE_ANON_KEY,"Authorization":"Bearer "+authToken,"Content-Type":"application/json"},body:JSON.stringify({reps_done:v})}).catch(function(){}); }}
+                      style={{width:42,background:"#F0F5F2",border:"1px solid #E8E4DE",borderRadius:6,padding:"3px 4px",fontSize:12,fontWeight:600,color:TEXT,textAlign:"center",outline:"none"}}
+                    />
                     <button onClick={function(){
                       fetch(SUPABASE_URL+"/rest/v1/workout_history?id=eq."+h.id,{method:"DELETE",headers:{"apikey":SUPABASE_ANON_KEY,"Authorization":"Bearer "+authToken}})
                       .then(function(){setHistModal(function(prev){return {name:prev.name,rows:prev.rows.filter(function(_,j){return j!==i;})};});})
@@ -4951,6 +4964,11 @@ function LibraryScreen({ isCoach, favorites, toggleFavorite, authToken, authUser
                       <span style={{ color: TEXT3, fontSize: 13 }}>{dateStr}</span>
                       <div style={{display:"flex",alignItems:"center",gap:10}}>
                         <span style={{ color: TEXT, fontSize: 15, fontWeight: 700 }}>{h.weight} lbs</span>
+                        <span style={{color:TEXT3,fontSize:12}}>×</span>
+                        <input type="number" defaultValue={h.reps_done||""} placeholder="reps"
+                          onBlur={function(e){ var v=e.target.value; fetch(SUPABASE_URL+"/rest/v1/workout_history?id=eq."+h.id,{method:"PATCH",headers:{"apikey":SUPABASE_ANON_KEY,"Authorization":"Bearer "+authToken,"Content-Type":"application/json"},body:JSON.stringify({reps_done:v})}).catch(function(){}); }}
+                          style={{width:42,background:"#F0F5F2",border:"1px solid #E8E4DE",borderRadius:6,padding:"3px 4px",fontSize:12,fontWeight:600,color:TEXT,textAlign:"center",outline:"none"}}
+                        />
                         <button onClick={function(){ fetch(SUPABASE_URL+"/rest/v1/workout_history?id=eq."+h.id,{method:"DELETE",headers:{"apikey":SUPABASE_ANON_KEY,"Authorization":"Bearer "+authToken}}).then(function(){setHistoryModal(function(prev){return {name:prev.name,rows:prev.rows.filter(function(_,j){return j!==i;})};});}).catch(function(){}); }} style={{background:"none",border:"none",color:"#E05252",fontSize:14,cursor:"pointer",padding:"2px 4px",lineHeight:1}}>×</button>
                       </div>
                     </div>

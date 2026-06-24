@@ -975,7 +975,7 @@ function ExerciseRow({ ex, color, isClient, onTapVideo, logKey, savedData, onSav
   function loadHistory() {
     if (!authUserId || !authToken) return;
     var exName = encodeURIComponent(parsed.name);
-    fetch(SUPABASE_URL + "/rest/v1/workout_history?client_id=eq." + authUserId + "&exercise_name=eq." + exName + "&order=logged_date.desc&limit=8", {
+    fetch(SUPABASE_URL + "/rest/v1/workout_history?client_id=eq." + authUserId + "&exercise_name=eq." + exName + "&order=logged_date.desc&limit=30", {
       headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
     }).then(function(r) { return r.json(); }).then(function(rows) {
       setHistory(Array.isArray(rows) ? rows : []);
@@ -1050,7 +1050,10 @@ function ExerciseRow({ ex, color, isClient, onTapVideo, logKey, savedData, onSav
                         return (
                           <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: i < history.length-1 ? "1px solid "+SURFACE2 : "none" }}>
                             <span style={{ color: TEXT3, fontSize: 13 }}>{dateStr}</span>
-                            <span style={{ color: TEXT, fontSize: 15, fontWeight: 700 }}>{h.weight} lbs</span>
+                            <div style={{display:"flex",alignItems:"center",gap:10}}>
+                              <span style={{ color: TEXT, fontSize: 15, fontWeight: 700 }}>{h.weight} lbs</span>
+                              <button onClick={function(){ fetch(SUPABASE_URL+"/rest/v1/workout_history?id=eq."+h.id,{method:"DELETE",headers:{"apikey":SUPABASE_ANON_KEY,"Authorization":"Bearer "+authToken}}).then(function(){setHistory(function(prev){return prev.filter(function(_,j){return j!==i;});});}).catch(function(){}); }} style={{background:"none",border:"none",color:"#E05252",fontSize:14,cursor:"pointer",padding:"2px 4px",lineHeight:1}}>×</button>
+                            </div>
                           </div>
                         );
                       })}
@@ -2625,7 +2628,7 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
   function loadExHist(exName) {
     setHistModal({ name: exName, rows: null });
     if (!authUserId || !authToken) { setHistModal({ name: exName, rows: [] }); return; }
-    fetch(SUPABASE_URL + "/rest/v1/workout_history?client_id=eq." + authUserId + "&exercise_name=eq." + encodeURIComponent(exName) + "&order=logged_date.desc&limit=8", {
+    fetch(SUPABASE_URL + "/rest/v1/workout_history?client_id=eq." + authUserId + "&exercise_name=eq." + encodeURIComponent(exName) + "&order=logged_date.desc&limit=30", {
       headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
     }).then(function(r){return r.json();}).then(function(rows){setHistModal({name:exName,rows:Array.isArray(rows)?rows:[]});}).catch(function(){setHistModal({name:exName,rows:[]});});
   }
@@ -3031,7 +3034,14 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
               return (
                 <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:i<histModal.rows.length-1?"1px solid "+SURFACE2:"none"}}>
                   <span style={{color:TEXT3,fontSize:13}}>{dateStr}</span>
-                  <span style={{color:TEXT,fontSize:15,fontWeight:700}}>{h.weight} lbs</span>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <span style={{color:TEXT,fontSize:15,fontWeight:700}}>{h.weight} lbs</span>
+                    <button onClick={function(){
+                      fetch(SUPABASE_URL+"/rest/v1/workout_history?id=eq."+h.id,{method:"DELETE",headers:{"apikey":SUPABASE_ANON_KEY,"Authorization":"Bearer "+authToken}})
+                      .then(function(){setHistModal(function(prev){return {name:prev.name,rows:prev.rows.filter(function(_,j){return j!==i;})};});})
+                      .catch(function(){});
+                    }} style={{background:"none",border:"none",color:"#E05252",fontSize:14,cursor:"pointer",padding:"2px 4px",lineHeight:1}}>×</button>
+                  </div>
                 </div>
               );
             })}
@@ -4486,7 +4496,7 @@ function LibraryScreen({ isCoach, favorites, toggleFavorite, authToken, authUser
     setHistoryModal({ name: exName, rows: null });
     if (!authUserId || !authToken) { setHistoryModal({ name: exName, rows: [] }); return; }
     var exEnc = encodeURIComponent(exName);
-    fetch(SUPABASE_URL + "/rest/v1/workout_history?client_id=eq." + authUserId + "&exercise_name=eq." + exEnc + "&order=logged_date.desc&limit=8", {
+    fetch(SUPABASE_URL + "/rest/v1/workout_history?client_id=eq." + authUserId + "&exercise_name=eq." + exEnc + "&order=logged_date.desc&limit=30", {
       headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
     }).then(function(r) { return r.json(); }).then(function(rows) {
       setHistoryModal({ name: exName, rows: Array.isArray(rows) ? rows : [] });
@@ -4910,7 +4920,10 @@ function LibraryScreen({ isCoach, favorites, toggleFavorite, authToken, authUser
                   return (
                     <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: i < historyModal.rows.length-1 ? "1px solid "+SURFACE2 : "none" }}>
                       <span style={{ color: TEXT3, fontSize: 13 }}>{dateStr}</span>
-                      <span style={{ color: TEXT, fontSize: 15, fontWeight: 700 }}>{h.weight} lbs</span>
+                      <div style={{display:"flex",alignItems:"center",gap:10}}>
+                        <span style={{ color: TEXT, fontSize: 15, fontWeight: 700 }}>{h.weight} lbs</span>
+                        <button onClick={function(){ fetch(SUPABASE_URL+"/rest/v1/workout_history?id=eq."+h.id,{method:"DELETE",headers:{"apikey":SUPABASE_ANON_KEY,"Authorization":"Bearer "+authToken}}).then(function(){setHistoryModal(function(prev){return {name:prev.name,rows:prev.rows.filter(function(_,j){return j!==i;})};});}).catch(function(){}); }} style={{background:"none",border:"none",color:"#E05252",fontSize:14,cursor:"pointer",padding:"2px 4px",lineHeight:1}}>×</button>
+                      </div>
                     </div>
                   );
                 })}

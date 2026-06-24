@@ -7668,7 +7668,7 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
               {!raceCollapsed && showSetup && (
                 <div style={{ background: "rgba(0,0,0,0.3)", borderRadius: 14, padding: 14, marginBottom: 14, border: "1px solid rgba(255,255,255,0.1)" }}>
                   {[
-                    { label: "RACE NAME", value: raceName, set: function(v) { setRaceName(v); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.raceName=v; localStorage.setItem("mf_race",JSON.stringify(r)); saveRaceToSupabase(r); } catch(e){} }, placeholder: "Race name" },
+                    { label: "RACE NAME", value: raceName, set: function(v) { setRaceName(v); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.raceName=v; localStorage.setItem("mf_race",JSON.stringify(r)); window.dispatchEvent(new Event("mf_race_saved")); } catch(e){} }, placeholder: "Race name" },
                   ].map(function(f) {
                     return (
                       <div key={f.label} style={{ marginBottom: 10 }}>
@@ -7681,9 +7681,9 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
                     <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 5 }}>GOAL TIME</div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       {[
-                        { label: "HRS", max: 23, val: parseInt((goalTime||"00:00:00").split(":")[0]) || 0, set: function(v) { var p = (goalTime||"00:00:00").split(":"); while(p.length<3) p.push("00"); p[0] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.goalTime=s; localStorage.setItem("mf_race",JSON.stringify(r)); saveRaceToSupabase(r); } catch(ex){} } },
-                        { label: "MIN", max: 59, val: parseInt((goalTime||"00:00:00").split(":")[1]) || 0, set: function(v) { var p = (goalTime||"00:00:00").split(":"); while(p.length<3) p.push("00"); p[1] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.goalTime=s; localStorage.setItem("mf_race",JSON.stringify(r)); saveRaceToSupabase(r); } catch(ex){} } },
-                        { label: "SEC", max: 59, val: parseInt((goalTime||"00:00:00").split(":")[2]) || 0, set: function(v) { var p = (goalTime||"00:00:00").split(":"); while(p.length<3) p.push("00"); p[2] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.goalTime=s; localStorage.setItem("mf_race",JSON.stringify(r)); saveRaceToSupabase(r); } catch(ex){} } },
+                        { label: "HRS", max: 23, val: parseInt((goalTime||"00:00:00").split(":")[0]) || 0, set: function(v) { var p = (goalTime||"00:00:00").split(":"); while(p.length<3) p.push("00"); p[0] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.goalTime=s; localStorage.setItem("mf_race",JSON.stringify(r)); window.dispatchEvent(new Event("mf_race_saved")); } catch(ex){} } },
+                        { label: "MIN", max: 59, val: parseInt((goalTime||"00:00:00").split(":")[1]) || 0, set: function(v) { var p = (goalTime||"00:00:00").split(":"); while(p.length<3) p.push("00"); p[1] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.goalTime=s; localStorage.setItem("mf_race",JSON.stringify(r)); window.dispatchEvent(new Event("mf_race_saved")); } catch(ex){} } },
+                        { label: "SEC", max: 59, val: parseInt((goalTime||"00:00:00").split(":")[2]) || 0, set: function(v) { var p = (goalTime||"00:00:00").split(":"); while(p.length<3) p.push("00"); p[2] = String(v).padStart(2,"0"); var s = p.join(":"); setGoalTime(s); setPaceInput(s); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.goalTime=s; localStorage.setItem("mf_race",JSON.stringify(r)); window.dispatchEvent(new Event("mf_race_saved")); } catch(ex){} } },
                       ].map(function(seg, si) {
                         return (
                           <div key={seg.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
@@ -7700,7 +7700,7 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
                   </div>
                   <div style={{ marginBottom: 10 }}>
                     <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 5 }}>RACE DATE</div>
-                    <input type="date" value={raceDateStr} onChange={function(e) { setRaceDateStr(e.target.value); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.raceDateStr=e.target.value; localStorage.setItem("mf_race",JSON.stringify(r)); saveRaceToSupabase(r); } catch(ex){} }} style={{ width: "100%", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, padding: "10px 12px", color: WHITE, fontSize: 14, fontWeight: 600, outline: "none", boxSizing: "border-box", colorScheme: "dark" }} />
+                    <input type="date" value={raceDateStr} onChange={function(e) { setRaceDateStr(e.target.value); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.raceDateStr=e.target.value; localStorage.setItem("mf_race",JSON.stringify(r)); window.dispatchEvent(new Event("mf_race_saved")); } catch(ex){} }} style={{ width: "100%", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, padding: "10px 12px", color: WHITE, fontSize: 14, fontWeight: 600, outline: "none", boxSizing: "border-box", colorScheme: "dark" }} />
                   </div>
                   <div>
                     <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 10, fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>RACE DISTANCE</div>
@@ -7708,7 +7708,7 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
                       {[["5k","5K"],["10k","10K"],["half","Half"],["full","Marathon"],["ultra","50K"]].map(function(kv) {
                         var active = raceDistKey === kv[0];
                         return (
-                          <button key={kv[0]} onClick={function() { setRaceDistKey(kv[0]); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.raceDistKey=kv[0]; localStorage.setItem("mf_race",JSON.stringify(r)); saveRaceToSupabase(r); } catch(ex){} }} style={{ flex: 1, padding: "7px 2px", borderRadius: 8, background: active ? WHITE : "rgba(255,255,255,0.08)", border: "1px solid "+(active ? WHITE : "rgba(255,255,255,0.15)"), color: active ? DKGREEN : WHITE, fontSize: 10, fontWeight: active ? 800 : 500, cursor: "pointer" }}>{kv[1]}</button>
+                          <button key={kv[0]} onClick={function() { setRaceDistKey(kv[0]); try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); r.raceDistKey=kv[0]; localStorage.setItem("mf_race",JSON.stringify(r)); window.dispatchEvent(new Event("mf_race_saved")); } catch(ex){} }} style={{ flex: 1, padding: "7px 2px", borderRadius: 8, background: active ? WHITE : "rgba(255,255,255,0.08)", border: "1px solid "+(active ? WHITE : "rgba(255,255,255,0.15)"), color: active ? DKGREEN : WHITE, fontSize: 10, fontWeight: active ? 800 : 500, cursor: "pointer" }}>{kv[1]}</button>
                         );
                       })}
                     </div>
@@ -9191,9 +9191,31 @@ if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.stat
       if (!Array.isArray(rows) || !rows[0] || !rows[0].race_settings) return;
       var rs = rows[0].race_settings;
       try { localStorage.setItem("mf_race", JSON.stringify(rs)); } catch(e) {}
-      // Force RaceScreen to re-read localStorage by dispatching storage event
       window.dispatchEvent(new Event("mf_race_loaded"));
     }).catch(function(){});
+  }, [authUserId, authToken]);
+
+  // Save race settings to Supabase whenever localStorage changes
+  useEffect(function() {
+    if (!authToken || !authUserId || isCoach) return;
+    function onStorage(e) {
+      if (e && e.key !== "mf_race") return;
+      try {
+        var rs = JSON.parse(localStorage.getItem("mf_race") || "{}");
+        if (!Object.keys(rs).length) return;
+        fetch(SUPABASE_URL + "/rest/v1/profiles?id=eq." + authUserId, {
+          method: "PATCH",
+          headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json" },
+          body: JSON.stringify({ race_settings: rs })
+        }).catch(function(){});
+      } catch(e2) {}
+    }
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("mf_race_saved", onStorage);
+    return function() {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("mf_race_saved", onStorage);
+    };
   }, [authUserId, authToken]);
 
   // Load client plans from Supabase on startup

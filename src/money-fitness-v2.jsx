@@ -2679,8 +2679,8 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
                           onBlur={function(e){var w=e.target.value;if(w&&authUserId&&authToken){var today=new Date().toISOString().split("T")[0];fetch(SUPABASE_URL+"/rest/v1/workout_history",{method:"POST",headers:{"apikey":SUPABASE_ANON_KEY,"Authorization":"Bearer "+authToken,"Content-Type":"application/json"},body:JSON.stringify({client_id:authUserId,exercise_name:p.name,weight:w,logged_date:today})}).catch(function(){});}}}
                           style={{width:52,background:"#F0F5F2",border:"1.5px solid #E8E4DE",borderRadius:8,padding:"4px 6px",fontSize:11,fontWeight:600,color:"#0A1A0F",textAlign:"center",outline:"none",flexShrink:0}}
                         />
-                        <button onClick={function(e){e.stopPropagation();loadExHist(p.name);}} style={{background:"none",border:"1px solid #E8E4DE",borderRadius:"50%",width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0,flexShrink:0}}>
-                          <span style={{color:"#7AAB8A",fontSize:10,fontWeight:700,lineHeight:1}}>i</span>
+                        <button onClick={function(e){e.stopPropagation();loadExHist(p.name);}} style={{background:"none",border:"1px solid #0A1A0F",borderRadius:"50%",width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0,flexShrink:0}}>
+                          <span style={{color:"#0A1A0F",fontSize:10,fontWeight:700,lineHeight:1}}>i</span>
                         </button>
                         {vid&&<button onClick={function(){setVideoModal({video:vid,name:p.name});}} style={{background:fc+"18",border:"none",borderRadius:7,padding:"4px 8px",color:fc,fontSize:10,fontWeight:700,cursor:"pointer",flexShrink:0}}>▶</button>}
                       </div>

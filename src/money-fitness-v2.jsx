@@ -2389,39 +2389,7 @@ function MyWorkouts({ color, favorites, importedWorkouts, customWorkouts, setCus
   if (videoModal) {
     return <VideoModal video={videoModal.video} exName={videoModal.name} onClose={function(){setVideoModal(null);}} />;
   }
-  if (histModal) {
-    return (
-      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:999,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={function(){setHistModal(null);}}>
-        <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"20px 20px 40px",width:"100%",maxWidth:480}} onClick={function(e){e.stopPropagation();}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-            <div>
-              <div style={{color:TEXT,fontSize:16,fontWeight:800}}>{histModal.name}</div>
-              <div style={{color:TEXT3,fontSize:11,marginTop:2}}>Weight History</div>
-            </div>
-            <button onClick={function(){setHistModal(null);}} style={{background:SURFACE,border:"none",borderRadius:10,width:32,height:32,cursor:"pointer",fontSize:18,color:TEXT3}}>×</button>
-          </div>
-          {histModal.rows===null ? (
-            <div style={{color:TEXT3,fontSize:13,textAlign:"center",padding:"20px 0"}}>Loading...</div>
-          ) : histModal.rows.length===0 ? (
-            <div style={{color:TEXT3,fontSize:13,textAlign:"center",padding:"20px 0"}}>No history yet — log a weight to get started!</div>
-          ) : (
-            <div>
-              {histModal.rows.map(function(h,i){
-                var d = new Date(h.logged_date+"T12:00:00");
-                var dateStr = d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
-                return (
-                  <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:i<histModal.rows.length-1?"1px solid "+SURFACE2:"none"}}>
-                    <span style={{color:TEXT3,fontSize:13}}>{dateStr}</span>
-                    <span style={{color:TEXT,fontSize:15,fontWeight:700}}>{h.weight} lbs</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
+
 
   if (fullscreenWk) {
     return <WorkoutFullscreenModal workout={fullscreenWk} color={c} onClose={function() { setFullscreenWk(null); }} />;
@@ -2897,6 +2865,7 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
                           placeholder="lbs"
                           value={exLogs[activeWk+"-"+origIdx+"-"+ex.origIdx]||""}
                           onChange={function(e){logWeight(activeWk+"-"+origIdx+"-"+ex.origIdx, e.target.value);}}
+                          onBlur={function(e){ var w=e.target.value; if(w&&authUserId&&authToken){var today=new Date().toISOString().split("T")[0];fetch(SUPABASE_URL+"/rest/v1/workout_history",{method:"POST",headers:{"apikey":SUPABASE_ANON_KEY,"Authorization":"Bearer "+authToken,"Content-Type":"application/json"},body:JSON.stringify({client_id:authUserId,exercise_name:ex.name,weight:w,logged_date:today})}).catch(function(){});} }}
                           style={{width:52,background:"#F0F5F2",border:"1.5px solid #E8E4DE",borderRadius:8,padding:"4px 6px",fontSize:11,fontWeight:600,color:"#0A1A0F",textAlign:"center",outline:"none",flexShrink:0}}
                         />
                         <button onClick={function(e){e.stopPropagation();loadExHist(ex.name);}} style={{background:"none",border:"1px solid #E8E4DE",borderRadius:"50%",width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0,flexShrink:0}}>
@@ -3470,6 +3439,33 @@ function GoalProgressTab({ client, isCoach, color, onTabChange, authUserId, auth
           Message Cameron
         </button>
       )}
+      {histModal && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:999,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={function(){setHistModal(null);}}>
+          <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"20px 20px 40px",width:"100%",maxWidth:480}} onClick={function(e){e.stopPropagation();}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+              <div>
+                <div style={{color:TEXT,fontSize:16,fontWeight:800}}>{histModal.name}</div>
+                <div style={{color:TEXT3,fontSize:11,marginTop:2}}>Weight History</div>
+              </div>
+              <button onClick={function(){setHistModal(null);}} style={{background:SURFACE,border:"none",borderRadius:10,width:32,height:32,cursor:"pointer",fontSize:18,color:TEXT3}}>×</button>
+            </div>
+            {histModal.rows===null ? (
+              <div style={{color:TEXT3,fontSize:13,textAlign:"center",padding:"20px 0"}}>Loading...</div>
+            ) : histModal.rows.length===0 ? (
+              <div style={{color:TEXT3,fontSize:13,textAlign:"center",padding:"20px 0"}}>No history yet — log a weight to get started!</div>
+            ) : histModal.rows.map(function(h,i){
+              var d = new Date(h.logged_date+"T12:00:00");
+              var dateStr = d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+              return (
+                <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:i<histModal.rows.length-1?"1px solid "+SURFACE2:"none"}}>
+                  <span style={{color:TEXT3,fontSize:13}}>{dateStr}</span>
+                  <span style={{color:TEXT,fontSize:15,fontWeight:700}}>{h.weight} lbs</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -3853,9 +3849,9 @@ function CoachProgramTabView({ program, color, onUpdate, lib, libCats, authToken
                     var inner = group.items.map(function(ex) {
                       var vid = findVideo(ex.name);
                       return (
-                        <div key={"ex"+ex.origIdx} style={{padding:"9px 0",borderBottom:"1px solid #F0EFEC"}}>
+                        <div key={"ex"+ex.origIdx} style={{padding:"9px 12px",background:isCircuit?cc+"18":"transparent",borderBottom:"1px solid "+(isCircuit?cc+"30":"#F0EFEC")}}>
                           <div style={{display:"flex",alignItems:"center",gap:8}}>
-                            <div style={{width:28,height:28,borderRadius:8,background:isCircuit?cc+"18":"#F0F5F2",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:isCircuit?cc:"#7AAB8A",fontFamily:"monospace",flexShrink:0}}>{ex.origIdx+1}</div>
+                            <div style={{width:28,height:28,borderRadius:8,background:isCircuit?cc+"35":"#F0F5F2",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:isCircuit?cc:"#7AAB8A",fontFamily:"monospace",flexShrink:0}}>{ex.origIdx+1}</div>
                             <div style={{color:"#0A1A0F",fontSize:14,fontWeight:500,flex:1}}>{ex.name}</div>
                             {ex.sets&&ex.reps&&<div style={{fontSize:11,fontWeight:600,color:"#7AAB8A",background:"#F0F5F2",padding:"4px 8px",borderRadius:8,fontFamily:"monospace",flexShrink:0}}>{ex.sets}×{ex.reps}</div>}
                             <input
@@ -3877,7 +3873,7 @@ function CoachProgramTabView({ program, color, onUpdate, lib, libCats, authToken
                             <span style={{color:"#fff",fontSize:10,fontWeight:800,letterSpacing:1}}>⚡ {group.circuitLabel.toUpperCase()}</span>
                             <span style={{color:"rgba(255,255,255,0.6)",fontSize:10,marginLeft:"auto"}}>{group.items.length} exercises</span>
                           </div>
-                          <div style={{padding:"0 12px"}}>{inner}</div>
+                          <div>{inner}</div>
                         </div>
                       );
                     }

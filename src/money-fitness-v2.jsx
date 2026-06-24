@@ -4174,19 +4174,7 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
                     );
                   })}
                 </div>
-              ) : (
-                <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
-                  {week1.slice(0, 3).map(function(day, i) {
-                    var dayAbbr = (day.day || "").substring(0, 3).toUpperCase();
-                    return (
-                      <div key={"daychip-"+i} onClick={function() { goToClientTab("Program", i); }} style={{ flex: 1, background: i === 0 ? "#1B8C4E" : "rgba(255,255,255,0.12)", borderRadius: 12, padding: "10px 6px", textAlign: "center", cursor: "pointer" }}>
-                        <div style={{ color: "#fff", fontSize: 11, fontWeight: 700 }}>{dayAbbr}</div>
-                        <div style={{ color: i === 0 ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.4)", fontSize: 10, marginTop: 2 }}>{(day.focus||"").toUpperCase()}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+) : null}
 
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={function() { goTo("race"); }} style={{ background: "#1B8C4E", border: "none", color: "#fff", padding: "12px 24px", borderRadius: 99, fontSize: 14, fontWeight: 800, cursor: "pointer" }}>

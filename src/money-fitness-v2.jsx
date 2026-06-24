@@ -93,6 +93,7 @@ const SVG_ICONS = {
 
 
 const BG       = "#FFFFFF";
+if (typeof document !== "undefined" && !document.getElementById("mf-spin-style")) { var _ss = document.createElement("style"); _ss.id = "mf-spin-style"; _ss.textContent = "@keyframes mfspin { to { transform: rotate(360deg); } }"; document.head.appendChild(_ss); }
 const CARD     = "#FFFFFF";
 const SURFACE  = "#F0F5F2";
 const SURFACE2 = "#E2EFE8";
@@ -2388,6 +2389,39 @@ function MyWorkouts({ color, favorites, importedWorkouts, customWorkouts, setCus
   if (videoModal) {
     return <VideoModal video={videoModal.video} exName={videoModal.name} onClose={function(){setVideoModal(null);}} />;
   }
+  if (histModal) {
+    return (
+      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:999,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={function(){setHistModal(null);}}>
+        <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"20px 20px 40px",width:"100%",maxWidth:480}} onClick={function(e){e.stopPropagation();}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+            <div>
+              <div style={{color:TEXT,fontSize:16,fontWeight:800}}>{histModal.name}</div>
+              <div style={{color:TEXT3,fontSize:11,marginTop:2}}>Weight History</div>
+            </div>
+            <button onClick={function(){setHistModal(null);}} style={{background:SURFACE,border:"none",borderRadius:10,width:32,height:32,cursor:"pointer",fontSize:18,color:TEXT3}}>×</button>
+          </div>
+          {histModal.rows===null ? (
+            <div style={{color:TEXT3,fontSize:13,textAlign:"center",padding:"20px 0"}}>Loading...</div>
+          ) : histModal.rows.length===0 ? (
+            <div style={{color:TEXT3,fontSize:13,textAlign:"center",padding:"20px 0"}}>No history yet — log a weight to get started!</div>
+          ) : (
+            <div>
+              {histModal.rows.map(function(h,i){
+                var d = new Date(h.logged_date+"T12:00:00");
+                var dateStr = d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+                return (
+                  <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:i<histModal.rows.length-1?"1px solid "+SURFACE2:"none"}}>
+                    <span style={{color:TEXT3,fontSize:13}}>{dateStr}</span>
+                    <span style={{color:TEXT,fontSize:15,fontWeight:700}}>{h.weight} lbs</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (fullscreenWk) {
     return <WorkoutFullscreenModal workout={fullscreenWk} color={c} onClose={function() { setFullscreenWk(null); }} />;
@@ -2571,6 +2605,14 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
   const [videoModal, setVideoModal] = useState(null);
   const [fullscreenDay, setFullscreenDay] = useState(null);
   const [section, setSection] = useState("coach");
+  const [histModal, setHistModal] = useState(null);
+  function loadExHist(exName) {
+    setHistModal({ name: exName, rows: null });
+    if (!authUserId || !authToken) { setHistModal({ name: exName, rows: [] }); return; }
+    fetch(SUPABASE_URL + "/rest/v1/workout_history?client_id=eq." + authUserId + "&exercise_name=eq." + encodeURIComponent(exName) + "&order=logged_date.desc&limit=8", {
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+    }).then(function(r){return r.json();}).then(function(rows){setHistModal({name:exName,rows:Array.isArray(rows)?rows:[]});}).catch(function(){setHistModal({name:exName,rows:[]});});
+  }
   const [exLogs, setExLogs] = useState({});
   const [savedSessions, setSavedSessions] = useState([]);
   const [customWorkouts, setCustomWorkouts] = useState([]);
@@ -2857,6 +2899,9 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
                           onChange={function(e){logWeight(activeWk+"-"+origIdx+"-"+ex.origIdx, e.target.value);}}
                           style={{width:52,background:"#F0F5F2",border:"1.5px solid #E8E4DE",borderRadius:8,padding:"4px 6px",fontSize:11,fontWeight:600,color:"#0A1A0F",textAlign:"center",outline:"none",flexShrink:0}}
                         />
+                        <button onClick={function(e){e.stopPropagation();loadExHist(ex.name);}} style={{background:"none",border:"1px solid #E8E4DE",borderRadius:"50%",width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:0,flexShrink:0}}>
+                          <span style={{color:"#7AAB8A",fontSize:10,fontWeight:700,lineHeight:1}}>i</span>
+                        </button>
                         {vid&&<button onClick={function(e){e.stopPropagation();setVideoModal({video:vid,name:ex.name});}} style={{background:dc+"18",border:"none",borderRadius:7,padding:"4px 8px",color:dc,fontSize:10,fontWeight:700,cursor:"pointer",flexShrink:0}}>▶</button>}
                       </div>
                     </div>
@@ -8054,6 +8099,14 @@ function CoachInbox({ messages, handleSendMessage, realClients, viewedCounts, se
 
 function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, authCoachId }) {
   const [refreshTick, setRefreshTick] = useState(0);
+  const [pullY, setPullY] = React.useState(0);
+  const [isPulling, setIsPulling] = React.useState(false);
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+  var _pullStartY = React.useRef(0);
+  var _pullScrollTop = React.useRef(0);
+  function handlePullTouchStart(e) { _pullStartY.current = e.touches[0].clientY; _pullScrollTop.current = e.currentTarget.scrollTop; }
+  function handlePullTouchMove(e) { if (_pullScrollTop.current > 0) return; var dy = e.touches[0].clientY - _pullStartY.current; if (dy > 0) { setPullY(Math.min(dy * 0.4, 70)); setIsPulling(true); } else { setPullY(0); setIsPulling(false); } }
+  function handlePullTouchEnd() { if (pullY >= 60) { setIsRefreshing(true); setRefreshTick(function(t) { return t + 1; }); setTimeout(function() { setIsRefreshing(false); }, 1200); } setPullY(0); setIsPulling(false); }
   const [lib, setLib] = useState([]);
   const [libCats, setLibCats] = useState(["All","Chest","Back","Legs","Shoulders","Arms","Core","Cardio"]);
 
@@ -9220,7 +9273,18 @@ if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.stat
           }} onClear={function(id) { setNotifications(function(p) { return p.map(function(n) { return n.id === id ? Object.assign({}, n, { read: true }) : n; }); }); }} />
         </div>
       </div>
-      <div style={{ flex: 1, overflowY: "auto", padding: tab === "clients" ? "0 16px 0" : "20px 16px 0" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: tab === "clients" ? "0 16px 0" : "20px 16px 0", position: "relative" }}
+        onTouchStart={handlePullTouchStart} onTouchMove={handlePullTouchMove} onTouchEnd={handlePullTouchEnd}>
+        {(isPulling || isRefreshing) && (
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: isRefreshing ? 44 : pullY, overflow: "hidden", transition: isRefreshing ? "none" : "height 0.15s", pointerEvents: "none" }}>
+            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#fff", border: "2px solid #E8E4DE", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px #00000022", transform: isRefreshing ? "none" : "rotate("+(pullY*3)+"deg)" }}>
+              {isRefreshing
+                ? <div style={{ width: 16, height: 16, border: "2.5px solid #E8E4DE", borderTop: "2.5px solid #1B8C4E", borderRadius: "50%", animation: "mfspin 0.7s linear infinite" }} />
+                : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1B8C4E" strokeWidth="2.5" strokeLinecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              }
+            </div>
+          </div>
+        )}
         {tab === "home" && (function() {
           var _mon = getMondayOf(new Date());
           var _planned = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(function(dn, i) {

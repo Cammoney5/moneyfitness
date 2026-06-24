@@ -2573,12 +2573,13 @@ function MyWorkouts({ color, favorites, importedWorkouts, customWorkouts, setCus
     </div>
   );
 }
-function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIndexUsed, myPlans, authUserId, authToken, onGoToMainTab, lib, libCats }) {
+function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIndexUsed, myPlans, authUserId, authToken, onGoToMainTab, lib, libCats, currentProgramWeek, saveCurrentProgramWeek, isCoachView }) {
   const c = color || ORANGE;
-  const [activeWk, setActiveWk] = useState(0);
+  const [activeWk, setActiveWk] = useState(function(){ return (currentProgramWeek && currentProgramWeek > 1) ? currentProgramWeek - 1 : 0; });
   const [videoModal, setVideoModal] = useState(null);
   const [fullscreenDay, setFullscreenDay] = useState(null);
   const [section, setSection] = useState("coach");
+  useEffect(function() { if (currentProgramWeek && currentProgramWeek > 0) setActiveWk(currentProgramWeek - 1); }, [currentProgramWeek]);
   const [histModal, setHistModal] = useState(null);
   function loadExHist(exName) {
     setHistModal({ name: exName, rows: null });
@@ -2781,11 +2782,21 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
       <div style={{display:"flex",gap:8,marginBottom:16}}>
         {program.map(function(w,i){
           var on=activeWk===i;
+          var isCurrent=currentProgramWeek===(i+1);
           return (
-            <button key={"wk"+i} onClick={function(){setActiveWk(i);}}
-              style={{flex:1,padding:"10px 0",borderRadius:12,border:"1.5px solid "+(on?c:BORDER),background:on?c+"15":"transparent",color:on?c:TEXT3,fontSize:12,fontWeight:on?700:500,cursor:"pointer"}}>
-              Week {w.week}
-            </button>
+            <div key={"wk"+i} style={{flex:1,position:"relative"}}>
+              <button onClick={function(){setActiveWk(i);}}
+                style={{width:"100%",padding:"10px 0",borderRadius:12,border:"2px solid "+(isCurrent?"#F4A623":on?c:BORDER),background:on?c+"15":"transparent",color:on?c:TEXT3,fontSize:12,fontWeight:(on||isCurrent)?700:500,cursor:"pointer"}}>
+                Week {w.week}
+                {isCurrent&&<span style={{display:"block",fontSize:8,color:"#F4A623",fontWeight:700,letterSpacing:0.5,marginTop:1}}>CURRENT</span>}
+              </button>
+              {isCoachView&&saveCurrentProgramWeek&&(
+                <button onClick={function(e){e.stopPropagation();saveCurrentProgramWeek(i+1);}}
+                  style={{position:"absolute",top:-6,right:-4,width:16,height:16,borderRadius:"50%",background:isCurrent?"#F4A623":BORDER,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:isCurrent?"#fff":TEXT3,fontWeight:700,lineHeight:1}}>
+                  {isCurrent?"★":"☆"}
+                </button>
+              )}
+            </div>
           );
         })}
       </div>
@@ -3991,7 +4002,7 @@ function CoachProgramTabView({ program, color, onUpdate, lib, libCats, authToken
   );
 }
 
-function ClientDetail({ client, onBack, isCoach, defaultTab, favorites, watchDays, messages, onSend, coachProgram, setCoachProgram, programDayIndex, setProgramDayIndex, myPlans, activityLogs, authUserId, authToken, onGoToMainTab, lib, libCats, setLib, realClients }) {
+function ClientDetail({ client, onBack, isCoach, defaultTab, favorites, watchDays, messages, onSend, coachProgram, setCoachProgram, programDayIndex, setProgramDayIndex, myPlans, activityLogs, authUserId, authToken, onGoToMainTab, lib, libCats, setLib, realClients, currentProgramWeek, saveCurrentProgramWeek }) {
   lib = lib || [];
   libCats = libCats || [];
   const tabs = isCoach ? ["Progress","Program","My Plan","Calendar","Messages"] : [];
@@ -4029,7 +4040,7 @@ function ClientDetail({ client, onBack, isCoach, defaultTab, favorites, watchDay
       {tab === "Program" && (
         <div>
           {!isCoach && (
-            <ProgramWithCustom program={coachProgram} color={c} favorites={favorites} initialDayIndex={programDayIndex} onDayIndexUsed={function() { if (setProgramDayIndex) setProgramDayIndex(null); }} myPlans={myPlans} authUserId={authUserId} authToken={authToken} onGoToMainTab={onGoToMainTab} lib={lib} libCats={libCats} />
+            <ProgramWithCustom program={coachProgram} color={c} favorites={favorites} initialDayIndex={programDayIndex} onDayIndexUsed={function() { if (setProgramDayIndex) setProgramDayIndex(null); }} myPlans={myPlans} authUserId={authUserId} authToken={authToken} onGoToMainTab={onGoToMainTab} lib={lib} libCats={libCats} currentProgramWeek={currentProgramWeek} saveCurrentProgramWeek={saveCurrentProgramWeek} isCoachView={isCoach} />
           )}
           {isCoach && (
             <CoachProgramTabView program={coachProgram} color={c} onUpdate={setCoachProgram} lib={lib} libCats={libCats} authToken={authToken} setLib={setLib} realClients={realClients} />
@@ -4359,14 +4370,14 @@ function HomeScreen({ isCoach, goTo, setClient, goToClientTab, messages, monthSt
   );
 }
 
-function ClientsScreen({ isCoach, selected, setSelected, clientDefaultTab, setClientDefaultTab, favorites, watchDays, messages, onSend, coachProgram, setCoachProgram, activityLogs, onLogsChange, programDayIndex, setProgramDayIndex, myPlans, realClients, authUserId, authToken, goTo, myProfile, lib, libCats, setLib }) {
+function ClientsScreen({ isCoach, selected, setSelected, clientDefaultTab, setClientDefaultTab, favorites, watchDays, messages, onSend, coachProgram, setCoachProgram, activityLogs, onLogsChange, programDayIndex, setProgramDayIndex, myPlans, realClients, authUserId, authToken, goTo, myProfile, lib, libCats, setLib, currentProgramWeek, saveCurrentProgramWeek }) {
   var displayClients = (realClients && realClients.length > 0) ? realClients : [];
   if (selected) {
-    return <ClientDetail client={selected} onBack={function() { setSelected(null); setClientDefaultTab("Progress"); }} isCoach={isCoach} defaultTab={clientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages[selected.id] || []} onSend={onSend} coachProgram={coachProgram} setCoachProgram={setCoachProgram} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} activityLogs={activityLogs} authUserId={authUserId} authToken={authToken} onGoToMainTab={goTo} lib={lib} libCats={libCats} setLib={setLib} realClients={realClients} />;
+    return <ClientDetail client={selected} onBack={function() { setSelected(null); setClientDefaultTab("Progress"); }} isCoach={isCoach} defaultTab={clientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages[selected.id] || []} onSend={onSend} coachProgram={coachProgram} setCoachProgram={setCoachProgram} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} activityLogs={activityLogs} authUserId={authUserId} authToken={authToken} onGoToMainTab={goTo} lib={lib} libCats={libCats} setLib={setLib} realClients={realClients} currentProgramWeek={currentProgramWeek} saveCurrentProgramWeek={saveCurrentProgramWeek} />;
   }
   if (!isCoach) {
     var clientProfile = myProfile ? { id: authUserId, name: myProfile.name || "Client", email: myProfile.email || "", avatar: (myProfile.name||"?").split(" ").map(function(w){return w[0];}).join("").toUpperCase().slice(0,2), color: myProfile.color || "#1B8C4E", streak: 0, checkIns: [], goals: [], workedOut: [], isReal: true } : { id: authUserId || "", name: "...", email: "", avatar: "?", color: "#1B8C4E", streak: 0, checkIns: [], goals: [], workedOut: [], isReal: true };
-    return <ClientDetail client={clientProfile} onBack={null} isCoach={false} defaultTab={clientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages[clientProfile.id] || []} onSend={onSend} coachProgram={coachProgram} setCoachProgram={setCoachProgram} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} activityLogs={activityLogs} authUserId={authUserId} authToken={authToken} onGoToMainTab={goTo} lib={lib} libCats={libCats} setLib={setLib} realClients={realClients} />;
+    return <ClientDetail client={clientProfile} onBack={null} isCoach={false} defaultTab={clientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages[clientProfile.id] || []} onSend={onSend} coachProgram={coachProgram} setCoachProgram={setCoachProgram} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} activityLogs={activityLogs} authUserId={authUserId} authToken={authToken} onGoToMainTab={goTo} lib={lib} libCats={libCats} setLib={setLib} realClients={realClients} currentProgramWeek={currentProgramWeek} saveCurrentProgramWeek={saveCurrentProgramWeek} />;
   }
   return (
     <div>
@@ -8200,6 +8211,19 @@ function CoachInbox({ messages, handleSendMessage, realClients, viewedCounts, se
 
 function MainApp({ initCoach, onLogout, newClientName, authToken, authUserId, authCoachId }) {
   const [refreshTick, setRefreshTick] = useState(0);
+  const [currentProgramWeek, setCurrentProgramWeek] = useState(function() {
+    try { var s = localStorage.getItem("mf_current_week"); return s ? parseInt(s) : 1; } catch(e) { return 1; }
+  });
+  function saveCurrentProgramWeek(week) {
+    setCurrentProgramWeek(week);
+    try { localStorage.setItem("mf_current_week", String(week)); } catch(e) {}
+    if (!authUserId || !authToken) return;
+    fetch(SUPABASE_URL + "/rest/v1/profiles?id=eq." + authUserId, {
+      method: "PATCH",
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken, "Content-Type": "application/json" },
+      body: JSON.stringify({ current_program_week: week })
+    }).catch(function(){});
+  }
   const [pullY, setPullY] = React.useState(0);
   const [isPulling, setIsPulling] = React.useState(false);
   const [isRefreshing, setIsRefreshing] = React.useState(false);
@@ -9114,6 +9138,15 @@ if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.stat
   // Load program from Supabase on mount
   useEffect(function() {
     if (!authToken || !authUserId) return;
+    function loadCoachCurrentWeek(coachId) {
+      fetch(SUPABASE_URL + "/rest/v1/profiles?id=eq." + coachId + "&select=current_program_week", {
+        headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+      }).then(function(r){return r.json();}).then(function(rows){
+        if (Array.isArray(rows) && rows.length > 0 && rows[0].current_program_week) {
+          setCurrentProgramWeek(rows[0].current_program_week);
+        }
+      }).catch(function(){});
+    }
     function loadProgram(coachId) {
       fetch(SUPABASE_URL + "/rest/v1/programs?coach_id=eq." + coachId + "&order=updated_at.desc&limit=1", {
         headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
@@ -9128,8 +9161,10 @@ if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.stat
     }
     if (isCoach) {
       loadProgram(authUserId);
+      loadCoachCurrentWeek(authUserId);
     } else if (authCoachId) {
       loadProgram(authCoachId);
+      loadCoachCurrentWeek(authCoachId);
     } else {
       // Fetch coach_id from profile
       fetch(SUPABASE_URL + "/rest/v1/profiles?id=eq." + authUserId + "&select=coach_id", {
@@ -9139,6 +9174,7 @@ if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.stat
       .then(function(rows) {
         if (Array.isArray(rows) && rows.length > 0 && rows[0].coach_id) {
           loadProgram(rows[0].coach_id);
+          loadCoachCurrentWeek(rows[0].coach_id);
         }
       })
       .catch(function(e) { console.log("profile load error", e); });
@@ -9446,7 +9482,7 @@ if (!r.ok) r.text().then(function(t) { console.log("delete entry error:", r.stat
           });
           return <HomeScreen isCoach={isCoach} goTo={goTo} setClient={setSelected} goToClientTab={goToClientTab} messages={messages} monthStats={monthStats} coachProgram={coachProgram} activityLogs={activityLogs} myPlans={myPlans} thisWeekPlanned={_planned} realClients={realClients} viewedCounts={viewedCounts} myProfile={myProfile} completions={completions} />;
         })()}
-        {tab === "clients"       && <ClientsScreen isCoach={isCoach} selected={selected} setSelected={setSelected} clientDefaultTab={clientDefaultTab} setClientDefaultTab={setClientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages} onSend={handleSendMessage} coachProgram={coachProgram} setCoachProgram={handleProgramUpdate} activityLogs={activityLogs} onLogsChange={handleLogsChange} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} realClients={realClients} authUserId={authUserId} authToken={authToken} goTo={goTo} myProfile={myProfile} lib={lib} libCats={libCats} setLib={setLib} />}
+        {tab === "clients"       && <ClientsScreen isCoach={isCoach} selected={selected} setSelected={setSelected} clientDefaultTab={clientDefaultTab} setClientDefaultTab={setClientDefaultTab} favorites={favorites} watchDays={watchDays} messages={messages} onSend={handleSendMessage} coachProgram={coachProgram} setCoachProgram={handleProgramUpdate} activityLogs={activityLogs} onLogsChange={handleLogsChange} programDayIndex={programDayIndex} setProgramDayIndex={setProgramDayIndex} myPlans={myPlans} realClients={realClients} authUserId={authUserId} authToken={authToken} goTo={goTo} myProfile={myProfile} lib={lib} libCats={libCats} setLib={setLib} currentProgramWeek={currentProgramWeek} saveCurrentProgramWeek={saveCurrentProgramWeek} />}
         {tab === "directmessage" && (
           <div style={{ padding: "0 0 24px" }}>
             <div style={{ padding: "12px 16px 10px", display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid "+BORDER, background: CARD }}>

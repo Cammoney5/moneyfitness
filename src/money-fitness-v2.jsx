@@ -7540,9 +7540,26 @@ function RaceScreen({ activityLogs, raceCollapsed, setRaceCollapsed, plans, setP
     return function() { window.removeEventListener("mf_race_loaded", onRaceLoaded); };
   }, []);
   var [goalTime,     setGoalTime]     = useState(function(){ try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); return r.goalTime||""; } catch(e){return "";} });  var [raceDistKey,  setRaceDistKey]  = useState(function(){ try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); return r.raceDistKey||"full"; } catch(e){return "full";} });
-  var [paceInput,    setPaceInput]    = useState("");
+  var [paceInput,    setPaceInput]    = useState(function(){ try { var r=JSON.parse(localStorage.getItem("mf_race")||"{}"); return r.goalTime||""; } catch(e){return "";} });
   var [showSetup,    setShowSetup]    = useState(false);
   var [weekOffset,   setWeekOffset]   = useState(0);
+
+  // Load race settings from Supabase on mount
+  useEffect(function() {
+    if (!authUserId || !authToken) return;
+    fetch(SUPABASE_URL + "/rest/v1/profiles?id=eq." + authUserId + "&select=race_settings", {
+      headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + authToken }
+    }).then(function(r) { return r.json(); }).then(function(rows) {
+      if (!Array.isArray(rows) || !rows[0] || !rows[0].race_settings) return;
+      var rs = rows[0].race_settings;
+      if (rs.raceDateStr) setRaceDateStr(rs.raceDateStr);
+      if (rs.raceName) setRaceName(rs.raceName);
+      if (rs.raceDistKey) setRaceDistKey(rs.raceDistKey);
+      if (rs.goalTime) { setGoalTime(rs.goalTime); setPaceInput(rs.goalTime); }
+      try { localStorage.setItem("mf_race", JSON.stringify(rs)); } catch(e) {}
+    }).catch(function(){});
+  }, [authUserId, authToken]);
+
   // plans state is lifted to MainApp so HomeScreen can read it
   var safePlans = plans || {};
   var [modalDay,     setModalDay]     = useState(null);

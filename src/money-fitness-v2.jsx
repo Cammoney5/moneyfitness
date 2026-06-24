@@ -3515,33 +3515,6 @@ function GoalProgressTab({ client, isCoach, color, onTabChange, authUserId, auth
           Message Cameron
         </button>
       )}
-      {histModal && (
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:99999,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={function(){setHistModal(null);}}>
-          <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"20px 20px 40px",width:"100%",maxWidth:480}} onClick={function(e){e.stopPropagation();}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-              <div>
-                <div style={{color:TEXT,fontSize:16,fontWeight:800}}>{histModal.name}</div>
-                <div style={{color:TEXT3,fontSize:11,marginTop:2}}>Weight History</div>
-              </div>
-              <button onClick={function(){setHistModal(null);}} style={{background:SURFACE,border:"none",borderRadius:10,width:32,height:32,cursor:"pointer",fontSize:18,color:TEXT3}}>×</button>
-            </div>
-            {histModal.rows===null ? (
-              <div style={{color:TEXT3,fontSize:13,textAlign:"center",padding:"20px 0"}}>Loading...</div>
-            ) : histModal.rows.length===0 ? (
-              <div style={{color:TEXT3,fontSize:13,textAlign:"center",padding:"20px 0"}}>No history yet — log a weight to get started!</div>
-            ) : histModal.rows.map(function(h,i){
-              var d = new Date(h.logged_date+"T12:00:00");
-              var dateStr = d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
-              return (
-                <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:i<histModal.rows.length-1?"1px solid "+SURFACE2:"none"}}>
-                  <span style={{color:TEXT3,fontSize:13}}>{dateStr}</span>
-                  <span style={{color:TEXT,fontSize:15,fontWeight:700}}>{h.weight} lbs</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -1498,7 +1498,10 @@ function CoachProgramEditor({ program, onSave, onClose, lib, libCats, authToken,
                             onChange={function(e) {
                               var cur = parseExercise(ex);
                               var timeStr = cur.time ? " @"+cur.time : "";
-                              updateExercise(activeWk, dayIdx, exIdx, parsed.name + " " + (e.target.value || "3") + "x" + (cur.reps || "10") + timeStr);
+                              var schemeStr = cur.scheme ? " #"+cur.scheme : "";
+                              var cLabel = getCircuitLabel(ex);
+                              var newEx = parsed.name + " " + (e.target.value || "3") + "x" + (cur.reps || "10") + timeStr + schemeStr;
+                              updateExercise(activeWk, dayIdx, exIdx, cLabel ? setCircuitLabel(newEx, cLabel) : newEx);
                             }}
                             placeholder="3"
                             style={Object.assign({}, inputS, { textAlign: "center", fontSize: 13, fontWeight: 700, padding: "6px 4px", color: fieldColors[activeWk+"-"+dayIdx+"-"+exIdx+"-s"] || undefined })}
@@ -1512,7 +1515,10 @@ function CoachProgramEditor({ program, onSave, onClose, lib, libCats, authToken,
                             onChange={function(e) {
                               var cur = parseExercise(ex);
                               var timeStr = cur.time ? " @"+cur.time : "";
-                              updateExercise(activeWk, dayIdx, exIdx, parsed.name + " " + (cur.sets || "3") + "x" + (e.target.value || "10") + timeStr);
+                              var schemeStr = cur.scheme ? " #"+cur.scheme : "";
+                              var cLabel = getCircuitLabel(ex);
+                              var newEx = parsed.name + " " + (cur.sets || "3") + "x" + (e.target.value || "10") + timeStr + schemeStr;
+                              updateExercise(activeWk, dayIdx, exIdx, cLabel ? setCircuitLabel(newEx, cLabel) : newEx);
                             }}
                             placeholder="10"
                             style={Object.assign({}, inputS, { textAlign: "center", fontSize: 13, fontWeight: 700, padding: "6px 4px", color: fieldColors[activeWk+"-"+dayIdx+"-"+exIdx+"-r"] || undefined })}
@@ -1527,7 +1533,9 @@ function CoachProgramEditor({ program, onSave, onClose, lib, libCats, authToken,
                               var cur = parseExercise(ex);
                               var timeStr = e.target.value ? " @"+e.target.value : "";
                               var schemeStr = cur.scheme ? " #"+cur.scheme : "";
-                              updateExercise(activeWk, dayIdx, exIdx, cur.name + " " + (cur.sets || "3") + "x" + (cur.reps || "10") + timeStr + schemeStr);
+                              var cLabel = getCircuitLabel(ex);
+                              var newEx = cur.name + " " + (cur.sets || "3") + "x" + (cur.reps || "10") + timeStr + schemeStr;
+                              updateExercise(activeWk, dayIdx, exIdx, cLabel ? setCircuitLabel(newEx, cLabel) : newEx);
                             }}
                             placeholder="30s"
                             style={Object.assign({}, inputS, { textAlign: "center", fontSize: 13, fontWeight: 700, padding: "6px 4px", color: fieldColors[activeWk+"-"+dayIdx+"-"+exIdx+"-t"] || undefined })}
@@ -1543,7 +1551,9 @@ function CoachProgramEditor({ program, onSave, onClose, lib, libCats, authToken,
                             var cur = parseExercise(ex);
                             var timeStr = cur.time ? " @"+cur.time : "";
                             var schemeStr = e.target.value ? " #"+e.target.value : "";
-                            updateExercise(activeWk, dayIdx, exIdx, cur.name + " " + (cur.sets || "3") + "x" + (cur.reps || "10") + timeStr + schemeStr);
+                            var cLabel = getCircuitLabel(ex);
+                            var newEx = cur.name + " " + (cur.sets || "3") + "x" + (cur.reps || "10") + timeStr + schemeStr;
+                            updateExercise(activeWk, dayIdx, exIdx, cLabel ? setCircuitLabel(newEx, cLabel) : newEx);
                           }}
                           placeholder="e.g. 2x2, 1x6, 1x8"
                           style={Object.assign({}, inputS, { width: "100%", fontSize: 12, padding: "5px 8px" })}

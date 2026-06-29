@@ -945,9 +945,15 @@ function VideoModal({ video, exName, onClose }) {
 
 function parseExercise(ex) {
   const stripped = ex.replace(/^\[C:[^\]]*\]\s*/, "");
-  const match = stripped.match(/^(.+?)\s+(\d+)[xx](\d+)/);
-  if (match) return { name: match[1].trim(), sets: match[2], reps: match[3] };
-  return { name: stripped.trim(), sets: "", reps: "" };
+  const schemeMatch = stripped.match(/#([^@#]+)$/);
+  const scheme = schemeMatch ? schemeMatch[1].trim() : "";
+  const base = stripped.replace(/#[^@#]+$/, "").trim();
+  const timeMatch = base.match(/@(\S+)$/);
+  const time = timeMatch ? timeMatch[1] : "";
+  const noTime = base.replace(/@\S+$/, "").trim();
+  const match = noTime.match(/^(.+?)\s+(\d+)[xx](\d+)/);
+  if (match) return { name: match[1].trim(), sets: match[2], reps: match[3], time: time, scheme: scheme };
+  return { name: noTime.trim(), sets: "", reps: "", time: time, scheme: scheme };
 }
 
 function getCircuitLabel(ex) {
@@ -1520,12 +1526,28 @@ function CoachProgramEditor({ program, onSave, onClose, lib, libCats, authToken,
                             onChange={function(e) {
                               var cur = parseExercise(ex);
                               var timeStr = e.target.value ? " @"+e.target.value : "";
-                              updateExercise(activeWk, dayIdx, exIdx, cur.name + " " + (cur.sets || "3") + "x" + (cur.reps || "10") + timeStr);
+                              var schemeStr = cur.scheme ? " #"+cur.scheme : "";
+                              updateExercise(activeWk, dayIdx, exIdx, cur.name + " " + (cur.sets || "3") + "x" + (cur.reps || "10") + timeStr + schemeStr);
                             }}
                             placeholder="30s"
                             style={Object.assign({}, inputS, { textAlign: "center", fontSize: 13, fontWeight: 700, padding: "6px 4px", color: fieldColors[activeWk+"-"+dayIdx+"-"+exIdx+"-t"] || undefined })}
                           />
                         </div>
+                      </div>
+                      <div style={{ paddingLeft: 24, marginTop: 4 }}>
+                        <div style={{ color: TEXT3, fontSize: 9, fontWeight: 700, letterSpacing: 0.5, marginBottom: 3 }}>SCHEME</div>
+                        <input
+                          type="text"
+                          value={parsed.scheme || ""}
+                          onChange={function(e) {
+                            var cur = parseExercise(ex);
+                            var timeStr = cur.time ? " @"+cur.time : "";
+                            var schemeStr = e.target.value ? " #"+e.target.value : "";
+                            updateExercise(activeWk, dayIdx, exIdx, cur.name + " " + (cur.sets || "3") + "x" + (cur.reps || "10") + timeStr + schemeStr);
+                          }}
+                          placeholder="e.g. 2x2, 1x6, 1x8"
+                          style={Object.assign({}, inputS, { width: "100%", fontSize: 12, padding: "5px 8px" })}
+                        />
                       </div>
                     </div>
                   );
@@ -2755,7 +2777,10 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
                     <div key={"fex-"+p.origIdx} style={{background:isC?cc+"15":"#fff",borderRadius:isC?0:14,border:isC?"none":"1.5px solid #E8E4DE",borderBottom:isC?"1px solid "+cc+"30":"none",padding:"12px 14px",marginBottom:isC?0:8}}>
                       <div style={{display:"flex",alignItems:"center",gap:8}}>
                         <div style={{width:28,height:28,borderRadius:8,background:isC?cc+"40":"#F0F5F2",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:isC?cc:"#7AAB8A",fontFamily:"monospace",flexShrink:0}}>{p.origIdx+1}</div>
-                        <div style={{color:"#0A1A0F",fontSize:14,fontWeight:500,flex:1}}>{p.name}</div>
+                        <div style={{flex:1}}>
+                          <div style={{color:"#0A1A0F",fontSize:14,fontWeight:500}}>{p.name}</div>
+                          {p.scheme&&<div style={{color:"#7AAB8A",fontSize:10,marginTop:1,fontWeight:600}}>{p.scheme}</div>}
+                        </div>
                         {p.sets&&(p.reps||p.time)&&(function(){
                           var _fc=fday.fieldColors||{};
                           var _fk=fw+"-"+fd+"-"+p.origIdx;
@@ -3001,7 +3026,10 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
                     <div key={"ex"+ex.origIdx} style={{padding:"9px 0",borderBottom:"1px solid #F0EFEC"}}>
                       <div style={{display:"flex",alignItems:"center",gap:8}}>
                         <div style={{width:28,height:28,borderRadius:8,background:isCircuit?cc+"18":"#F0F5F2",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:isCircuit?cc:"#7AAB8A",fontFamily:"monospace",flexShrink:0}}>{ex.origIdx+1}</div>
-                        <div style={{color:"#0A1A0F",fontSize:14,fontWeight:500,flex:1}}>{ex.name}</div>
+                        <div style={{flex:1}}>
+                          <div style={{color:"#0A1A0F",fontSize:14,fontWeight:500}}>{ex.name}</div>
+                          {ex.scheme&&<div style={{color:"#7AAB8A",fontSize:10,marginTop:1,fontWeight:600}}>{ex.scheme}</div>}
+                        </div>
                         {ex.sets&&(ex.reps||ex.time)&&(function(){
                           var _fc=day.fieldColors||{};
                           var _fk=activeWk+"-"+origIdx+"-"+ex.origIdx;

@@ -2777,11 +2777,14 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
                     <div key={"fex-"+p.origIdx} style={{background:isC?cc+"15":"#fff",borderRadius:isC?0:14,border:isC?"none":"1.5px solid #E8E4DE",borderBottom:isC?"1px solid "+cc+"30":"none",padding:"12px 14px",marginBottom:isC?0:8}}>
                       <div style={{display:"flex",alignItems:"center",gap:8}}>
                         <div style={{width:28,height:28,borderRadius:8,background:isC?cc+"40":"#F0F5F2",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:isC?cc:"#7AAB8A",fontFamily:"monospace",flexShrink:0}}>{p.origIdx+1}</div>
-                        <div style={{flex:1}}>
-                          <div style={{color:"#0A1A0F",fontSize:14,fontWeight:500}}>{p.name}</div>
-                          {p.scheme&&<div style={{color:"#7AAB8A",fontSize:10,marginTop:1,fontWeight:600}}>{p.scheme}</div>}
-                        </div>
-                        {p.sets&&(p.reps||p.time)&&(function(){
+                        <div style={{color:"#0A1A0F",fontSize:14,fontWeight:500,flex:1}}>{p.name}</div>
+                        {p.scheme ? (
+                          <div style={{display:"flex",gap:4,flexWrap:"wrap",flexShrink:0}}>
+                            {p.scheme.split(",").map(function(s,si){
+                              return <div key={si} style={{fontSize:11,fontWeight:600,color:"#7AAB8A",background:"#F0F5F2",padding:"4px 7px",borderRadius:8,fontFamily:"monospace",whiteSpace:"nowrap"}}>{s.trim()}</div>;
+                            })}
+                          </div>
+                        ) : p.sets&&(p.reps||p.time)&&(function(){
                           var _fc=fday.fieldColors||{};
                           var _fk=fw+"-"+fd+"-"+p.origIdx;
                           var _sc=_fc[_fk+"-s"],_rc=_fc[_fk+"-r"],_tc=_fc[_fk+"-t"];
@@ -3026,11 +3029,14 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
                     <div key={"ex"+ex.origIdx} style={{padding:"9px 0",borderBottom:"1px solid #F0EFEC"}}>
                       <div style={{display:"flex",alignItems:"center",gap:8}}>
                         <div style={{width:28,height:28,borderRadius:8,background:isCircuit?cc+"18":"#F0F5F2",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:isCircuit?cc:"#7AAB8A",fontFamily:"monospace",flexShrink:0}}>{ex.origIdx+1}</div>
-                        <div style={{flex:1}}>
-                          <div style={{color:"#0A1A0F",fontSize:14,fontWeight:500}}>{ex.name}</div>
-                          {ex.scheme&&<div style={{color:"#7AAB8A",fontSize:10,marginTop:1,fontWeight:600}}>{ex.scheme}</div>}
-                        </div>
-                        {ex.sets&&(ex.reps||ex.time)&&(function(){
+                        <div style={{color:"#0A1A0F",fontSize:14,fontWeight:500,flex:1}}>{ex.name}</div>
+                        {ex.scheme ? (
+                          <div style={{display:"flex",gap:4,flexWrap:"wrap",flexShrink:0}}>
+                            {ex.scheme.split(",").map(function(s,si){
+                              return <div key={si} style={{fontSize:11,fontWeight:600,color:"#7AAB8A",background:"#F0F5F2",padding:"4px 7px",borderRadius:8,fontFamily:"monospace",whiteSpace:"nowrap"}}>{s.trim()}</div>;
+                            })}
+                          </div>
+                        ) : ex.sets&&(ex.reps||ex.time)&&(function(){
                           var _fc=day.fieldColors||{};
                           var _fk=activeWk+"-"+origIdx+"-"+ex.origIdx;
                           var _sc=_fc[_fk+"-s"],_rc=_fc[_fk+"-r"],_tc=_fc[_fk+"-t"];

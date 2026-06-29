@@ -4220,7 +4220,7 @@ function ClientDetail({ client, onBack, isCoach, defaultTab, favorites, watchDay
             <ProgramWithCustom program={coachProgram} color={c} favorites={favorites} initialDayIndex={programDayIndex} onDayIndexUsed={function() { if (setProgramDayIndex) setProgramDayIndex(null); }} myPlans={myPlans} authUserId={authUserId} authToken={authToken} onGoToMainTab={onGoToMainTab} lib={lib} libCats={libCats} currentProgramWeek={currentProgramWeek} saveCurrentProgramWeek={saveCurrentProgramWeek} isCoachView={isCoach} />
           )}
           {isCoach && (
-            <CoachProgramTabView program={coachProgram} color={c} onUpdate={setCoachProgram} lib={lib} libCats={libCats} authToken={authToken} setLib={setLib} realClients={realClients} currentProgramWeek={currentProgramWeek} saveCurrentProgramWeek={saveCurrentProgramWeek} />
+            <CoachProgramTabView program={coachProgram} color={c} onUpdate={function(v){ var next = typeof v === "function" ? v(coachProgram) : v; setCoachProgram(next); saveProgram(next); }} lib={lib} libCats={libCats} authToken={authToken} setLib={setLib} realClients={realClients} currentProgramWeek={currentProgramWeek} saveCurrentProgramWeek={saveCurrentProgramWeek} />
           )}
         </div>
       )}

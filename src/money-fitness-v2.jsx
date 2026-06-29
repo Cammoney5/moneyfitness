@@ -2848,6 +2848,11 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
               <p style={{ color: "#0A1A0F", fontSize: 14, lineHeight: 1.6, margin: 0 }}>{fday.notes}</p>
             </div>
           ) : null}
+      {videoModal && (
+        <div style={{position:"fixed",inset:0,zIndex:9999}}>
+          <VideoModal video={videoModal.video} exName={videoModal.name} onClose={function(){setVideoModal(null);}} />
+        </div>
+      )}
       {histModal && (
             <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:999,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={function(){setHistModal(null);}}>
               <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"20px 20px 40px",width:"100%",maxWidth:480}} onClick={function(e){e.stopPropagation();}}>

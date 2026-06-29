@@ -1455,8 +1455,11 @@ function CoachProgramEditor({ program, onSave, onClose, lib, libCats, authToken,
                           value={parsed.name}
                           onChange={function(e) {
                             var cur = parseExercise(ex);
-                            var newEx = e.target.value + (cur.sets ? " " + cur.sets + "x" + cur.reps : "");
-                            updateExercise(activeWk, dayIdx, exIdx, newEx);
+                            var timeStr = cur.time ? " @"+cur.time : "";
+                            var schemeStr = cur.scheme ? " #"+cur.scheme : "";
+                            var cLabel = getCircuitLabel(ex);
+                            var newEx = e.target.value + (cur.sets ? " " + cur.sets + "x" + cur.reps : "") + timeStr + schemeStr;
+                            updateExercise(activeWk, dayIdx, exIdx, cLabel ? setCircuitLabel(newEx, cLabel) : newEx);
                           }}
                           style={Object.assign({}, inputS, { flex: 1, fontSize: 12, fontWeight: 600 })}
                           placeholder="Exercise name"

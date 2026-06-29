@@ -2730,8 +2730,14 @@ function ProgramWithCustom({ program, color, favorites, initialDayIndex, onDayIn
 
   function parseEx(ex) {
     var s = ex.replace(/^\[C:[^\]]*\]\s*/, "");
+    var schemeM = s.match(/#([^@#]+)$/);
+    var scheme = schemeM ? schemeM[1].trim() : "";
+    s = s.replace(/#[^@#]+$/, "").trim();
+    var timeM = s.match(/@(\S+)$/);
+    var time = timeM ? timeM[1] : "";
+    s = s.replace(/@\S+$/, "").trim();
     var m = s.match(/^(.+?)\s+(\d+)[xX×](\d+)/);
-    return m ? {name:m[1].trim(),sets:m[2],reps:m[3]} : {name:s.trim(),sets:"",reps:""};
+    return m ? {name:m[1].trim(),sets:m[2],reps:m[3],time:time,scheme:scheme} : {name:s.trim(),sets:"",reps:"",time:time,scheme:scheme};
   }
 
   if (fullscreenDay !== null) {
@@ -3771,8 +3777,14 @@ function CoachProgramTabView({ program, color, onUpdate, lib, libCats, authToken
 
   function parseEx(ex) {
     var s = ex.replace(/^\[C:[^\]]*\]\s*/, "");
+    var schemeM = s.match(/#([^@#]+)$/);
+    var scheme = schemeM ? schemeM[1].trim() : "";
+    s = s.replace(/#[^@#]+$/, "").trim();
+    var timeM = s.match(/@(\S+)$/);
+    var time = timeM ? timeM[1] : "";
+    s = s.replace(/@\S+$/, "").trim();
     var m = s.match(/^(.+?)\s+(\d+)[xX×](\d+)/);
-    return m ? {name:m[1].trim(),sets:m[2],reps:m[3]} : {name:s.trim(),sets:"",reps:""};
+    return m ? {name:m[1].trim(),sets:m[2],reps:m[3],time:time,scheme:scheme} : {name:s.trim(),sets:"",reps:"",time:time,scheme:scheme};
   }
 
   function logWeight(key, val) {
